@@ -45,7 +45,7 @@ hidden_imports = [
 
 
 a = Analysis(
-    [str(PROJECT_ROOT / "src" / "bpmn_platform" / "app.py")],
+    [str(PROJECT_ROOT / "packaging" / "launcher.py")],
     pathex=[str(PROJECT_ROOT / "src")],
     binaries=[],
     datas=datas,
