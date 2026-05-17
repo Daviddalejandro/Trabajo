@@ -1,11 +1,11 @@
-"""Agente de exportacion (Fase 9): XML, SVG y JSON metadata a disco."""
+"""Agente de exportacion (Fase 9): XML, SVG, JSON y HTML self-contained."""
 from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ..bpmn import render_svg
+from ..bpmn import render_report, render_svg
 from ..bpmn.generator import BpmnGenerationResult
 from ..config import settings
 from ..excel.parser import ParseResult
@@ -38,12 +38,14 @@ class ExportAgent(Agent):
         xml_path.write_bytes(bpmn_result.xml)
         files.append(xml_path)
 
-        # 2) SVG por proceso
+        # 2) SVG por proceso (sirve tambien para incluir inline en el HTML).
+        svgs_by_process: dict[str, str] = {}
         for process in result.model.processes:
             layout = bpmn_result.layouts.get(process.id)
             if not layout:
                 continue
             svg = render_svg(result.model, layout, title=process.name)
+            svgs_by_process[process.id] = svg
             svg_path = out_dir / f"bpmn_{process.id}_{timestamp}.svg"
             svg_path.write_text(svg, encoding="utf-8")
             files.append(svg_path)
@@ -66,6 +68,19 @@ class ExportAgent(Agent):
             json.dumps(metadata, indent=2, ensure_ascii=False), encoding="utf-8"
         )
         files.append(json_path)
+
+        # 4) Reporte HTML self-contained (paleta Colsubsidio, no requiere assets).
+        agent_findings: list[tuple[str, str]] = context.get("agent_findings") or []
+        html = render_report(
+            model=result.model,
+            svgs_by_process=svgs_by_process,
+            quality=quality_report,
+            parser_issues=result.issues,
+            agent_findings=agent_findings,
+        )
+        html_path = out_dir / f"reporte_{timestamp}.html"
+        html_path.write_text(html, encoding="utf-8")
+        files.append(html_path)
 
         context.set("export_files", files)
         log.info("Export completado: {} archivos -> {}", len(files), out_dir)

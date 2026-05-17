@@ -17,18 +17,20 @@ def configure_logging() -> None:
         return
     settings.ensure_dirs()
     logger.remove()
-    logger.add(
-        sys.stderr,
-        level=settings.log_level,
-        format=(
-            "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
-            "<level>{level:<7}</level> | "
-            "<cyan>{name}:{function}:{line}</cyan> | {message}"
-        ),
-        enqueue=False,
-        backtrace=False,
-        diagnose=False,
-    )
+    # En binarios PyInstaller --windowed sys.stderr puede ser None.
+    if sys.stderr is not None:
+        logger.add(
+            sys.stderr,
+            level=settings.log_level,
+            format=(
+                "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+                "<level>{level:<7}</level> | "
+                "<cyan>{name}:{function}:{line}</cyan> | {message}"
+            ),
+            enqueue=False,
+            backtrace=False,
+            diagnose=False,
+        )
     logger.add(
         settings.logs_dir / "bpmn_platform_{time:YYYY-MM-DD}.log",
         level=settings.log_level,
