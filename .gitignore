@@ -28,8 +28,9 @@ ENV/
 env/
 .env
 
-# PyInstaller
+# PyInstaller (ignorar specs/exe generados, pero NO el spec oficial empaquetado).
 *.spec
+!packaging/BPMNPlatform.spec
 *.exe
 
 # IDE
