@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bpmn-platform"
+version = "0.1.0"
+description = "Plataforma BPMN Inteligente con Agentes IA y herramientas Open Source"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "BPMN Platform Team" }
+]
+
+dependencies = [
+    # UI Windows desktop
+    "PyQt6>=6.6",
+    "PyQt6-WebEngine>=6.6",
+
+    # Excel structured I/O (lectura + escritura + validaciones)
+    "openpyxl>=3.1.2",
+
+    # Metamodelo y validación
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+
+    # Catalogos
+    "PyYAML>=6.0",
+
+    # Logging y observabilidad
+    "loguru>=0.7",
+
+    # IA local
+    "httpx>=0.27",
+
+    # XML BPMN (preparado para fases siguientes)
+    "lxml>=5.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-qt>=4.4",
+    "ruff>=0.4",
+    "mypy>=1.9",
+]
+build = [
+    "pyinstaller>=6.6",
+]
+
+[project.scripts]
+bpmn-platform = "bpmn_platform.app:run"
+bpmn-template = "bpmn_platform.excel.template_builder:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"bpmn_platform" = ["resources/**/*"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true

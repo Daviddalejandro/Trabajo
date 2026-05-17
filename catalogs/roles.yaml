@@ -1,0 +1,17 @@
+# Catalogo de roles / responsables homologados.
+- code: ANALISTA_RIESGO
+  label: Analista de Riesgo
+- code: ANALISTA_OPERACIONES
+  label: Analista de Operaciones
+- code: APROBADOR_CREDITO
+  label: Aprobador de Credito
+- code: OFICIAL_CUMPLIMIENTO
+  label: Oficial de Cumplimiento
+- code: AUDITOR_INTERNO
+  label: Auditor Interno
+- code: ARQUITECTO_TI
+  label: Arquitecto TI
+- code: USUARIO_NEGOCIO
+  label: Usuario de Negocio
+- code: SISTEMA
+  label: Sistema (no humano)

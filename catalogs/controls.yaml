@@ -1,0 +1,25 @@
+# Catalogo de controles homologados.
+- code: C-BIOMETRICO
+  label: Validacion biometrica
+  type: preventive
+  mitigates: [R-SUPLANTACION]
+- code: C-DOBLE_VALIDACION
+  label: Doble validacion (4 ojos)
+  type: preventive
+  mitigates: [R-FRAUDE, R-ERROR_OPERATIVO]
+- code: C-LOG_AUDITORIA
+  label: Log de auditoria
+  type: detective
+  mitigates: [R-FRAUDE, R-PERDIDA_INFO]
+- code: C-BACKUP
+  label: Backup automatico
+  type: corrective
+  mitigates: [R-PERDIDA_INFO]
+- code: C-MONITOREO_SLA
+  label: Monitoreo de SLA
+  type: detective
+  mitigates: [R-DISPONIBILIDAD]
+- code: C-CHECKLIST_REG
+  label: Checklist regulatorio
+  type: preventive
+  mitigates: [R-INCUMPLIMIENTO]

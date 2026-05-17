@@ -1,0 +1,19 @@
+# Catalogo de riesgos homologados.
+- code: R-SUPLANTACION
+  label: Suplantacion de identidad
+  severity: high
+- code: R-FRAUDE
+  label: Fraude financiero
+  severity: critical
+- code: R-INCUMPLIMIENTO
+  label: Incumplimiento regulatorio
+  severity: high
+- code: R-PERDIDA_INFO
+  label: Perdida de informacion
+  severity: high
+- code: R-DISPONIBILIDAD
+  label: Indisponibilidad del servicio
+  severity: medium
+- code: R-ERROR_OPERATIVO
+  label: Error operativo manual
+  severity: medium

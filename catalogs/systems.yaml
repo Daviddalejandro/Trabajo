@@ -1,0 +1,26 @@
+# Catalogo de sistemas / aplicaciones corporativas homologadas.
+# Editable por el equipo de arquitectura empresarial.
+- code: SAP
+  label: SAP ERP
+  description: ERP corporativo.
+- code: CRM
+  label: CRM Comercial
+  description: Sistema de gestion de clientes.
+- code: AIRFLOW
+  label: Apache Airflow
+  description: Orquestador de batch / ETL.
+- code: SERVICENOW
+  label: ServiceNow
+  description: Plataforma ITSM.
+- code: JIRA
+  label: Jira
+  description: Gestion de proyectos y tickets.
+- code: SHAREPOINT
+  label: SharePoint
+  description: Repositorio documental.
+- code: CUSTOM_API
+  label: API Interna
+  description: API corporativa propia (placeholder).
+- code: EMAIL
+  label: Correo Electronico
+  description: Canal de comunicacion por email.

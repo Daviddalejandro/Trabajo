@@ -1,0 +1,26 @@
+# Tipos BPMN permitidos (subset gobernado).
+# Las etiquetas (label) son las que se muestran en el dropdown del Excel.
+- code: StartEvent
+  label: Inicio
+  description: Evento de inicio del proceso.
+- code: UserTask
+  label: Actividad Humana
+  description: Actividad ejecutada por una persona (Role).
+- code: ServiceTask
+  label: Actividad Automatica
+  description: Actividad ejecutada por un sistema (Application + Command).
+- code: ExclusiveGateway
+  label: Decision
+  description: Compuerta exclusiva (un solo camino).
+- code: ParallelGateway
+  label: Paralelo
+  description: Compuerta paralela (todos los caminos en simultaneo).
+- code: IntermediateCatchEvent
+  label: Espera
+  description: Evento intermedio de espera (timer, condicion).
+- code: MessageEvent
+  label: Mensaje
+  description: Evento de mensaje entrante/saliente.
+- code: EndEvent
+  label: Fin
+  description: Evento de fin del proceso.
