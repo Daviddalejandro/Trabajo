@@ -13,5 +13,11 @@
   label: Arquitecto TI
 - code: USUARIO_NEGOCIO
   label: Usuario de Negocio
+- code: COORD_TALENTO_HUMANO
+  label: Coordinador de Talento Humano
+- code: ANALISTA_TALENTO_HUMANO
+  label: Analista de Talento Humano
+- code: LIDER_AREA
+  label: Lider del Area Solicitante
 - code: SISTEMA
   label: Sistema (no humano)

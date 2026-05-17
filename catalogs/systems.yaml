@@ -6,6 +6,15 @@
 - code: CRM
   label: CRM Comercial
   description: Sistema de gestion de clientes.
+- code: HRM
+  label: HRM (SuccessFactors)
+  description: Sistema de gestion de talento humano (HRIS).
+- code: ACTIVE_DIRECTORY
+  label: Active Directory
+  description: Directorio corporativo de usuarios y permisos.
+- code: TEST_PSICOTECNICOS
+  label: Plataforma de pruebas psicotecnicas
+  description: Aplicacion de evaluaciones psicotecnicas online.
 - code: AIRFLOW
   label: Apache Airflow
   description: Orquestador de batch / ETL.
@@ -18,6 +27,9 @@
 - code: SHAREPOINT
   label: SharePoint
   description: Repositorio documental.
+- code: PORTAL_EMPLEO
+  label: Portales de empleo (LinkedIn / elempleo)
+  description: Publicacion externa de vacantes.
 - code: CUSTOM_API
   label: API Interna
   description: API corporativa propia (placeholder).
