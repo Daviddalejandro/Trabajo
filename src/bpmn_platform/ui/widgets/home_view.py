@@ -1,7 +1,9 @@
 """Vista Inicio: roadmap visible y acciones primarias."""
 from __future__ import annotations
 
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtSvgWidgets import QSvgWidget
 from PyQt6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -16,33 +18,38 @@ from PyQt6.QtWidgets import (
 
 from ...config import settings
 from ...core.catalogs import CatalogBundle
+from .. import theme
 
 
-_PHASES = [
-    ("Fase 1", "Fundaciones del Proyecto", "Arquitectura, stack OSS, app Windows."),
-    ("Fase 2", "Metamodelo Empresarial", "Entidades, relaciones, catalogos."),
-    ("Fase 3", "Excel Empresarial", "Plantilla controlada con validaciones."),
-    ("Fase 4", "Motor de Parsing", "Lectura Excel y normalizacion (siguiente)."),
-    ("Fase 5", "Motor Semantico IA", "Inferencia BPMN con Ollama (siguiente)."),
-    ("Fase 6", "Generador BPMN", "BPMN 2.0 XML (siguiente)."),
+_FASES = [
+    ("Fase 1", "Fundaciones", "App PyQt6, multiagente, logging y scripts Windows."),
+    ("Fase 2", "Metamodelo Empresarial", "Entidades, relaciones y catálogos controlados."),
+    ("Fase 3", "Excel Empresarial", "Plantilla con dropdowns y validaciones."),
+    ("Fase 4", "Motor de Parsing", "Excel → EnterpriseModel con detección de issues."),
+    ("Fase 5", "Motor Semántico IA", "Inferencias por reglas + Ollama opcional."),
+    ("Fase 6", "Generador BPMN 2.0", "XML estándar con BPMNDI y auto-layout."),
+    ("Fase 7", "Sistema → Comando", "Trazabilidad tecnológica obligatoria."),
+    ("Fase 8", "Validador de Calidad", "Score 0-100 con criterios estructurales."),
+    ("Fase 9", "Visualización", "Diagrama SVG con zoom/pan + exportación."),
+    ("Fase 10", "Gobierno", "Auditoría JSONL y métricas."),
+    ("Fase 11", "Capacidades Futuras", "Process mining, RPA, DMN, Neo4j (stubs)."),
 ]
 
 
 def _card(title: str, subtitle: str, body: str) -> QFrame:
     frame = QFrame()
     frame.setFrameShape(QFrame.Shape.StyledPanel)
-    frame.setStyleSheet(
-        "QFrame { background-color: white; border: 1px solid #D0D7E2; border-radius: 8px; }"
-        "QLabel#title { color: #1F3864; font-size: 12pt; font-weight: bold; }"
-        "QLabel#subtitle { color: #2E5AAB; font-size: 11pt; font-weight: 600; }"
-        "QLabel#body { color: #444; font-size: 10pt; }"
-    )
+    frame.setStyleSheet(theme.card_qss())
     layout = QVBoxLayout(frame)
     layout.setContentsMargins(14, 12, 14, 12)
     layout.setSpacing(4)
-    t = QLabel(title); t.setObjectName("title")
-    s = QLabel(subtitle); s.setObjectName("subtitle")
-    b = QLabel(body); b.setObjectName("body"); b.setWordWrap(True)
+    t = QLabel(title)
+    t.setObjectName("card-title")
+    s = QLabel(subtitle)
+    s.setObjectName("card-subtitle")
+    b = QLabel(body)
+    b.setObjectName("card-body")
+    b.setWordWrap(True)
     layout.addWidget(t)
     layout.addWidget(s)
     layout.addWidget(b)
@@ -57,49 +64,55 @@ class HomeView(QWidget):
     def __init__(self, *, catalogs: CatalogBundle | None) -> None:
         super().__init__()
         self._catalogs = catalogs
-        self.setStyleSheet("QWidget { background-color: #F4F6FA; }")
+        self.setStyleSheet(f"QWidget {{ background-color: {theme.GRIS_FONDO}; }}")
 
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 24, 24, 24)
         root.setSpacing(18)
 
-        header = QLabel(f"{settings.app_name}")
-        header.setStyleSheet("font-size: 22pt; font-weight: bold; color: #1F3864;")
+        # ----- Cabecera con logo Colsubsidio ----- #
+        header_bar = QHBoxLayout()
+        header_bar.setSpacing(16)
+        if theme.ASSET_HEADER.exists():
+            logo = QSvgWidget(str(theme.ASSET_HEADER))
+            logo.setFixedSize(220, 44)
+            header_bar.addWidget(logo, 0, Qt.AlignmentFlag.AlignVCenter)
+        title_box = QVBoxLayout()
+        title_box.setSpacing(2)
+        title = QLabel(settings.app_name)
+        title.setStyleSheet(
+            f"font-family: {theme.FONT_FAMILY}; font-size: 22pt; font-weight: bold;"
+            f" color: {theme.COLSUBSIDIO_AZUL};"
+        )
         subtitle = QLabel(
             "Plataforma BPMN inteligente, multiagente y 100% Open Source. "
-            "Convierte Excels empresariales estructurados en BPMN 2.0 con gobierno."
+            "Convierte Excels empresariales en BPMN 2.0 con gobierno y trazabilidad."
         )
-        subtitle.setStyleSheet("font-size: 11pt; color: #404040;")
+        subtitle.setStyleSheet(
+            f"font-family: {theme.FONT_FAMILY}; font-size: 11pt; color: {theme.GRIS_TEXTO};"
+        )
         subtitle.setWordWrap(True)
+        title_box.addWidget(title)
+        title_box.addWidget(subtitle)
+        header_bar.addLayout(title_box, 1)
 
-        # Acciones
+        # ----- Botonera ----- #
         actions = QHBoxLayout()
         actions.setSpacing(12)
+
         btn_load = QPushButton("Cargar Excel...")
         btn_load.setMinimumHeight(40)
-        btn_load.setStyleSheet(
-            "QPushButton { background-color: #1F3864; color: white; font-weight: bold;"
-            " padding: 8px 18px; border-radius: 6px; }"
-            "QPushButton:hover { background-color: #2E5AAB; }"
-        )
+        btn_load.setStyleSheet(theme.primary_button_qss())
         btn_load.clicked.connect(self.load_excel_requested.emit)
 
         btn_template = QPushButton("Generar plantilla Excel oficial")
         btn_template.setMinimumHeight(40)
-        btn_template.setStyleSheet(
-            "QPushButton { background-color: white; color: #1F3864; font-weight: bold;"
-            " padding: 8px 18px; border: 1px solid #1F3864; border-radius: 6px; }"
-            "QPushButton:hover { background-color: #E8EEF7; }"
-        )
+        btn_template.setStyleSheet(theme.secondary_button_qss())
         btn_template.clicked.connect(self.generate_template_requested.emit)
 
-        btn_ollama = QPushButton("Comprobar Ollama")
+        btn_ollama = QPushButton("Comprobar Ollama (IA local)")
         btn_ollama.setMinimumHeight(40)
-        btn_ollama.setStyleSheet(
-            "QPushButton { background-color: white; color: #1F3864; font-weight: bold;"
-            " padding: 8px 18px; border: 1px solid #1F3864; border-radius: 6px; }"
-            "QPushButton:hover { background-color: #E8EEF7; }"
-        )
+        btn_ollama.setStyleSheet(theme.secondary_button_qss())
         btn_ollama.clicked.connect(self.check_ollama_requested.emit)
 
         actions.addWidget(btn_load)
@@ -107,23 +120,27 @@ class HomeView(QWidget):
         actions.addWidget(btn_ollama)
         actions.addItem(QSpacerItem(20, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
 
-        # Roadmap en grid de tarjetas
-        roadmap_title = QLabel("Roadmap de la plataforma")
-        roadmap_title.setStyleSheet("font-size: 13pt; font-weight: bold; color: #1F3864;")
+        # ----- Roadmap ----- #
+        roadmap_title = QLabel("Hoja de ruta de la plataforma")
+        roadmap_title.setStyleSheet(
+            f"font-family: {theme.FONT_FAMILY}; font-size: 13pt; font-weight: bold;"
+            f" color: {theme.COLSUBSIDIO_AZUL};"
+        )
 
         grid = QGridLayout()
         grid.setSpacing(12)
-        for index, (phase, name, body) in enumerate(_PHASES):
+        for index, (phase, name, body) in enumerate(_FASES):
             row, col = divmod(index, 3)
             grid.addWidget(_card(phase, name, body), row, col)
 
-        # Estado catalogos
+        # ----- Estado de catalogos ----- #
         self._catalog_summary = QLabel()
-        self._catalog_summary.setStyleSheet("font-size: 10pt; color: #404040;")
+        self._catalog_summary.setStyleSheet(
+            f"font-family: {theme.FONT_FAMILY}; font-size: 10pt; color: {theme.GRIS_TEXTO};"
+        )
         self._refresh_catalog_summary()
 
-        root.addWidget(header)
-        root.addWidget(subtitle)
+        root.addLayout(header_bar)
         root.addLayout(actions)
         root.addWidget(roadmap_title)
         root.addLayout(grid)
@@ -136,7 +153,7 @@ class HomeView(QWidget):
 
     def _refresh_catalog_summary(self) -> None:
         if not self._catalogs:
-            self._catalog_summary.setText("Estado: catalogos NO cargados.")
+            self._catalog_summary.setText("Estado: catálogos NO cargados.")
             return
         pieces = [f"{name} ({len(c.entries)})" for name, c in self._catalogs.all().items()]
-        self._catalog_summary.setText("Catalogos cargados: " + " | ".join(pieces))
+        self._catalog_summary.setText("Catálogos cargados: " + " | ".join(pieces))

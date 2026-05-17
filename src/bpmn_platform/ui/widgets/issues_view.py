@@ -1,4 +1,4 @@
-"""Vista Resultados: muestra el resultado del parsing y validacion."""
+"""Vista Resultados: muestra el resultado del parsing y la validación."""
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt
@@ -15,28 +15,39 @@ from PyQt6.QtWidgets import (
 
 from ...core.governance import IssueSeverity
 from ...excel.parser import ParseResult
+from .. import theme
 
 
-_SEVERITY_COLOR = {
-    IssueSeverity.ERROR: "#FFD6D6",
-    IssueSeverity.WARNING: "#FFF1C2",
-    IssueSeverity.INFO: "#D9E5FF",
+_SEVERITY_BG = {
+    IssueSeverity.ERROR: theme.ERROR_BG,
+    IssueSeverity.WARNING: theme.WARNING_BG,
+    IssueSeverity.INFO: theme.INFO_BG,
+}
+_SEVERITY_LABEL = {
+    IssueSeverity.ERROR: "Error",
+    IssueSeverity.WARNING: "Advertencia",
+    IssueSeverity.INFO: "Información",
 }
 
 
-def _metric_card(title: str, value: str, accent: str = "#1F3864") -> QWidget:
+def _metric_card(title: str, value: str, accent: str | None = None) -> QWidget:
+    accent_color = accent or theme.COLSUBSIDIO_AZUL
     card = QWidget()
     card.setStyleSheet(
-        "QWidget { background-color: white; border: 1px solid #D0D7E2;"
-        " border-radius: 8px; }"
+        f"QWidget {{ background-color: {theme.BLANCO}; border: 1px solid {theme.GRIS_BORDE};"
+        f" border-radius: 8px; }}"
     )
     layout = QVBoxLayout(card)
     layout.setContentsMargins(14, 10, 14, 10)
     layout.setSpacing(2)
     title_lbl = QLabel(title)
-    title_lbl.setStyleSheet("font-size: 10pt; color: #555;")
+    title_lbl.setStyleSheet(
+        f"font-family: {theme.FONT_FAMILY}; font-size: 10pt; color: {theme.GRIS_SECUNDARIO};"
+    )
     value_lbl = QLabel(value)
-    value_lbl.setStyleSheet(f"font-size: 18pt; font-weight: bold; color: {accent};")
+    value_lbl.setStyleSheet(
+        f"font-family: {theme.FONT_FAMILY}; font-size: 18pt; font-weight: bold; color: {accent_color};"
+    )
     layout.addWidget(title_lbl)
     layout.addWidget(value_lbl)
     return card
@@ -45,17 +56,22 @@ def _metric_card(title: str, value: str, accent: str = "#1F3864") -> QWidget:
 class IssuesView(QWidget):
     def __init__(self) -> None:
         super().__init__()
-        self.setStyleSheet("QWidget { background-color: #F4F6FA; }")
+        self.setStyleSheet(f"QWidget {{ background-color: {theme.GRIS_FONDO}; }}")
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 24, 24, 24)
         root.setSpacing(12)
 
-        title = QLabel("Resultado del parsing")
-        title.setStyleSheet("font-size: 18pt; font-weight: bold; color: #1F3864;")
-        self._hint = QLabel(
-            "Aun no se ha cargado un Excel. Usa 'Archivo -> Cargar Excel...'."
+        title = QLabel("Resultado del análisis")
+        title.setStyleSheet(
+            f"font-family: {theme.FONT_FAMILY}; font-size: 18pt; font-weight: bold;"
+            f" color: {theme.COLSUBSIDIO_AZUL};"
         )
-        self._hint.setStyleSheet("font-size: 10pt; color: #555;")
+        self._hint = QLabel(
+            "Aún no se ha cargado un Excel. Usa 'Archivo → Cargar Excel...'."
+        )
+        self._hint.setStyleSheet(
+            f"font-family: {theme.FONT_FAMILY}; font-size: 10pt; color: {theme.GRIS_SECUNDARIO};"
+        )
 
         self._metrics_row = QHBoxLayout()
         self._metrics_row.setSpacing(10)
@@ -63,16 +79,12 @@ class IssuesView(QWidget):
         self._table = QTableWidget()
         self._table.setColumnCount(4)
         self._table.setHorizontalHeaderLabels(
-            ["Severidad", "Codigo", "Mensaje", "Ubicacion"]
+            ["Severidad", "Código", "Mensaje", "Ubicación"]
         )
         self._table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self._table.setAlternatingRowColors(True)
         self._table.verticalHeader().setVisible(False)
-        self._table.setStyleSheet(
-            "QTableWidget { background-color: white; gridline-color: #D0D7E2; }"
-            "QHeaderView::section { background-color: #1F3864; color: white;"
-            " padding: 6px; border: 0; }"
-        )
+        self._table.setStyleSheet(theme.table_qss())
         header = self._table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
@@ -91,39 +103,48 @@ class IssuesView(QWidget):
 
         if not result:
             self._hint.setText(
-                "Aun no se ha cargado un Excel. Usa 'Archivo -> Cargar Excel...'."
+                "Aún no se ha cargado un Excel. Usa 'Archivo → Cargar Excel...'."
             )
             self._table.setRowCount(0)
             return
 
         model = result.model
         if result.ok:
-            self._hint.setText("Parsing completado sin errores criticos.")
-            self._hint.setStyleSheet("font-size: 10pt; color: #2E7D32;")
+            self._hint.setText("Análisis completado sin errores críticos.")
+            self._hint.setStyleSheet(
+                f"font-family: {theme.FONT_FAMILY}; font-size: 10pt; color: {theme.OK_FG};"
+            )
         else:
             self._hint.setText(
-                f"Parsing completado con {len(result.errors)} errores. Revisa la tabla."
+                f"Análisis completado con {len(result.errors)} errores. Revisa la tabla."
             )
-            self._hint.setStyleSheet("font-size: 10pt; color: #C62828;")
+            self._hint.setStyleSheet(
+                f"font-family: {theme.FONT_FAMILY}; font-size: 10pt; color: {theme.ERROR_FG};"
+            )
 
         metrics = [
-            ("Procesos", str(len(model.processes)), "#1F3864"),
-            ("Actividades", str(len(model.activities)), "#1F3864"),
-            ("Eventos", str(len(model.events)), "#1F3864"),
-            ("Gateways", str(len(model.gateways)), "#1F3864"),
-            ("Comandos", str(len(model.commands)), "#1F3864"),
-            ("Activos", str(len(model.information_assets)), "#1F3864"),
-            ("Errores", str(len(result.errors)), "#C62828"),
-            ("Warnings", str(len(result.warnings)), "#E65100"),
-            ("Info", str(len(result.infos)), "#1565C0"),
+            ("Procesos", str(len(model.processes)), theme.COLSUBSIDIO_AZUL),
+            ("Actividades", str(len(model.activities)), theme.COLSUBSIDIO_AZUL),
+            ("Eventos", str(len(model.events)), theme.COLSUBSIDIO_AZUL),
+            ("Compuertas", str(len(model.gateways)), theme.COLSUBSIDIO_AZUL),
+            ("Comandos", str(len(model.commands)), theme.COLSUBSIDIO_AZUL),
+            ("Activos", str(len(model.information_assets)), theme.COLSUBSIDIO_AZUL),
+            ("Errores", str(len(result.errors)), theme.ERROR_FG),
+            ("Advertencias", str(len(result.warnings)), theme.WARNING_FG),
+            ("Información", str(len(result.infos)), theme.INFO_FG),
         ]
         for label, value, accent in metrics:
             self._metrics_row.addWidget(_metric_card(label, value, accent))
 
         self._table.setRowCount(len(result.issues))
         for row, issue in enumerate(result.issues):
-            color = QColor(_SEVERITY_COLOR.get(issue.severity, "#FFFFFF"))
-            cells = (issue.severity.value, issue.code, issue.message, issue.location)
+            color = QColor(_SEVERITY_BG.get(issue.severity, theme.BLANCO))
+            cells = (
+                _SEVERITY_LABEL.get(issue.severity, issue.severity.value),
+                issue.code,
+                issue.message,
+                issue.location,
+            )
             for col, text in enumerate(cells):
                 item = QTableWidgetItem(text)
                 item.setBackground(color)
@@ -136,7 +157,7 @@ class IssuesView(QWidget):
         )
 
     def append_agent_issues(self, lines: list[tuple[str, str]]) -> None:
-        """Anade hallazgos extra producidos por otros agentes.
+        """Añade hallazgos extra producidos por otros agentes.
 
         Cada item es (agent_name, line) donde line tiene el formato
         '[severity] CODE: mensaje'.
@@ -153,8 +174,13 @@ class IssuesView(QWidget):
                     break
             _, _, rest = line.partition("]")
             code, _, message = rest.strip().partition(":")
-            color = QColor(_SEVERITY_COLOR.get(severity, "#FFFFFF"))
-            cells = (severity.value, code.strip(), message.strip(), f"agent:{agent_name}")
+            color = QColor(_SEVERITY_BG.get(severity, theme.BLANCO))
+            cells = (
+                _SEVERITY_LABEL.get(severity, severity.value),
+                code.strip(),
+                message.strip(),
+                f"agente:{agent_name}",
+            )
             for col, text in enumerate(cells):
                 item = QTableWidgetItem(text)
                 item.setBackground(color)

@@ -14,9 +14,8 @@ authors = [
 ]
 
 dependencies = [
-    # UI Windows desktop
+    # UI Windows desktop (QtSvg/QtSvgWidgets vienen incluidos en PyQt6)
     "PyQt6>=6.6",
-    "PyQt6-WebEngine>=6.6",
 
     # Excel structured I/O (lectura + escritura + validaciones)
     "openpyxl>=3.1.2",
@@ -58,6 +57,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "bpmn_platform" = ["resources/**/*"]
+"bpmn_platform.ui" = ["resources/**/*"]
 
 [tool.ruff]
 line-length = 110

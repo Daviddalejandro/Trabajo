@@ -1,9 +1,8 @@
-"""Vista Catalogos: navegar y revisar los catalogos cargados."""
+"""Vista Catálogos: navegar y revisar los catálogos cargados."""
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QHBoxLayout,
     QHeaderView,
     QLabel,
     QListWidget,
@@ -16,45 +15,50 @@ from PyQt6.QtWidgets import (
 
 from ...core.catalogs import CatalogBundle
 from ...core.catalogs.loader import Catalog
+from .. import theme
 
 
 class CatalogView(QWidget):
     def __init__(self, *, catalogs: CatalogBundle | None) -> None:
         super().__init__()
         self._catalogs = catalogs
-        self.setStyleSheet("QWidget { background-color: #F4F6FA; }")
+        self.setStyleSheet(f"QWidget {{ background-color: {theme.GRIS_FONDO}; }}")
 
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 24, 24, 24)
         root.setSpacing(12)
 
-        title = QLabel("Catalogos controlados")
-        title.setStyleSheet("font-size: 18pt; font-weight: bold; color: #1F3864;")
+        title = QLabel("Catálogos controlados")
+        title.setStyleSheet(
+            f"font-family: {theme.FONT_FAMILY}; font-size: 18pt; font-weight: bold;"
+            f" color: {theme.COLSUBSIDIO_AZUL};"
+        )
         subtitle = QLabel(
-            "Estos catalogos alimentan los dropdowns del Excel oficial. "
+            "Estos catálogos alimentan los dropdowns del Excel oficial. "
             "Para modificarlos edite los archivos YAML en la carpeta 'catalogs/'."
         )
-        subtitle.setStyleSheet("font-size: 10pt; color: #404040;")
+        subtitle.setStyleSheet(
+            f"font-family: {theme.FONT_FAMILY}; font-size: 10pt; color: {theme.GRIS_TEXTO};"
+        )
         subtitle.setWordWrap(True)
 
         self._list = QListWidget()
         self._list.setMinimumWidth(220)
         self._list.setStyleSheet(
-            "QListWidget { background-color: white; border: 1px solid #D0D7E2; }"
-            "QListWidget::item { padding: 8px 12px; }"
-            "QListWidget::item:selected { background-color: #1F3864; color: white; }"
+            f"QListWidget {{ background-color: {theme.BLANCO}; border: 1px solid {theme.GRIS_BORDE}; }}"
+            f"QListWidget::item {{ padding: 8px 12px; font-family: {theme.FONT_FAMILY}; }}"
+            f"QListWidget::item:selected {{ background-color: {theme.COLSUBSIDIO_AZUL};"
+            f" color: {theme.BLANCO}; }}"
+            f"QListWidget::item:hover {{ background-color: {theme.AZUL_CLARO}; }}"
         )
         self._list.currentTextChanged.connect(self._on_catalog_selected)
 
         self._table = QTableWidget()
         self._table.setColumnCount(3)
-        self._table.setHorizontalHeaderLabels(["Codigo", "Etiqueta", "Descripcion"])
+        self._table.setHorizontalHeaderLabels(["Código", "Etiqueta", "Descripción"])
         self._table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self._table.setAlternatingRowColors(True)
-        self._table.setStyleSheet(
-            "QTableWidget { background-color: white; gridline-color: #D0D7E2; }"
-            "QHeaderView::section { background-color: #1F3864; color: white; padding: 6px; border: 0; }"
-        )
+        self._table.setStyleSheet(theme.table_qss())
         self._table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self._table.verticalHeader().setVisible(False)
 

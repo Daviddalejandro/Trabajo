@@ -19,17 +19,21 @@ from ..core.metamodel import (
 from .layout import Layout, NodeBounds
 
 
+# Paleta Colsubsidio (azul #0067B1, amarillo #FFD000) aplicada al BPMN.
+# Se conservan verde/rojo en eventos start/end por convencion BPMN 2.0.
 _STYLE = """
-.bpmn-task { fill: #FFFFFF; stroke: #1F3864; stroke-width: 2; rx: 10; ry: 10; }
-.bpmn-service { fill: #FFF8E1; stroke: #6D4C00; stroke-width: 2; rx: 10; ry: 10; }
+.bpmn-task { fill: #FFFFFF; stroke: #0067B1; stroke-width: 2; rx: 10; ry: 10; }
+.bpmn-service { fill: #E8F1F9; stroke: #004F8C; stroke-width: 2; rx: 10; ry: 10; }
 .bpmn-event-start { fill: #C8E6C9; stroke: #2E7D32; stroke-width: 2; }
 .bpmn-event-end { fill: #FFCDD2; stroke: #C62828; stroke-width: 3; }
-.bpmn-event { fill: #FFFFFF; stroke: #757575; stroke-width: 2; }
-.bpmn-gateway { fill: #FFF59D; stroke: #6D4C00; stroke-width: 2; }
+.bpmn-event { fill: #FFFFFF; stroke: #6B6B6B; stroke-width: 2; }
+.bpmn-gateway { fill: #FFD000; stroke: #CC9C00; stroke-width: 2; }
 .bpmn-edge { fill: none; stroke: #303030; stroke-width: 1.6; }
 .bpmn-label { font-family: Segoe UI, Roboto, sans-serif; font-size: 11px; fill: #1A1A1A; text-anchor: middle; }
-.bpmn-label-small { font-family: Segoe UI, Roboto, sans-serif; font-size: 9px; fill: #555; text-anchor: middle; }
-.bpmn-title { font-family: Segoe UI, Roboto, sans-serif; font-size: 14px; font-weight: bold; fill: #1F3864; }
+.bpmn-label-small { font-family: Segoe UI, Roboto, sans-serif; font-size: 9px; fill: #404040; text-anchor: middle; }
+.bpmn-title { font-family: Segoe UI, Roboto, sans-serif; font-size: 16px; font-weight: bold; fill: #0067B1; }
+.bpmn-frame { fill: none; stroke: #0067B1; stroke-width: 1; }
+.bpmn-accent { fill: #FFD000; }
 """
 
 
@@ -137,8 +141,11 @@ def render_svg(model: EnterpriseModel, layout: Layout, *, title: str | None = No
     )
     parts.append(f"<style>{_STYLE}</style>")
     parts.append(_arrow_marker_defs())
+    # Banda superior Colsubsidio (azul con franja amarilla).
     parts.append(
-        f'<text class="bpmn-title" x="20" y="24">{escape(title_text)}</text>'
+        f'<rect x="0" y="0" width="{width:.0f}" height="36" fill="#0067B1"/>'
+        f'<rect x="0" y="36" width="{width:.0f}" height="4" fill="#FFD000"/>'
+        f'<text class="bpmn-title" x="20" y="24" fill="#FFFFFF">{escape(title_text)}</text>'
     )
 
     for flow_id, edge in layout.edges.items():

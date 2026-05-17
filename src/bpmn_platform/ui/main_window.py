@@ -27,6 +27,7 @@ from ..core.catalogs import CatalogBundle, load_catalogs
 from ..excel.parser import ExcelParser
 from ..excel.template_builder import build_template
 from ..logging_config import get_logger
+from . import theme
 from .widgets.about_view import AboutView
 from .widgets.bpmn_view import BpmnView
 from .widgets.catalog_view import CatalogView
@@ -36,14 +37,15 @@ from .widgets.issues_view import IssuesView
 log = get_logger(__name__)
 
 
-_NAV_ITEMS = ("Inicio", "Diagrama BPMN", "Resultados", "Catalogos", "Acerca de")
+_NAV_ITEMS = ("Inicio", "Diagrama BPMN", "Resultados", "Catálogos", "Acerca de")
 
 
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle(f"{settings.app_name} - v{settings.app_version}")
+        self.setWindowTitle(f"{settings.app_name} — v{settings.app_version}")
         self.resize(1300, 820)
+        self.setStyleSheet(theme.main_window_qss())
 
         self._catalogs: CatalogBundle | None = None
         self._load_catalogs_safely()
@@ -72,16 +74,16 @@ class MainWindow(QMainWindow):
         self.act_load_excel.setShortcut(QKeySequence.StandardKey.Open)
         self.act_load_excel.triggered.connect(self._on_load_excel)
 
-        self.act_export_bpmn = QAction("Exportar BPMN/SVG/JSON...", self)
+        self.act_export_bpmn = QAction("Exportar BPMN / SVG / JSON...", self)
         self.act_export_bpmn.setShortcut(QKeySequence("Ctrl+E"))
         self.act_export_bpmn.triggered.connect(self._on_export_bpmn)
         self.act_export_bpmn.setEnabled(False)
 
-        self.act_reload_catalogs = QAction("Recargar catalogos", self)
+        self.act_reload_catalogs = QAction("Recargar catálogos", self)
         self.act_reload_catalogs.setShortcut(QKeySequence("F5"))
         self.act_reload_catalogs.triggered.connect(self._on_reload_catalogs)
 
-        self.act_check_ollama = QAction("Comprobar Ollama", self)
+        self.act_check_ollama = QAction("Comprobar Ollama (IA local)", self)
         self.act_check_ollama.triggered.connect(self._on_check_ollama)
 
         self.act_quit = QAction("Salir", self)
@@ -109,12 +111,7 @@ class MainWindow(QMainWindow):
 
         self.nav = QListWidget()
         self.nav.setFixedWidth(220)
-        self.nav.setStyleSheet(
-            "QListWidget { background-color: #1F3864; color: white; padding: 12px 0; "
-            "border: none; font-size: 14px; }"
-            "QListWidget::item { padding: 12px 18px; }"
-            "QListWidget::item:selected { background-color: #2E5AAB; }"
-        )
+        self.nav.setStyleSheet(theme.navigation_qss())
         for name in _NAV_ITEMS:
             QListWidgetItem(name, self.nav)
         self.nav.currentRowChanged.connect(self._on_nav_changed)
@@ -176,10 +173,10 @@ class MainWindow(QMainWindow):
 
     def _refresh_catalog_status_label(self) -> None:
         if not self._catalogs:
-            self._catalog_status.setText("Catalogos: no cargados")
+            self._catalog_status.setText("Catálogos: no cargados")
             return
         totals = sum(len(c.entries) for c in self._catalogs.all().values())
-        self._catalog_status.setText(f"Catalogos OK ({totals} entradas)")
+        self._catalog_status.setText(f"Catálogos OK ({totals} entradas)")
 
     # ------------------------------------------------------------------ #
     # Slots
@@ -194,7 +191,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self,
                 "Plantilla Excel",
-                "No se pueden generar plantillas sin catalogos cargados.",
+                "No se pueden generar plantillas sin catálogos cargados.",
             )
             return
 
@@ -225,17 +222,17 @@ class MainWindow(QMainWindow):
         self.home_view.set_catalogs(self._catalogs)
         self.catalog_view.set_catalogs(self._catalogs)
         self._refresh_catalog_status_label()
-        self._status_label.setText("Catalogos recargados.")
+        self._status_label.setText("Catálogos recargados.")
 
     def _on_check_ollama(self) -> None:
         status = OllamaClient().health()
         if status.available:
             models = ", ".join(status.models) or "(sin modelos descargados)"
-            self._status_label.setText(f"Ollama OK - modelos: {models}")
+            self._status_label.setText(f"Ollama OK — modelos: {models}")
             QMessageBox.information(
                 self,
                 "Ollama",
-                f"Ollama esta disponible en {status.base_url}.\nModelos: {models}",
+                f"Ollama está disponible en {status.base_url}.\nModelos: {models}",
             )
         else:
             self._status_label.setText("Ollama no disponible")
@@ -243,7 +240,7 @@ class MainWindow(QMainWindow):
                 self,
                 "Ollama",
                 (
-                    f"Ollama NO esta disponible en {status.base_url}.\n\n"
+                    f"Ollama NO está disponible en {status.base_url}.\n\n"
                     f"Detalle: {status.error}\n\n"
                     "Sugerencia: instalar Ollama y descargar un modelo, por ejemplo:\n"
                     f"  ollama pull {settings.ollama_model}"
@@ -255,7 +252,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self,
                 "Cargar Excel",
-                "No se pueden parsear plantillas sin catalogos cargados.",
+                "No se pueden parsear plantillas sin catálogos cargados.",
             )
             return
         path_str, _ = QFileDialog.getOpenFileName(
@@ -313,7 +310,7 @@ class MainWindow(QMainWindow):
         if result.ok:
             self._status_label.setText(
                 f"Excel cargado: {len(result.model.activities)} actividades, "
-                f"{len(result.warnings)} warnings, {score_txt}."
+                f"{len(result.warnings)} advertencias, {score_txt}."
             )
         else:
             self._status_label.setText(
@@ -328,11 +325,11 @@ class MainWindow(QMainWindow):
 
     def _on_export_bpmn(self) -> None:
         if not self._last_bpmn_result or not self._last_parse_result:
-            QMessageBox.information(self, "Exportar BPMN", "No hay BPMN generado todavia.")
+            QMessageBox.information(self, "Exportar BPMN", "Aún no hay BPMN generado.")
             return
         target_dir = QFileDialog.getExistingDirectory(
             self,
-            "Carpeta destino para exportacion",
+            "Carpeta destino para la exportación",
             str(settings.exports_dir),
         )
         if not target_dir:

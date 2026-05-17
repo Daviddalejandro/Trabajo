@@ -20,6 +20,8 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from .. import theme
+
 
 class _ZoomGraphicsView(QGraphicsView):
     def __init__(self) -> None:
@@ -41,30 +43,45 @@ class _ZoomGraphicsView(QGraphicsView):
 class BpmnView(QWidget):
     def __init__(self) -> None:
         super().__init__()
-        self.setStyleSheet("QWidget { background-color: #F4F6FA; }")
+        self.setStyleSheet(f"QWidget {{ background-color: {theme.GRIS_FONDO}; }}")
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 24, 24, 24)
         root.setSpacing(10)
 
-        title = QLabel("Visualizacion BPMN")
-        title.setStyleSheet("font-size: 18pt; font-weight: bold; color: #1F3864;")
+        title = QLabel("Diagrama BPMN")
+        title.setStyleSheet(
+            f"font-family: {theme.FONT_FAMILY}; font-size: 18pt; font-weight: bold;"
+            f" color: {theme.COLSUBSIDIO_AZUL};"
+        )
 
         controls = QHBoxLayout()
         controls.setSpacing(8)
         self._process_selector = QComboBox()
         self._process_selector.setMinimumWidth(280)
+        self._process_selector.setStyleSheet(
+            f"QComboBox {{ padding: 6px 10px; border: 1px solid {theme.GRIS_BORDE};"
+            f" border-radius: 4px; background-color: {theme.BLANCO};"
+            f" font-family: {theme.FONT_FAMILY}; }}"
+        )
         self._process_selector.currentIndexChanged.connect(self._on_process_changed)
 
         btn_fit = QPushButton("Ajustar a ventana")
+        btn_fit.setStyleSheet(theme.secondary_button_qss())
         btn_fit.clicked.connect(self._fit_view)
         btn_zoom_in = QPushButton("+")
         btn_zoom_in.setFixedWidth(36)
+        btn_zoom_in.setStyleSheet(theme.secondary_button_qss())
         btn_zoom_in.clicked.connect(lambda: self._view.scale(1.2, 1.2))
-        btn_zoom_out = QPushButton("-")
+        btn_zoom_out = QPushButton("−")
         btn_zoom_out.setFixedWidth(36)
+        btn_zoom_out.setStyleSheet(theme.secondary_button_qss())
         btn_zoom_out.clicked.connect(lambda: self._view.scale(1 / 1.2, 1 / 1.2))
 
-        controls.addWidget(QLabel("Proceso:"))
+        proc_label = QLabel("Proceso:")
+        proc_label.setStyleSheet(
+            f"font-family: {theme.FONT_FAMILY}; color: {theme.GRIS_TEXTO};"
+        )
+        controls.addWidget(proc_label)
         controls.addWidget(self._process_selector)
         controls.addWidget(btn_fit)
         controls.addWidget(btn_zoom_in)
@@ -75,13 +92,16 @@ class BpmnView(QWidget):
         self._view = _ZoomGraphicsView()
         self._view.setScene(self._scene)
         self._view.setStyleSheet(
-            "QGraphicsView { background-color: white; border: 1px solid #D0D7E2; }"
+            f"QGraphicsView {{ background-color: {theme.BLANCO};"
+            f" border: 1px solid {theme.GRIS_BORDE}; }}"
         )
 
         self._placeholder = QLabel(
-            "Aun no se ha generado un BPMN. Cargue un Excel desde 'Archivo -> Cargar Excel...'"
+            "Aún no se ha generado un BPMN. Carga un Excel desde 'Archivo → Cargar Excel...'"
         )
-        self._placeholder.setStyleSheet("color: #555; font-size: 11pt;")
+        self._placeholder.setStyleSheet(
+            f"font-family: {theme.FONT_FAMILY}; color: {theme.GRIS_SECUNDARIO}; font-size: 11pt;"
+        )
         self._placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         root.addWidget(title)
