@@ -16,6 +16,10 @@ on:
 permissions:
   contents: read
 
+# Silencia el warning de deprecacion de Node.js 20 en las actions oficiales.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build:
     runs-on: windows-latest

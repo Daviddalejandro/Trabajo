@@ -31,21 +31,32 @@ Stack 100% Open Source:
 
 ## Instalacion rapida
 
+### Opción 1 — Con Anaconda (recomendado si ya tienes Anaconda)
+
+Ver guía detallada en [`docs/RUN_ANACONDA.md`](docs/RUN_ANACONDA.md).
+
+```
+# Desde Anaconda Prompt, dentro de la carpeta del repo
+conda create -n bpmn python=3.11 -y
+conda activate bpmn
+python scripts\run_anaconda.py
+```
+
+### Opción 2 — Con Python + venv
+
 ```powershell
-# 1) Clonar
 git clone https://github.com/daviddalejandro/trabajo.git
 cd trabajo
-
-# 2) Habilitar scripts (una sola vez)
 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-
-# 3) Setup automatico (crea .venv e instala dependencias)
 .\scripts\setup_windows.ps1
-
-# 4) Ejecutar la app
 .\.venv\Scripts\Activate.ps1
 bpmn-platform
 ```
+
+### Opción 3 — Binario .exe (sin Python instalado)
+
+Ver [`docs/BUILD.md`](docs/BUILD.md). Descarga el artefacto desde la
+pestaña Actions del repo y ejecutas el `.exe` directamente.
 
 ---
 

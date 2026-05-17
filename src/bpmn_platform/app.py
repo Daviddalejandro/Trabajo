@@ -17,10 +17,10 @@ def run() -> int:
     log = get_logger(__name__)
     log.info("Iniciando {} v{}", settings.app_name, settings.app_version)
 
-    from PyQt6.QtCore import Qt
     from PyQt6.QtWidgets import QApplication
 
-    QApplication.setAttribute(Qt.ApplicationAttribute.AA_EnableHighDpiScaling, True)
+    # Nota: en PyQt6 el high-DPI scaling es automatico (no requiere
+    # AA_EnableHighDpiScaling, esa flag se removio en Qt6).
     app = QApplication(sys.argv)
     app.setApplicationName(settings.app_name)
     app.setOrganizationName("BPMN Platform")
