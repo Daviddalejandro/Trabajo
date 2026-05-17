@@ -1,18 +1,48 @@
 """Configuracion central de la plataforma BPMN."""
 from __future__ import annotations
 
+import os
+import sys
 from pathlib import Path
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+def _resource_base() -> Path:
+    """Raiz de recursos READ-ONLY (catalogos, assets).
+
+    En modo editable: la raiz del proyecto.
+    En binario PyInstaller --onefile: el directorio temporal _MEIPASS.
+    """
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS)
+    return Path(__file__).resolve().parents[2]
+
+
+def _user_state_root() -> Path:
+    """Raiz para datos del usuario (logs, exports, runtime), siempre escribibles.
+
+    En modo editable: la raiz del proyecto.
+    En binario: %LOCALAPPDATA%/BPMNPlatform (Windows) o ~/.bpmn-platform.
+    """
+    if getattr(sys, "frozen", False):
+        if sys.platform.startswith("win"):
+            base = Path(os.environ.get("LOCALAPPDATA", Path.home())) / "BPMNPlatform"
+        else:
+            base = Path.home() / ".bpmn-platform"
+        return base
+    return Path(__file__).resolve().parents[2]
+
+
+PROJECT_ROOT = _resource_base()
 CATALOG_DIR = PROJECT_ROOT / "catalogs"
-DATA_DIR = PROJECT_ROOT / "data"
+
+_STATE_ROOT = _user_state_root()
+DATA_DIR = _STATE_ROOT / "data"
 RUNTIME_DIR = DATA_DIR / "runtime"
 EXPORTS_DIR = DATA_DIR / "exports"
-LOGS_DIR = PROJECT_ROOT / "logs"
+LOGS_DIR = _STATE_ROOT / "logs"
 
 
 class AppSettings(BaseSettings):
