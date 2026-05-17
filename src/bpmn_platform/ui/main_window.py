@@ -19,20 +19,22 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from ..agents import Orchestrator, default_agents
+from ..agents import AgentContext, Orchestrator, default_agents
 from ..ai import OllamaClient
 from ..config import settings
 from ..core.catalogs import CatalogBundle, load_catalogs
+from ..excel.parser import ExcelParser
 from ..excel.template_builder import build_template
 from ..logging_config import get_logger
 from .widgets.about_view import AboutView
 from .widgets.catalog_view import CatalogView
 from .widgets.home_view import HomeView
+from .widgets.issues_view import IssuesView
 
 log = get_logger(__name__)
 
 
-_NAV_ITEMS = ("Inicio", "Catalogos", "Acerca de")
+_NAV_ITEMS = ("Inicio", "Resultados", "Catalogos", "Acerca de")
 
 
 class MainWindow(QMainWindow):
@@ -61,6 +63,10 @@ class MainWindow(QMainWindow):
         self.act_generate_template.setShortcut(QKeySequence("Ctrl+T"))
         self.act_generate_template.triggered.connect(self._on_generate_template)
 
+        self.act_load_excel = QAction("Cargar Excel...", self)
+        self.act_load_excel.setShortcut(QKeySequence.StandardKey.Open)
+        self.act_load_excel.triggered.connect(self._on_load_excel)
+
         self.act_reload_catalogs = QAction("Recargar catalogos", self)
         self.act_reload_catalogs.setShortcut(QKeySequence("F5"))
         self.act_reload_catalogs.triggered.connect(self._on_reload_catalogs)
@@ -78,6 +84,7 @@ class MainWindow(QMainWindow):
     def _build_menu(self) -> None:
         menubar = self.menuBar()
         archivo = menubar.addMenu("&Archivo")
+        archivo.addAction(self.act_load_excel)
         archivo.addAction(self.act_generate_template)
         archivo.addSeparator()
         archivo.addAction(self.act_quit)
@@ -107,15 +114,18 @@ class MainWindow(QMainWindow):
 
         self.stack = QStackedWidget()
         self.home_view = HomeView(catalogs=self._catalogs)
+        self.issues_view = IssuesView()
         self.catalog_view = CatalogView(catalogs=self._catalogs)
         self.about_view = AboutView()
 
         self.stack.addWidget(self.home_view)
+        self.stack.addWidget(self.issues_view)
         self.stack.addWidget(self.catalog_view)
         self.stack.addWidget(self.about_view)
 
         self.home_view.generate_template_requested.connect(self._on_generate_template)
         self.home_view.check_ollama_requested.connect(self._on_check_ollama)
+        self.home_view.load_excel_requested.connect(self._on_load_excel)
 
         layout.addWidget(self.nav)
         layout.addWidget(self.stack, 1)
@@ -237,6 +247,94 @@ class MainWindow(QMainWindow):
             "Pipeline multiagente (dry-run)",
             "\n".join(f"- [{'OK' if r.ok else 'ERR'}] {r.name}: {r.summary}" for r in results),
         )
+
+    def _on_load_excel(self) -> None:
+        if not self._catalogs:
+            QMessageBox.warning(
+                self,
+                "Cargar Excel",
+                "No se pueden parsear plantillas sin catalogos cargados.",
+            )
+            return
+        path_str, _ = QFileDialog.getOpenFileName(
+            self,
+            "Cargar plantilla BPMN",
+            str(settings.exports_dir),
+            "Excel Workbook (*.xlsx)",
+        )
+        if not path_str:
+            return
+        try:
+            parser = ExcelParser(catalogs=self._catalogs)
+            result = parser.parse(Path(path_str))
+        except Exception as exc:  # noqa: BLE001
+            log.exception("Fallo parseando Excel.")
+            QMessageBox.critical(self, "Cargar Excel", f"Error parseando:\n{exc}")
+            return
+
+        # Ejecuta el resto del pipeline (validacion empresarial + placeholders).
+        context = AgentContext()
+        context.set("excel_path", path_str)
+        context.set("parse_result", result)
+        context.set("enterprise_model", result.model)
+        pipeline_results = self._orchestrator.run(context)
+
+        # Sumar issues de validation_agent (despues del parser).
+        validation_issues = []
+        for ar in pipeline_results:
+            if ar.name == "validation":
+                validation_issues = ar.issues
+                break
+
+        # Reflejar todo en la vista de Resultados.
+        self.issues_view.set_result(result)
+        self._append_validation_issues_to_view(validation_issues)
+
+        # Cambia a la vista Resultados.
+        self.nav.setCurrentRow(_NAV_ITEMS.index("Resultados"))
+
+        if result.ok:
+            self._status_label.setText(
+                f"Excel cargado: {len(result.model.activities)} actividades, "
+                f"{len(result.warnings)} warnings."
+            )
+        else:
+            self._status_label.setText(
+                f"Excel cargado con {len(result.errors)} errores."
+            )
+
+    def _append_validation_issues_to_view(self, lines: list[str]) -> None:
+        """Anade hallazgos del ValidationAgent al final de la tabla de issues."""
+        if not lines:
+            return
+        from PyQt6.QtGui import QColor
+        from PyQt6.QtWidgets import QTableWidgetItem
+
+        from ..core.governance import IssueSeverity as _Sev
+
+        table = self.issues_view._table  # acceso intencional (UI co-localizada)
+        start = table.rowCount()
+        table.setRowCount(start + len(lines))
+        for offset, line in enumerate(lines):
+            severity = _Sev.INFO
+            for s in (_Sev.ERROR, _Sev.WARNING, _Sev.INFO):
+                if f"[{s.value}]" in line:
+                    severity = s
+                    break
+            tag, rest = line.split("]", 1) if "]" in line else ("", line)
+            code, _, message = rest.strip().partition(":")
+            color_map = {
+                _Sev.ERROR: "#FFD6D6",
+                _Sev.WARNING: "#FFF1C2",
+                _Sev.INFO: "#D9E5FF",
+            }
+            color = QColor(color_map[severity])
+            for col, text in enumerate(
+                (severity.value, code.strip(), message.strip(), "validation_agent")
+            ):
+                item = QTableWidgetItem(text)
+                item.setBackground(color)
+                table.setItem(start + offset, col, item)
 
 
 def create_main_window() -> MainWindow:

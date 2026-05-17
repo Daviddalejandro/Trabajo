@@ -26,9 +26,12 @@ class PlannedAgent(Agent):
 
 def default_agents() -> list[Agent]:
     """Lista canonica de agentes (segun el documento maestro)."""
+    from .parser_agent import ParserAgent
+    from .validation_agent import ValidationAgent
+
     return [
-        PlannedAgent("parser",          "Leer Excel y normalizar."),
-        PlannedAgent("validation",      "Validar estructura y catalogos."),
+        ParserAgent(),
+        ValidationAgent(),
         PlannedAgent("semantic",        "Interpretar negocio e inferir BPMN."),
         PlannedAgent("bpmn",            "Construir BPMN 2.0 XML valido."),
         PlannedAgent("governance",      "Aplicar riesgos, controles y SLA."),

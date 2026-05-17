@@ -52,6 +52,7 @@ def _card(title: str, subtitle: str, body: str) -> QFrame:
 class HomeView(QWidget):
     generate_template_requested = pyqtSignal()
     check_ollama_requested = pyqtSignal()
+    load_excel_requested = pyqtSignal()
 
     def __init__(self, *, catalogs: CatalogBundle | None) -> None:
         super().__init__()
@@ -74,12 +75,21 @@ class HomeView(QWidget):
         # Acciones
         actions = QHBoxLayout()
         actions.setSpacing(12)
-        btn_template = QPushButton("Generar plantilla Excel oficial")
-        btn_template.setMinimumHeight(40)
-        btn_template.setStyleSheet(
+        btn_load = QPushButton("Cargar Excel...")
+        btn_load.setMinimumHeight(40)
+        btn_load.setStyleSheet(
             "QPushButton { background-color: #1F3864; color: white; font-weight: bold;"
             " padding: 8px 18px; border-radius: 6px; }"
             "QPushButton:hover { background-color: #2E5AAB; }"
+        )
+        btn_load.clicked.connect(self.load_excel_requested.emit)
+
+        btn_template = QPushButton("Generar plantilla Excel oficial")
+        btn_template.setMinimumHeight(40)
+        btn_template.setStyleSheet(
+            "QPushButton { background-color: white; color: #1F3864; font-weight: bold;"
+            " padding: 8px 18px; border: 1px solid #1F3864; border-radius: 6px; }"
+            "QPushButton:hover { background-color: #E8EEF7; }"
         )
         btn_template.clicked.connect(self.generate_template_requested.emit)
 
@@ -92,6 +102,7 @@ class HomeView(QWidget):
         )
         btn_ollama.clicked.connect(self.check_ollama_requested.emit)
 
+        actions.addWidget(btn_load)
         actions.addWidget(btn_template)
         actions.addWidget(btn_ollama)
         actions.addItem(QSpacerItem(20, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum))
