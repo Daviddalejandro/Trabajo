@@ -216,6 +216,16 @@ def build_default_schema() -> ExcelSchema:
             help_text="Notas adicionales para el agente semantico.",
             width=44,
         ),
+        ColumnSpec(
+            key="predecessors",
+            header="Predecesor",
+            kind=CellKind.TEXT,
+            help_text=(
+                "ID(s) del/los nodo(s) que preceden a este. Separe varios con ';'. "
+                "Si se deja vacio, se asume la fila anterior del mismo proceso."
+            ),
+            width=20,
+        ),
     )
 
     return ExcelSchema(

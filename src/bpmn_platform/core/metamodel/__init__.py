@@ -30,6 +30,7 @@ from .entities import (
     Process,
     Risk,
     Role,
+    SequenceFlow,
 )
 from .enums import (
     AssetClassification,
@@ -66,6 +67,7 @@ __all__ = [
     "SLA",
     "Event",
     "Gateway",
+    "SequenceFlow",
     # Relationships / aggregate
     "ActivityApplicationUse",
     "ActivityAssetFlow",

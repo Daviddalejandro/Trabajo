@@ -44,6 +44,7 @@ from ..core.metamodel import (
     Process,
     Risk,
     Role,
+    SequenceFlow,
     Severity,
 )
 from ..logging_config import get_logger
@@ -332,6 +333,10 @@ class ExcelParser:
         app_uses: list[ActivityApplicationUse] = []
         asset_flows: list[ActivityAssetFlow] = []
 
+        # Para inferir SequenceFlow:
+        process_order: dict[str, list[str]] = {}            # proc -> ids en orden de fila
+        explicit_predecessors: dict[str, list[str]] = {}    # id -> [predecesores explicitos]
+
         seen_ids: set[str] = set()
         cols = self.schema.activity_columns
 
@@ -401,6 +406,14 @@ class ExcelParser:
             if bpmn_type not in _EVENT_TYPES and bpmn_type not in _GATEWAY_TYPES:
                 for issue in validate_activity_name(name, location=f"{sheet.title}!{act_id}"):
                     self._add(issue.severity, issue.code, issue.message, sheet.title, row_idx, "Actividad")
+
+            # Tracking de orden por proceso y predecesores explicitos.
+            process_order.setdefault(process_id, []).append(act_id)
+            pred_raw = self._clean_str(row_dict.get("predecessors"))
+            if pred_raw:
+                preds = [p.strip() for p in re.split(r"[;,|]", pred_raw) if p.strip()]
+                if preds:
+                    explicit_predecessors[act_id] = preds
 
             if bpmn_type in _EVENT_TYPES:
                 events.append(
@@ -581,6 +594,13 @@ class ExcelParser:
                 f"La hoja '{sheet.title}' no contiene actividades.",
             )
 
+        sequence_flows = self._build_sequence_flows(
+            process_order=process_order,
+            explicit_predecessors=explicit_predecessors,
+            known_ids=seen_ids,
+            sheet_name=sheet.title,
+        )
+
         return {
             "activities": activities,
             "events": events,
@@ -591,7 +611,62 @@ class ExcelParser:
             "slas": slas,
             "activity_application_uses": app_uses,
             "activity_asset_flows": asset_flows,
+            "sequence_flows": sequence_flows,
         }
+
+    def _build_sequence_flows(
+        self,
+        *,
+        process_order: dict[str, list[str]],
+        explicit_predecessors: dict[str, list[str]],
+        known_ids: set[str],
+        sheet_name: str,
+    ) -> list[SequenceFlow]:
+        """Construye los SequenceFlow a partir de predecesores explicitos o
+        del orden de fila dentro de cada proceso.
+        """
+        flows: list[SequenceFlow] = []
+        used_ids: set[str] = set()
+
+        def _add_flow(source: str, target: str) -> None:
+            base = f"FLOW-{source}-{target}"
+            flow_id = base
+            n = 2
+            while flow_id in used_ids:
+                flow_id = f"{base}-{n}"
+                n += 1
+            used_ids.add(flow_id)
+            flows.append(
+                SequenceFlow(
+                    id=flow_id,
+                    name=f"{source} -> {target}",
+                    source_id=source,
+                    target_id=target,
+                )
+            )
+
+        for proc_id, ordered in process_order.items():
+            for index, act_id in enumerate(ordered):
+                preds = explicit_predecessors.get(act_id)
+                if preds is not None:
+                    for predecessor in preds:
+                        if predecessor not in known_ids:
+                            self._add(
+                                IssueSeverity.ERROR,
+                                "FLOW-PRED-UNKNOWN",
+                                f"Predecesor '{predecessor}' de '{act_id}' no existe.",
+                                sheet_name,
+                                None,
+                                "Predecesor",
+                            )
+                            continue
+                        _add_flow(predecessor, act_id)
+                    continue
+                # Fallback: orden de fila dentro del proceso.
+                if index == 0:
+                    continue
+                _add_flow(ordered[index - 1], act_id)
+        return flows
 
     # ------------------------------------------------------------------ #
     # Helpers

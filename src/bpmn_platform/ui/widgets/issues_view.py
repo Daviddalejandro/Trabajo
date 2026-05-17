@@ -134,3 +134,30 @@ class IssuesView(QWidget):
         self._table.horizontalHeader().setSectionResizeMode(
             2, QHeaderView.ResizeMode.Stretch
         )
+
+    def append_agent_issues(self, lines: list[tuple[str, str]]) -> None:
+        """Anade hallazgos extra producidos por otros agentes.
+
+        Cada item es (agent_name, line) donde line tiene el formato
+        '[severity] CODE: mensaje'.
+        """
+        if not lines:
+            return
+        start = self._table.rowCount()
+        self._table.setRowCount(start + len(lines))
+        for offset, (agent_name, line) in enumerate(lines):
+            severity = IssueSeverity.INFO
+            for s in (IssueSeverity.ERROR, IssueSeverity.WARNING, IssueSeverity.INFO):
+                if f"[{s.value}]" in line:
+                    severity = s
+                    break
+            _, _, rest = line.partition("]")
+            code, _, message = rest.strip().partition(":")
+            color = QColor(_SEVERITY_COLOR.get(severity, "#FFFFFF"))
+            cells = (severity.value, code.strip(), message.strip(), f"agent:{agent_name}")
+            for col, text in enumerate(cells):
+                item = QTableWidgetItem(text)
+                item.setBackground(color)
+                if col == 0:
+                    item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+                self._table.setItem(start + offset, col, item)

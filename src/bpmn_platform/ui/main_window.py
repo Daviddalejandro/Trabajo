@@ -1,4 +1,4 @@
-"""Ventana principal de la plataforma BPMN (Fase 1)."""
+"""Ventana principal de la plataforma BPMN."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -21,12 +21,14 @@ from PyQt6.QtWidgets import (
 
 from ..agents import AgentContext, Orchestrator, default_agents
 from ..ai import OllamaClient
+from ..bpmn import render_svg
 from ..config import settings
 from ..core.catalogs import CatalogBundle, load_catalogs
 from ..excel.parser import ExcelParser
 from ..excel.template_builder import build_template
 from ..logging_config import get_logger
 from .widgets.about_view import AboutView
+from .widgets.bpmn_view import BpmnView
 from .widgets.catalog_view import CatalogView
 from .widgets.home_view import HomeView
 from .widgets.issues_view import IssuesView
@@ -34,24 +36,27 @@ from .widgets.issues_view import IssuesView
 log = get_logger(__name__)
 
 
-_NAV_ITEMS = ("Inicio", "Resultados", "Catalogos", "Acerca de")
+_NAV_ITEMS = ("Inicio", "Diagrama BPMN", "Resultados", "Catalogos", "Acerca de")
 
 
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle(f"{settings.app_name} - v{settings.app_version}")
-        self.resize(1180, 760)
+        self.resize(1300, 820)
 
         self._catalogs: CatalogBundle | None = None
         self._load_catalogs_safely()
+
+        self._last_parse_result = None
+        self._last_bpmn_result = None
+        self._last_export_files: list[Path] = []
 
         self._build_actions()
         self._build_menu()
         self._build_central()
         self._build_status_bar()
 
-        # Multiagente disponible desde el dia 1 (esqueleto).
         self._orchestrator = Orchestrator(agents=default_agents())
 
     # ------------------------------------------------------------------ #
@@ -67,15 +72,17 @@ class MainWindow(QMainWindow):
         self.act_load_excel.setShortcut(QKeySequence.StandardKey.Open)
         self.act_load_excel.triggered.connect(self._on_load_excel)
 
+        self.act_export_bpmn = QAction("Exportar BPMN/SVG/JSON...", self)
+        self.act_export_bpmn.setShortcut(QKeySequence("Ctrl+E"))
+        self.act_export_bpmn.triggered.connect(self._on_export_bpmn)
+        self.act_export_bpmn.setEnabled(False)
+
         self.act_reload_catalogs = QAction("Recargar catalogos", self)
         self.act_reload_catalogs.setShortcut(QKeySequence("F5"))
         self.act_reload_catalogs.triggered.connect(self._on_reload_catalogs)
 
         self.act_check_ollama = QAction("Comprobar Ollama", self)
         self.act_check_ollama.triggered.connect(self._on_check_ollama)
-
-        self.act_run_pipeline = QAction("Ejecutar pipeline (dry-run)", self)
-        self.act_run_pipeline.triggered.connect(self._on_run_pipeline)
 
         self.act_quit = QAction("Salir", self)
         self.act_quit.setShortcut(QKeySequence.StandardKey.Quit)
@@ -86,13 +93,13 @@ class MainWindow(QMainWindow):
         archivo = menubar.addMenu("&Archivo")
         archivo.addAction(self.act_load_excel)
         archivo.addAction(self.act_generate_template)
+        archivo.addAction(self.act_export_bpmn)
         archivo.addSeparator()
         archivo.addAction(self.act_quit)
 
         herramientas = menubar.addMenu("&Herramientas")
         herramientas.addAction(self.act_reload_catalogs)
         herramientas.addAction(self.act_check_ollama)
-        herramientas.addAction(self.act_run_pipeline)
 
     def _build_central(self) -> None:
         central = QWidget()
@@ -114,14 +121,19 @@ class MainWindow(QMainWindow):
 
         self.stack = QStackedWidget()
         self.home_view = HomeView(catalogs=self._catalogs)
+        self.bpmn_view = BpmnView()
         self.issues_view = IssuesView()
         self.catalog_view = CatalogView(catalogs=self._catalogs)
         self.about_view = AboutView()
 
-        self.stack.addWidget(self.home_view)
-        self.stack.addWidget(self.issues_view)
-        self.stack.addWidget(self.catalog_view)
-        self.stack.addWidget(self.about_view)
+        for widget in (
+            self.home_view,
+            self.bpmn_view,
+            self.issues_view,
+            self.catalog_view,
+            self.about_view,
+        ):
+            self.stack.addWidget(widget)
 
         self.home_view.generate_template_requested.connect(self._on_generate_template)
         self.home_view.check_ollama_requested.connect(self._on_check_ollama)
@@ -238,16 +250,6 @@ class MainWindow(QMainWindow):
                 ),
             )
 
-    def _on_run_pipeline(self) -> None:
-        results = self._orchestrator.run()
-        ok = sum(1 for r in results if r.ok)
-        self._status_label.setText(f"Pipeline ejecutado ({ok}/{len(results)} agentes ok).")
-        QMessageBox.information(
-            self,
-            "Pipeline multiagente (dry-run)",
-            "\n".join(f"- [{'OK' if r.ok else 'ERR'}] {r.name}: {r.summary}" for r in results),
-        )
-
     def _on_load_excel(self) -> None:
         if not self._catalogs:
             QMessageBox.warning(
@@ -272,69 +274,84 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Cargar Excel", f"Error parseando:\n{exc}")
             return
 
-        # Ejecuta el resto del pipeline (validacion empresarial + placeholders).
         context = AgentContext()
         context.set("excel_path", path_str)
         context.set("parse_result", result)
         context.set("enterprise_model", result.model)
         pipeline_results = self._orchestrator.run(context)
 
-        # Sumar issues de validation_agent (despues del parser).
-        validation_issues = []
-        for ar in pipeline_results:
-            if ar.name == "validation":
-                validation_issues = ar.issues
-                break
+        self._last_parse_result = result
+        self._last_bpmn_result = context.get("bpmn_result")
+        self._last_export_files = context.get("export_files") or []
 
-        # Reflejar todo en la vista de Resultados.
+        # Render diagrama por proceso.
+        if self._last_bpmn_result:
+            diagrams: dict[str, str] = {}
+            labels: dict[str, str] = {}
+            for process in result.model.processes:
+                layout = self._last_bpmn_result.layouts.get(process.id)
+                if layout:
+                    diagrams[process.id] = render_svg(
+                        result.model, layout, title=process.name
+                    )
+                    labels[process.id] = process.name
+            self.bpmn_view.set_diagrams(diagrams, labels)
+            self.act_export_bpmn.setEnabled(True)
+
+        # Issues consolidados en la vista Resultados.
         self.issues_view.set_result(result)
-        self._append_validation_issues_to_view(validation_issues)
+        agent_lines: list[tuple[str, str]] = []
+        for ar in pipeline_results:
+            if ar.name == "parser":
+                continue  # ya cubierto por ParseResult
+            for line in ar.issues:
+                agent_lines.append((ar.name, line))
+        self.issues_view.append_agent_issues(agent_lines)
 
-        # Cambia a la vista Resultados.
-        self.nav.setCurrentRow(_NAV_ITEMS.index("Resultados"))
-
+        quality_report = context.get("quality_report")
+        score_txt = f"calidad {quality_report.score}/100" if quality_report else "sin score"
         if result.ok:
             self._status_label.setText(
                 f"Excel cargado: {len(result.model.activities)} actividades, "
-                f"{len(result.warnings)} warnings."
+                f"{len(result.warnings)} warnings, {score_txt}."
             )
         else:
             self._status_label.setText(
-                f"Excel cargado con {len(result.errors)} errores."
+                f"Excel cargado con {len(result.errors)} errores ({score_txt})."
             )
 
-    def _append_validation_issues_to_view(self, lines: list[str]) -> None:
-        """Anade hallazgos del ValidationAgent al final de la tabla de issues."""
-        if not lines:
+        # Cambia a la vista del diagrama si hubo modelo.
+        if self._last_bpmn_result:
+            self.nav.setCurrentRow(_NAV_ITEMS.index("Diagrama BPMN"))
+        else:
+            self.nav.setCurrentRow(_NAV_ITEMS.index("Resultados"))
+
+    def _on_export_bpmn(self) -> None:
+        if not self._last_bpmn_result or not self._last_parse_result:
+            QMessageBox.information(self, "Exportar BPMN", "No hay BPMN generado todavia.")
             return
-        from PyQt6.QtGui import QColor
-        from PyQt6.QtWidgets import QTableWidgetItem
+        target_dir = QFileDialog.getExistingDirectory(
+            self,
+            "Carpeta destino para exportacion",
+            str(settings.exports_dir),
+        )
+        if not target_dir:
+            return
+        from ..agents.export_agent import ExportAgent
+        from ..agents.base import AgentContext as _Ctx
 
-        from ..core.governance import IssueSeverity as _Sev
-
-        table = self.issues_view._table  # acceso intencional (UI co-localizada)
-        start = table.rowCount()
-        table.setRowCount(start + len(lines))
-        for offset, line in enumerate(lines):
-            severity = _Sev.INFO
-            for s in (_Sev.ERROR, _Sev.WARNING, _Sev.INFO):
-                if f"[{s.value}]" in line:
-                    severity = s
-                    break
-            tag, rest = line.split("]", 1) if "]" in line else ("", line)
-            code, _, message = rest.strip().partition(":")
-            color_map = {
-                _Sev.ERROR: "#FFD6D6",
-                _Sev.WARNING: "#FFF1C2",
-                _Sev.INFO: "#D9E5FF",
-            }
-            color = QColor(color_map[severity])
-            for col, text in enumerate(
-                (severity.value, code.strip(), message.strip(), "validation_agent")
-            ):
-                item = QTableWidgetItem(text)
-                item.setBackground(color)
-                table.setItem(start + offset, col, item)
+        ctx = _Ctx()
+        ctx.set("parse_result", self._last_parse_result)
+        ctx.set("bpmn_result", self._last_bpmn_result)
+        ctx.set("export_dir", target_dir)
+        result = ExportAgent().run(ctx)
+        files = ctx.get("export_files") or []
+        QMessageBox.information(
+            self,
+            "Exportar BPMN",
+            f"{result.summary}\n\n" + "\n".join(str(f) for f in files),
+        )
+        self._status_label.setText(f"Exportados {len(files)} archivos en {target_dir}")
 
 
 def create_main_window() -> MainWindow:

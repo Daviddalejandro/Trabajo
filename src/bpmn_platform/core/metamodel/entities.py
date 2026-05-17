@@ -180,3 +180,11 @@ class Process(_Entity):
     domain: str | None = None
     owner_role_id: str | None = None
     version: str = "1.0.0"
+
+
+class SequenceFlow(_Entity):
+    """Flujo de secuencia BPMN entre dos elementos (Activity/Event/Gateway)."""
+
+    source_id: str
+    target_id: str
+    condition: str | None = None

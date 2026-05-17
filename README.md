@@ -14,10 +14,9 @@ Stack 100% Open Source:
 - **Motor IA local (offline-first)**: Ollama + httpx
 - **BPMN XML (fase 6)**: lxml
 
-> Estado actual: **Fases 1, 2 y 3** del documento maestro implementadas.
-> Fases 4-11 (parser, motor semantico IA, generador BPMN, validador,
-> visualizacion, gobierno, exportacion) estan andamiadas y se construyen
-> incrementalmente.
+> Estado actual: **las 11 fases del documento maestro implementadas**
+> (Fase 11 con stubs declarativos listos para extension). Demo end-to-end
+> ejecutable en una linea — ver `docs/DEMO.md`.
 
 ---
 
@@ -50,7 +49,43 @@ bpmn-platform
 
 ---
 
-## Generar la plantilla Excel oficial
+## Demo end-to-end en 1 comando
+
+Genera un Excel de muestra **"Onboarding de clientes"**, ejecuta los 9
+agentes y produce BPMN 2.0 XML + SVG + JSON metadata en una sola
+corrida:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python -m examples.onboarding_demo
+```
+
+Salida tipica:
+
+```
+[1/3] Excel de muestra generado -> data\exports\demo_onboarding\sample_onboarding.xlsx
+[2/3] Pipeline ejecutado (9 agentes).
+
+Resultados por agente:
+  [OK ] parser         Procesos: 1, Actividades: 6, Eventos: 3, Gateways: 1. Errores: 0, Warnings: 0.
+  [OK ] validation     Validaciones empresariales: 0 hallazgos.
+  [OK ] semantic       Inferencias semanticas: 0 hallazgos.
+  [OK ] bpmn           BPMN XML generado (6404 bytes, 1 diagramas).
+  [OK ] quality        Calidad BPMN: score 100/100 - 0 errores, 0 warnings, 0 infos.
+  [OK ] governance     Gobierno empresarial: 0 hallazgos.
+  [OK ] metadata       Metadata empresarial: 6 actividades en 1 procesos.
+  [OK ] export         Exportados 3 archivo(s) en data\exports\demo_onboarding.
+  [OK ] recommendation 1 recomendaciones propuestas.
+
+[3/3] Artefactos generados en data\exports\demo_onboarding:
+  - bpmn_<timestamp>.bpmn
+  - bpmn_PROC-ONBOARDING_<timestamp>.svg
+  - bpmn_metadata_<timestamp>.json
+```
+
+Detalle completo en `docs/DEMO.md`.
+
+## Generar la plantilla Excel oficial (en blanco)
 
 Desde la app: menu **Archivo → Generar plantilla Excel...**
 
@@ -121,20 +156,24 @@ Tras editarlos, en la app: **Herramientas → Recargar catalogos** (`F5`).
 ```
 .
 ├── catalogs/                       # YAML controlados (dropdowns Excel)
+├── examples/                       # Demo end-to-end + Excel de muestra
 ├── scripts/                        # PowerShell para setup Windows
 ├── src/bpmn_platform/
-│   ├── agents/                     # Esqueleto multiagente
-│   ├── ai/                         # Cliente Ollama
+│   ├── agents/                     # Multiagente real (9 agentes)
+│   ├── ai/                         # Cliente Ollama (offline-first)
+│   ├── bpmn/                       # Generador BPMN 2.0, layout, quality, SVG
 │   ├── core/
 │   │   ├── catalogs/               # Loader YAML
 │   │   ├── governance/             # Reglas de gobierno
 │   │   └── metamodel/              # Entidades Pydantic
-│   ├── excel/                      # Plantilla Excel oficial
-│   ├── ui/                         # PyQt6 (MainWindow + vistas)
+│   ├── excel/                      # Plantilla oficial + parser
+│   ├── governance/                 # Audit log JSONL
+│   ├── integrations/               # Stubs para Process Mining, RPA, DMN, ...
+│   ├── ui/                         # PyQt6 (MainWindow + vistas + visor BPMN)
 │   ├── app.py                      # Entry point
 │   └── config.py                   # Settings (overridables con BPMN_*)
-├── tests/                          # pytest
-├── docs/                           # Documentacion tecnica
+├── tests/                          # pytest (22+ tests)
+├── docs/                           # ARCHITECTURE, METAMODEL, PARSER, DEMO, ROADMAP
 ├── pyproject.toml
 └── README.md
 ```

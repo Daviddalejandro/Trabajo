@@ -23,6 +23,7 @@ from .entities import (
     Process,
     Risk,
     Role,
+    SequenceFlow,
 )
 from .enums import AssetFlowDirection
 
@@ -74,6 +75,7 @@ class EnterpriseModel(BaseModel):
     events: list[Event] = Field(default_factory=list)
     gateways: list[Gateway] = Field(default_factory=list)
     data_objects: list[DataObject] = Field(default_factory=list)
+    sequence_flows: list[SequenceFlow] = Field(default_factory=list)
 
     # Relaciones materializadas
     activity_application_uses: list[ActivityApplicationUse] = Field(default_factory=list)
@@ -96,6 +98,7 @@ class EnterpriseModel(BaseModel):
             "events",
             "gateways",
             "data_objects",
+            "sequence_flows",
         ):
             items = getattr(self, collection_name)
             ids = [item.id for item in items]
@@ -105,6 +108,34 @@ class EnterpriseModel(BaseModel):
                     f"IDs duplicados en '{collection_name}': {sorted(duplicated)}"
                 )
         return self
+
+    def related_to_process(self, process_id: str) -> tuple[set[str], list[SequenceFlow]]:
+        """Elementos (node_ids, flows) que participan del proceso indicado.
+
+        Toma como semilla las actividades cuyo `process_id` coincide y expande
+        transitivamente via sequence_flows para incluir eventos/gateways
+        conectados al proceso.
+        """
+        related: set[str] = {a.id for a in self.activities if a.process_id == process_id}
+        if not related:
+            return set(), []
+        flows = self.sequence_flows
+        changed = True
+        while changed:
+            changed = False
+            for flow in flows:
+                src_in = flow.source_id in related
+                tgt_in = flow.target_id in related
+                if src_in and not tgt_in:
+                    related.add(flow.target_id)
+                    changed = True
+                elif tgt_in and not src_in:
+                    related.add(flow.source_id)
+                    changed = True
+        process_flows = [
+            f for f in flows if f.source_id in related and f.target_id in related
+        ]
+        return related, process_flows
 
     def index(self) -> dict[str, dict[str, object]]:
         """Indices por id para lookup rapido."""
