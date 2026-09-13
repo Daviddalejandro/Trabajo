@@ -1,11 +1,22 @@
 # ESPECIFICACIÓN DE PROTOTIPO FUNCIONAL — MDM/RDM in-house · Dominio Party
-**Colsubsidio · Jefatura de Gobierno de Datos (ARC)** · Versión 1.2 · 2026-09-13
+**Colsubsidio · Jefatura de Gobierno de Datos (ARC)** · Versión 1.3 · 2026-09-13
 **Documento de handoff para Claude Code** — autor del modelo: David Alejandro Ballesteros Díaz
 
+> **Registro de cambios v1.3** — incorpora el **vínculo de servicio** como entidad
+> propia (`PARTY_SERVICE_ENROLLMENT`, capa 4): la relación que perdura en el tiempo
+> con una UES (cliente de Crédito Social, usuario de Salud, beneficiario de cuota
+> monetaria) se distingue de la transacción puntual (hotel, Piscilago, supermercado),
+> que **no** entra al MDM de Party. `CAT_SERVICE` se marca por tipo de relación
+> (`CAT_SERVICE_KIND`: PERSISTENT / TRANSACTIONAL) y solo los persistentes son
+> vinculables; `PARTY_ROLE` vuelve a nivel de UES. Nuevos: `CAT_ENROLLMENT_STATUS`,
+> razón de elegibilidad `NO_ACTIVE_SERVICE` (la cobranza solo aplica con vínculo
+> activo cobrable), retención disparada por el cierre del vínculo, filtro `service`
+> en audiencias, casos demo R y S. **29 tablas núcleo, 42 catálogos creados.**
+>
 > **Registro de cambios v1.2** — cierra los 4 pendientes de la revisión 1.1 y resuelve
 > en el modelo (no como "futuro") las 10 necesidades funcionales planteadas por el
 > autor, más 9 capacidades MDM adicionales identificadas en revisión experta.
-> Resumen: **28 tablas núcleo** (25 + `PARTY_SEGMENT`, `CONTACT_POINT`,
+> Resumen: 28 tablas núcleo (25 + `PARTY_SEGMENT`, `CONTACT_POINT`,
 > `MATCH_REVIEW_TASK`); punto de contacto con identidad propia y compartible entre
 > parties (grupos familiares); segmentación multi-tipo; servicio en el rol; workflow
 > de zona gris entre owners de fuente; `source_system_cd` en toda tabla de hechos;
@@ -18,7 +29,7 @@
 > universo RDM de 41 catálogos (37 del diccionario maestro + 4 de esta versión).
 >
 > **Pendiente de reconciliación con el diccionario maestro de la Jefatura (41 tablas):**
-> las tres tablas nuevas y los campos agregados en §5 deben incorporarse al diccionario
+> las cuatro tablas nuevas (v1.2 y v1.3) y los campos agregados en §5 deben incorporarse al diccionario
 > y al diagrama `mdm_party_diagram.mermaid`. Hasta entonces, esta especificación es la
 > fuente de verdad del prototipo.
 
@@ -97,7 +108,7 @@ internacional como complemento técnico):
 
 **Dentro del alcance:**
 - Esquema `rdm` completo (5 capas) + semilla de catálogos (§6) + vistas de consumo.
-- Esquema `mdm` con las **28 tablas núcleo** de las 8 capas (§5.2).
+- Esquema `mdm` con las **29 tablas núcleo** de las 8 capas (§5.2).
 - Esquema `staging` con 5 tablas RAW (una por fuente, §5.3).
 - Pipeline batch de 7 etapas por fuente, ejecutable por CLI (§7) + comandos
   operativos (`rne-sync`, `rehomologate`, `purge --dry-run`).
@@ -117,6 +128,10 @@ internacional como complemento técnico):
 - SSO/seguridad enterprise, alta disponibilidad, volúmenes > 10M registros.
 - Consumo real por SAP CDP: el prototipo expone la API de audiencias (§11); la
   integración con el CDP es producción.
+- **Datos transaccionales de los servicios** (saldos, cuotas, consumos, estadías,
+  compras): pertenecen a los sistemas transaccionales y al dominio Acuerdo/Producto.
+  El MDM de Party conserva únicamente la **cabecera del vínculo** (qué servicio,
+  desde cuándo, en qué estado, con qué referencia en la fuente).
 
 ---
 
@@ -182,7 +197,7 @@ internacional como complemento técnico):
     con snapshot previo al merge (§5.2, capa 7).
 14. **Linaje por fila:** toda tabla de hechos de las capas 2 a 5 (`PARTY_ROLE`,
     `PARTY_SEGMENT`, `PARTY_IDENTIFIER`, `PARTY_NAME`, `PARTY_RELATIONSHIP`,
-    `PARTY_CONTACT_POINT`, `PARTY_ADDRESS`) lleva `source_system_cd` y
+    `PARTY_SERVICE_ENROLLMENT`, `PARTY_CONTACT_POINT`, `PARTY_ADDRESS`) lleva `source_system_cd` y
     `captured_at`. La pregunta "¿de qué fuente viene este dato?" se responde con la
     fila, sin reconstrucción desde auditoría.
 15. **El punto de contacto es una entidad propia, no un atributo del party.**
@@ -196,6 +211,12 @@ internacional como complemento técnico):
     `UNIQUENESS` en `PARTY_DQ_ISSUE` (nunca se descarta silenciosamente).
 17. **Nunca matching cruzado de tipo:** una PERSON nunca se compara con una
     ORGANIZATION. El blocking parte por `party_type_cd`.
+18. **Solo los servicios de relación persistente entran al MDM.** Un servicio con
+    `service_kind = TRANSACTIONAL` (hotel, Piscilago, supermercado, droguería) existe
+    en el RDM como referencia corporativa, pero **nunca** genera un
+    `PARTY_SERVICE_ENROLLMENT`: la carga lo rechaza con hallazgo `VALIDITY`. La
+    transacción puntual no define la relación del titular con Colsubsidio; el
+    vínculo sostenido sí (DAMA-DMBOK2 Cap. 10, separación Party / Agreement).
 
 ---
 
@@ -288,12 +309,12 @@ referencia conforme Ley 1581/2012 art. 17 y DAMA-DMBOK2 Cap. 10.
   `VW_RDM_CAT_ID_TYPE` (reglas de validación del documento) y
   `VW_RDM_CAT_RELATIONSHIP_TYPE` (tipos de party permitidos origen/destino e inverso).
 
-### 5.2 Esquema `mdm` — Dominio Party: 8 capas, subconjunto núcleo de 28 tablas
+### 5.2 Esquema `mdm` — Dominio Party: 8 capas, subconjunto núcleo de 29 tablas
 
 El modelo lógico completo son **41 tablas en 8 capas** (referencia: diagrama ER
 `mdm_party_diagram.mermaid` y diccionario maestro de la Jefatura, derivados del
 modelo IBM InfoSphere; en reconciliación con esta versión). El prototipo implementa
-las 28 siguientes (Core 6 · Identity 2 · Roles y Relaciones 3 · Contactability 5 ·
+las 29 siguientes (Core 6 · Identity 2 · Roles y Relaciones 4 · Contactability 5 ·
 Governance 4 · Golden Record 6 · Consents 2); **no crear ninguna otra**.
 
 Convención de linaje (regla dura §3.14): donde la tabla dice **[linaje]** lleva
@@ -308,7 +329,7 @@ Convención de linaje (regla dura §3.14): donde la tabla dice **[linaje]** llev
 | `PARTY` | Registro maestro (el golden record vive aquí). `party_sk`, `party_type_cd FK` (PERSON/ORGANIZATION), `golden_status_cd FK` (ciclo MDM `CANDIDATE → GOLDEN → MERGED`, §6), **`party_status_cd FK`** (ciclo de negocio `ACTIVE / INACTIVE / DECEASED`, independiente del ciclo MDM), **`golden_version`** (entero, +1 en cada cambio del golden), **`completeness_score`** (0–100, % de campos de identidad y contacto poblados; recalculado en survivorship), `created_at`, `updated_at` |
 | `PARTY_PERSON` | Extensión persona natural. `party_sk PK/FK`, `first_name`, `middle_name`, `first_surname`, `second_surname`, `birth_date`, `gender_cd FK`, `full_name_normalized`, **`death_date`** (NULL si vive; al poblarse, `party_status_cd = DECEASED`). La condición de **menor de edad** se deriva de `birth_date` (< 18 años a la fecha de consulta) y nunca se almacena. |
 | `PARTY_ORG` | Extensión persona jurídica. `party_sk PK/FK`, `legal_name`, `trade_name`, `legal_name_normalized`, `ciiu_cd FK`, `org_type_cd FK` |
-| `PARTY_ROLE` **[linaje]** | Roles del party en el negocio. `party_role_sk`, `party_sk FK`, `role_cd FK` (AFFILIATE/EMPLOYEE/VENDOR/CUSTOMER/DIGITAL_USER/AFFILIATING_COMPANY), `sub_role_cd FK`, `business_unit_cd FK`, **`service_cd FK`** (`CAT_SERVICE`, servicio/línea concreta dentro de la UES; `-1 = NOT_APPLICABLE` cuando el rol no está ligado a un servicio), `valid_from`, `valid_to`. Un party tiene N filas: una por combinación rol + servicio + vigencia |
+| `PARTY_ROLE` **[linaje]** | Roles del party en el negocio. `party_role_sk`, `party_sk FK`, `role_cd FK` (AFFILIATE/EMPLOYEE/VENDOR/CUSTOMER/DIGITAL_USER/AFFILIATING_COMPANY), `sub_role_cd FK`, `business_unit_cd FK` (UES en la que se ejerce el rol), `valid_from`, `valid_to`. Un party tiene N filas: una por combinación rol + UES + vigencia. El detalle de **qué servicio persistente** sostiene ese rol vive en `PARTY_SERVICE_ENROLLMENT` (capa 4) |
 | **`PARTY_SEGMENT`** **[linaje]** | Segmentación multi-tipo. `party_segment_sk`, `party_sk FK`, `segment_type_cd FK` (nivel 1 de `CAT_SEGMENT_TYPE`: AFFILIATION, FINANCIAL_RISK, COMMERCIAL...), `segment_cd FK` (nivel 2 del mismo catálogo; debe ser hijo de `segment_type_cd`, validado en carga), `valid_from`, `valid_to`. **UNIQUE(`party_sk`, `segment_type_cd`, `valid_from`)**: un party tiene a lo sumo un segmento vigente por tipo, y tantos tipos como necesite (afiliación = A, riesgo financiero = MEDIUM, comercial = PREMIUM) |
 | `XREF_PARTY_SOURCE` | Crosswalk fuente↔maestro y caché de matching. `xref_sk`, `party_sk FK`, `source_system_cd FK`, `external_id` (**el identificador original de la fuente, sin transformación**: PERNR, KUNNR, LIFNR, PARTNER, user_id), `source_hash`, `first_seen_at`, `last_seen_at`. UNIQUE(`source_system_cd`,`external_id`). Un party puede tener varias filas por fuente si la fuente le asignó más de un ID (p. ej. cliente re-creado) |
 
@@ -326,6 +347,7 @@ Convención de linaje (regla dura §3.14): donde la tabla dice **[linaje]** llev
 | `PARTY_RELATIONSHIP` **[linaje]** | Relaciones direccionales party↔party. `relationship_sk`, `from_party_sk FK`, `to_party_sk FK`, `relationship_type_cd FK` (con dirección), `valid_from`, `valid_to`. Como `PARTY` es supertipo, cubre **persona↔persona, organización↔persona y organización↔organización**. La carga valida los tipos de party permitidos por relación contra los atributos EAV `from_party_type` / `to_party_type` del catálogo (p. ej. `SPOUSE_OF` solo PERSON→PERSON; `LEGAL_REP_OF` solo PERSON→ORGANIZATION; `SUBSIDIARY_OF` solo ORGANIZATION→ORGANIZATION) y persiste automáticamente la relación inversa cuando `inverse_code` existe (`PARENT_OF` ↔ `CHILD_OF`) |
 | `PARTY_GROUP` | **Decisión vigente: grupo genérico** (reemplaza tablas específicas de grupo familiar). `group_sk`, `group_type_cd FK` (FAMILY / CORPORATE_GROUP), `group_name`, `anchor_party_sk FK` |
 | `PARTY_GROUP_MEMBER` | Miembros del grupo. `group_member_sk`, `group_sk FK`, `party_sk FK`, `member_role_cd FK`, `valid_from`, `valid_to` |
+| **`PARTY_SERVICE_ENROLLMENT`** **[linaje]** | **Vínculo de servicio persistente** del party con una UES (regla dura §3.18). `enrollment_sk`, `party_sk FK`, `party_role_sk FK` (rol bajo el cual se sostiene el vínculo, p. ej. CUSTOMER en CREDITO), `business_unit_cd FK`, `service_cd FK` (`CAT_SERVICE`, solo valores con `service_kind = PERSISTENT`; la carga valida que el servicio pertenezca a la UES), `enrollment_status_cd FK` (`CAT_ENROLLMENT_STATUS`: ACTIVE / SUSPENDED / CLOSED), `enrolled_at`, `closed_at`, `source_reference` (número de crédito, contrato o afiliación **tal como lo conoce la fuente**; nunca saldos ni contenido clínico), `valid_from`, `valid_to`. UNIQUE(`party_sk`, `service_cd`, `source_reference`). Un party puede sostener varios vínculos del mismo servicio (dos créditos vigentes) y varios servicios a la vez. Es la cabecera del Acuerdo; el detalle transaccional queda fuera del MDM |
 
 **Capa 5 · Contactability (púrpura):**
 
@@ -335,7 +357,7 @@ Convención de linaje (regla dura §3.14): donde la tabla dice **[linaje]** llev
 | `PARTY_CONTACT_POINT` **[linaje]** | **Relación N:M** party ↔ punto de contacto. `party_contact_sk`, `party_sk FK`, `contact_point_sk FK`, `usage_role_cd FK` (`CAT_CONTACT_USAGE_ROLE`: OWNER = titular del medio; SHARED = lo usa pero no es el titular; GUARDIAN = acudiente que recibe comunicaciones por un menor), `is_primary`, `valid_from`, `valid_to`. UNIQUE(`party_sk`, `contact_point_sk`, `valid_from`). El celular del hijo puede estar vinculado al hijo como OWNER y a la madre como GUARDIAN sin duplicar el número |
 | `PARTY_ADDRESS` **[linaje]** | Direcciones con geografía DIVIPOLA. `address_sk`, `party_sk FK`, `address_line`, `country_cd FK`, `divipola_cd FK` (municipio), `locality_type` vía RDM, `geocoding_status_cd FK` |
 | `PARTY_CONTACT_PREF` | Preferencias por canal y finalidad (Ley 2300/2023 art. 3). `pref_sk`, `party_sk FK`, `channel_cd FK`, `purpose_cd FK`, `allowed` bool, `frequency_cd FK`, `origin_cd FK` (`CAT_PREF_ORIGIN`: TITULAR / LEGAL_REP / INTERNAL_POLICY), `declared_at` |
-| `PARTY_CONTACT_ELIGIBILITY_CACHE` | Caché materializada de elegibilidad. Clave compuesta **`(party_sk, contact_point_sk, purpose_cd)`** (el canal se deriva del punto de contacto), campos `is_eligible`, `reason_cd FK`, `computed_at`. Se recalcula al cambiar consents, prefs, vínculos de contacto, `rne_excluded`, `party_status_cd` o `birth_date` |
+| `PARTY_CONTACT_ELIGIBILITY_CACHE` | Caché materializada de elegibilidad. Clave compuesta **`(party_sk, contact_point_sk, purpose_cd)`** (el canal se deriva del punto de contacto), campos `is_eligible`, `reason_cd FK`, `computed_at`. Se recalcula al cambiar consents, prefs, vínculos de contacto, `rne_excluded`, `party_status_cd`, `birth_date` o el estado de un vínculo de servicio |
 
 **Capa 6 · Governance (naranja):**
 
@@ -413,18 +435,20 @@ y agregar al final de la migración, vía `ALTER TABLE`, las FKs que cruzan capa
 en particular `PARTY_AUDIT_LOG.arco_request_id → DATA_SUBJECT_REQUEST`
 (Governance → Consents), `PARTY_AUDIT_LOG.merge_sk → PARTY_MERGE_HISTORY`,
 `PARTY_MERGE_HISTORY.match_sk → PARTY_MATCH`, `MATCH_REVIEW_TASK.match_sk →
-PARTY_MATCH` y `PARTY_CONSENT.granted_by_party_sk → PARTY`. Así el orden de creación
+PARTY_MATCH`, `PARTY_CONSENT.granted_by_party_sk → PARTY` y
+`PARTY_SERVICE_ENROLLMENT.party_role_sk → PARTY_ROLE`. Así el orden de creación
 no depende de la ubicación editorial de las tablas.
 
 ---
 
 ## 6. CATÁLOGOS RDM — SEMILLA DEL PROTOTIPO
 
-**Universo RDM: 41 catálogos** = 37 del diccionario maestro (22 base + 15
-adicionales) + 4 incorporados por esta versión (`CAT_SERVICE`,
-`CAT_CONTACT_USAGE_ROLE`, `CAT_PARTY_STATUS`, `CAT_STEWARD_DECISION`), todos
-gobernados en `rdm.CATALOG` con miembros técnicos, inmutabilidad y auditoría. El
-prototipo **crea 40 y puebla 40**; el restante queda reservado al diccionario maestro
+**Universo RDM: 43 catálogos** = 37 del diccionario maestro (22 base + 15
+adicionales) + 6 incorporados por las versiones 1.2 y 1.3 (`CAT_SERVICE`,
+`CAT_CONTACT_USAGE_ROLE`, `CAT_PARTY_STATUS`, `CAT_STEWARD_DECISION`,
+`CAT_SERVICE_KIND`, `CAT_ENROLLMENT_STATUS`), todos gobernados en `rdm.CATALOG` con
+miembros técnicos, inmutabilidad y auditoría. El prototipo **crea 42 y puebla 42**;
+el restante queda reservado al diccionario maestro
 de la Jefatura (no inventar su nombre). Fuentes oficiales colombianas donde aplica:
 DANE/DIVIPOLA (geografía), DIAN (CIIU), MinSalud, Supersalud.
 
@@ -448,13 +472,13 @@ DANE/DIVIPOLA (geografía), DIAN (CIIU), MinSalud, Supersalud.
 | `CAT_ARCO_REQUEST_TYPE` | GOVERNANCE | `ACCESS`, `RECTIFICATION`, `CANCELLATION`, `OPPOSITION` (EAV `sla_business_days`: ACCESS = 10, resto = 15) |
 | `CAT_REQUEST_STATUS` | GOVERNANCE | `RECEIVED`, `IN_PROGRESS`, `RESOLVED`, `REJECTED` |
 | `CAT_DQ_CATEGORY` | GOVERNANCE | `COMPLETENESS`, `VALIDITY`, `CONSISTENCY`, `UNIQUENESS`, `TIMELINESS` |
-| `CAT_MDM_ENTITY` | MDM_OPS | Un valor por tabla mdm núcleo (28) |
+| `CAT_MDM_ENTITY` | MDM_OPS | Un valor por tabla mdm núcleo (29) |
 | `CAT_GEOCODING_STATUS` | GEOGRAPHY | `PENDING`, `GEOCODED`, `FAILED`, `NOT_APPLICABLE` |
 | `CAT_COUNTRY` | GEOGRAPHY | `COL` (Colombia), `VEN`, `USA`, `ESP` — homologa `LAND1=CO→COL` |
 | `CAT_GEO_DIVIPOLA` | GEOGRAPHY | Jerárquico DANE. Semilla mínima obligatoria: `11` Bogotá D.C. → `11001` Bogotá D.C. (CABECERA); `05` Antioquia → `05001` Medellín; `25` Cundinamarca → `25286` Funza, `25754` Soacha; `76` Valle del Cauca → `76001` Cali. **Verificación de la regla §3.9: `11` NUNCA es Cundinamarca** |
 | `CAT_SEGMENT_TYPE` | BUSINESS | **Jerárquico (`is_hierarchical = true`)**. Nivel 1 = tipo de segmento; nivel 2 = valor. Semilla: `AFFILIATION` → `A`, `B`, `C` (categorías de afiliado); `FINANCIAL_RISK` → `LOW`, `MEDIUM`, `HIGH`; `COMMERCIAL` → `BASIC`, `PREMIUM`. Un party puede tener un valor vigente por cada tipo |
 
-**Tabla B · Catálogos operativos (19), FK obligatorias de las tablas núcleo desde la
+**Tabla B · Catálogos operativos (21), FK obligatorias de las tablas núcleo desde la
 Fase 2 — sembrar exactamente estos valores mínimos:**
 
 | Catálogo | Dominio | Valores mínimos |
@@ -467,23 +491,26 @@ Fase 2 — sembrar exactamente estos valores mínimos:**
 | `CAT_SEVERITY` | GOVERNANCE | `BLOCKING`, `WARNING`, `INFO` |
 | `CAT_SURVIVORSHIP_STRATEGY` | MDM_OPS | `SOURCE_PRIORITY`, `MOST_RECENT`, `MOST_COMPLETE`, `MOST_FREQUENT`, `MANUAL_OVERRIDE` |
 | `CAT_AUDIT_ACTION` | GOVERNANCE | `INSERT`, `UPDATE`, `MERGE`, `UNMERGE`, `REVIEW_DECISION`, `ARCO_READ`, `ARCO_UPDATE`, `REHOMOLOGATE`, `PURGE_MARK`, `PURGE_SIMULATED` |
-| `CAT_ELIGIBILITY_REASON` | CONTACT | `ELIGIBLE`, `DECEASED`, `MINOR`, `RNE_EXCLUSION`, `NO_CONSENT`, `CONSENT_REVOKED`, `CHANNEL_DENIED`, `FREQUENCY_EXCEEDED`, `SHARED_CONTACT_RESTRICTED`, `NO_CONTACT_POINT` |
+| `CAT_ELIGIBILITY_REASON` | CONTACT | `ELIGIBLE`, `DECEASED`, `MINOR`, `RNE_EXCLUSION`, `NO_ACTIVE_SERVICE`, `NO_CONSENT`, `CONSENT_REVOKED`, `CHANNEL_DENIED`, `FREQUENCY_EXCEEDED`, `SHARED_CONTACT_RESTRICTED`, `NO_CONTACT_POINT` |
 | `CAT_PREF_ORIGIN` | CONTACT | `TITULAR`, `LEGAL_REP`, `INTERNAL_POLICY` |
 | `CAT_CONTACT_USAGE_ROLE` | CONTACT | `OWNER`, `SHARED`, `GUARDIAN` |
 | `CAT_BLOCKING_STRATEGY` | MDM_OPS | `DOC_HASH`, `EMAIL_HASH`, `PHONE_HASH`, `SURNAME_SOUNDEX`, `NIT_HASH`, `LEGAL_NAME_TOKENS` |
 | `CAT_GROUP_TYPE` | DEMOGRAPHICS | `FAMILY`, `CORPORATE_GROUP` |
 | `CAT_GROUP_MEMBER_ROLE` | DEMOGRAPHICS | `ANCHOR`, `MEMBER`, `BENEFICIARY` |
 | `CAT_ORG_TYPE` | BUSINESS | `SAS`, `LTDA`, `SA`, `ESAL` |
-| `CAT_BUSINESS_UNIT` | BUSINESS | `SALUD`, `EDUCACION`, `VIVIENDA`, `HOTELERIA_TURISMO`, `CREDITO`, `MERCADEO` (UES ilustrativas) |
-| `CAT_SERVICE` | BUSINESS | Servicios ilustrativos con EAV `business_unit`: `EPS_PLAN`, `IPS_CONSULTA` (SALUD); `COLEGIO`, `CAPACITACION` (EDUCACION); `SUBSIDIO_VIVIENDA` (VIVIENDA); `LIBRANZA`, `TARJETA` (CREDITO); `HOTEL` (HOTELERIA_TURISMO); `SUPERMERCADO`, `DROGUERIA` (MERCADEO). La carga valida que `service_cd` pertenezca a la `business_unit_cd` del rol |
-| `CAT_RETENTION_RULE` | GOVERNANCE | Reglas de la política corporativa con EAV `years` y `trigger`: `AFFILIATE_5Y` (5 años desde fin de afiliación), `HR_5Y_POST_EXIT` (5 años post-egreso), `VENDOR_7Y`, `FINANCIAL_10Y`, `HEALTH_20Y` (Res. 1995/1999 art. 15), `LEGAL_HOLD`, `PURGE_ELIGIBLE` |
+| `CAT_BUSINESS_UNIT` | BUSINESS | `SUBSIDIO`, `SALUD`, `EDUCACION`, `VIVIENDA`, `CREDITO`, `RECREACION`, `HOTELERIA_TURISMO`, `MERCADEO` (UES ilustrativas) |
+| `CAT_SERVICE_KIND` | BUSINESS | `PERSISTENT` (relación sostenida en el tiempo: genera vínculo en el MDM), `TRANSACTIONAL` (consumo puntual: solo referencia, nunca vínculo) |
+| `CAT_SERVICE` | BUSINESS | **Jerárquico bajo la UES** (`parent_value_sk` → valor de `CAT_BUSINESS_UNIT` replicado como nivel 1) con EAV obligatorios `service_kind` y `collections_applies`. Semilla PERSISTENT: `CUOTA_MONETARIA` (SUBSIDIO, beneficiario de subsidio familiar), `SALUD_EPS` y `SALUD_PLAN_COMPLEMENTARIO` (SALUD, usuarios de salud), `COLEGIO_MATRICULA` (EDUCACION), `SUBSIDIO_VIVIENDA` (VIVIENDA), `CREDITO_SOCIAL` y `TARJETA_CREDITO` (CREDITO, clientes de crédito; `collections_applies = true`), `CLUB_SOCIO` (RECREACION). Semilla TRANSACTIONAL: `PISCILAGO` (RECREACION), `HOTEL` (HOTELERIA_TURISMO), `SUPERMERCADO`, `DROGUERIA` (MERCADEO). La carga valida que `service_cd` pertenezca a la UES del rol y que sea PERSISTENT (regla dura §3.18) |
+| `CAT_ENROLLMENT_STATUS` | BUSINESS | `ACTIVE`, `SUSPENDED`, `CLOSED` (estado del vínculo de servicio; `CLOSED` dispara el conteo de retención) |
+| `CAT_RETENTION_RULE` | GOVERNANCE | Reglas de la política corporativa con EAV `years` y `trigger`: `AFFILIATE_5Y` (5 años desde fin de afiliación), `HR_5Y_POST_EXIT` (5 años post-egreso), `VENDOR_7Y`, `FINANCIAL_10Y` (10 años desde `closed_at` del último vínculo de CREDITO), `HEALTH_20Y` (20 años desde `closed_at` del último vínculo de SALUD; Res. 1995/1999 art. 15), `LEGAL_HOLD`, `PURGE_ELIGIBLE`. La regla aplicable se resuelve por UES del vínculo cerrado; prevalece la de mayor plazo |
 | `CAT_CIIU` | BUSINESS | 5 códigos DIAN ilustrativos (necesarios para el peso CIIU del matching ORG) |
 
 **Reutilizaciones declaradas (prohibido crear catálogos duplicados):** `purpose_cd`
 → `CAT_CONTACT_PURPOSE`; `MATCH_RULE.entity_type_cd` y `PARTY_BUCKET.party_type_cd`
 → `CAT_PARTY_TYPE`; `member_role_cd` → `CAT_GROUP_MEMBER_ROLE`;
 `MATCH_REVIEW_TASK.task_status_cd` → `CAT_REQUEST_STATUS`; `segment_type_cd` y
-`segment_cd` → `CAT_SEGMENT_TYPE` (niveles 1 y 2).
+`segment_cd` → `CAT_SEGMENT_TYPE` (niveles 1 y 2); `PARTY_SERVICE_ENROLLMENT.business_unit_cd`
+→ `CAT_BUSINESS_UNIT` (mismo valor que el nivel 1 de `CAT_SERVICE`).
 
 **Homologaciones semilla en `rdm.SOURCE_VALUE_MAPPING`** (criterio de salida del RDM;
 regla dura §3.4: sistema fuente exacto):
@@ -502,6 +529,9 @@ regla dura §3.4: sistema fuente exacto):
 | SF_EC | `employmentStatus` | `T` (terminated) | `INACTIVE` | CAT_PARTY_STATUS |
 | WEB_PORTAL | `tipo_doc` | `cedula` | `CC` | CAT_ID_TYPE |
 | WEB_PORTAL | `categoria` | `A` / `B` / `C` | `AFFILIATION.A` / `.B` / `.C` | CAT_SEGMENT_TYPE |
+| SAP_ECC_SD | `KTOKD` (grupo de cuentas) | `ZCRE` / `ZSAL` | `CREDITO_SOCIAL` / `SALUD_EPS` | CAT_SERVICE |
+| SAP_ECC_SD | `LOEVM` (marca de borrado) | `X` | `CLOSED` | CAT_ENROLLMENT_STATUS |
+| SAP_CRM | `RLTYP` | `ZSUB` | `CUOTA_MONETARIA` | CAT_SERVICE |
 
 **Prueba canónica de salida del RDM (test obligatorio):** dado
 (`SAP_CRM`, `GESCHL`, `1`), la vista `VW_RDM_SOURCE_TO_CANONICAL` y el endpoint
@@ -534,7 +564,8 @@ regla dura §3.4: sistema fuente exacto):
 5. **Calidad (DQ)** — validaciones categorizadas por `CAT_DQ_CATEGORY`
    (completitud de documento y nombre, validez de fecha de nacimiento, formato
    E.164, dígito de verificación NIT, DIVIPOLA existente, segmento hijo de su tipo,
-   servicio perteneciente a su UES, tipos de party permitidos en la relación).
+   servicio perteneciente a su UES y de tipo PERSISTENT (regla dura §3.18), tipos
+   de party permitidos en la relación).
    Registro que falla reglas bloqueantes → `raw_status = DQ_QUARANTINE`; el resto
    continúa con sus hallazgos registrados.
 6. **Crosswalk** — lookup en `XREF_PARTY_SOURCE` por (`source_system_cd`,
@@ -542,7 +573,9 @@ regla dura §3.4: sistema fuente exacto):
    matching, regla dura §3.11); si no existe → pasa a matching (§8). Si el documento
    ya pertenece a un GOLDEN distinto (regla dura §3.16) → matching forzado con
    hallazgo `UNIQUENESS`.
-7. **Carga MDM** — upsert en las tablas de las capas 2–5 y 8 con linaje por fila,
+7. **Carga MDM** — upsert en las tablas de las capas 2–5 y 8 con linaje por fila
+   (los vínculos de servicio se crean o cierran según el estado en la fuente y
+   generan/actualizan su `PARTY_DATA_RETENTION` al cerrarse),
    resolución de puntos de contacto contra `CONTACT_POINT` por (`channel_cd`,
    `contact_hash`) (si el número ya existe se vincula, nunca se duplica), aplicación
    de survivorship (§9), recálculo de `completeness_score`, materialización de
@@ -679,6 +712,7 @@ Estrategias soportadas: `SOURCE_PRIORITY`, `MOST_RECENT`, `MOST_COMPLETE`,
 | email / teléfono (vínculo primario) | `MOST_RECENT` | por `captured_at` del vínculo `PARTY_CONTACT_POINT` |
 | segmentos | por tipo | cada `segment_type_cd` tiene fuente autoritativa (EAV `authoritative_source` en el valor de nivel 1): AFFILIATION → SAP_CRM; FINANCIAL_RISK → SAP_ECC_SD; COMMERCIAL → WEB_PORTAL; sin fuente autoritativa → `MOST_RECENT` |
 | roles | `UNION` | los roles no compiten: se conservan todos con su linaje (una persona es empleado y afiliado a la vez) |
+| vínculos de servicio | `UNION` por `source_reference` | cada vínculo pertenece a la fuente que lo administra (CREDITO_SOCIAL → SAP_ECC_SD; CUOTA_MONETARIA → SAP_CRM); nunca compiten entre fuentes; el estado lo fija su fuente administradora |
 | resto | `MOST_COMPLETE` | fallback sin prioridad de fuente definida |
 
 Justificación de la prioridad (mantener en la documentación): el rango 1 pertenece
@@ -719,11 +753,15 @@ unmerge restaura desde `pre_merge_snapshot` y re-ejecuta survivorship en ambos.
    **(4)** el vínculo del party con el contacto es SHARED o GUARDIAN y el OWNER del
    contacto es menor de edad y la finalidad es COMMERCIAL →
    `SHARED_CONTACT_RESTRICTED`;
-   **(5)** sin consent `GRANTED` del tipo requerido por la finalidad (EAV
+   **(5)** finalidad COLLECTIONS sin ningún `PARTY_SERVICE_ENROLLMENT` en estado
+   ACTIVE o SUSPENDED cuyo servicio tenga `collections_applies = true` →
+   `NO_ACTIVE_SERVICE` (la cobranza solo es legítima sobre una obligación vigente,
+   Ley 2300/2023 art. 3);
+   **(6)** sin consent `GRANTED` del tipo requerido por la finalidad (EAV
    `required_consent_type`) → `NO_CONSENT` / `CONSENT_REVOKED`;
-   **(6)** preferencia del canal no permitida → `CHANNEL_DENIED`;
-   **(7)** frecuencia excedida → `FREQUENCY_EXCEEDED`;
-   **(8)** en otro caso → `ELIGIBLE`.
+   **(7)** preferencia del canal no permitida → `CHANNEL_DENIED`;
+   **(8)** frecuencia excedida → `FREQUENCY_EXCEEDED`;
+   **(9)** en otro caso → `ELIGIBLE`.
    La sincronización del RNE se simula con `python cli.py rne-sync --file
    app/synth/rne_sample.csv`: marca `rne_excluded = true` en los `CONTACT_POINT`
    cuyo hash coincide y **nunca toca preferencias ni finalidades distintas de
@@ -731,9 +769,9 @@ unmerge restaura desde `pre_merge_snapshot` y re-ejecuta survivorship en ambos.
    registro). Este numeral materializa el compromiso del caso financiero ante el
    Comité con fuente declarada y trazable.
 4. **Audiencias (caso financiero 3 y habilitación de SAP CDP)** —
-   `GET /audiences?purpose=COMMERCIAL&channel=EMAIL&role=AFFILIATE&segment=AFFILIATION.A`
+   `GET /audiences?purpose=COMMERCIAL&channel=EMAIL&role=AFFILIATE&segment=AFFILIATION.A&service=CREDITO_SOCIAL&enrollment_status=ACTIVE`
    devuelve únicamente parties `GOLDEN`, `ACTIVE`, con contacto elegible para esa
-   finalidad y canal, con el valor de contacto y el `reason_cd = ELIGIBLE`. Toda
+   finalidad y canal (y, si se filtra por servicio, con vínculo en ese estado), con el valor de contacto y el `reason_cd = ELIGIBLE`. Toda
    ejecución se audita (`actor`, filtros, conteo) porque es un tratamiento con
    finalidad declarada (Ley 1581/2012 art. 4 lit. b). Reemplaza la consolidación
    manual de bases de campaña descrita en el caso de negocio.
@@ -753,10 +791,11 @@ unmerge restaura desde `pre_merge_snapshot` y re-ejecuta survivorship en ambos.
 
 | Método y ruta | Función |
 |---|---|
-| `GET /parties?q=&role=&segment=&status=&limit=` | Búsqueda de parties (nombre normalizado, documento, email, ID externo por fuente) |
+| `GET /parties?q=&role=&segment=&service=&status=&limit=` | Búsqueda de parties (nombre normalizado, documento, email, ID externo por fuente) |
 | `GET /parties/{party_sk}/golden` | Vista 360 del golden record: las 8 capas + survivorship por campo + `golden_version` + `completeness_score` |
 | `GET /parties/{party_sk}/sources` | Fuentes que alimentan el party (`XREF`) y, por cada fila de hechos, su `source_system_cd` y `captured_at` |
 | `GET /parties/{party_sk}/relationships?direction=both` | Relaciones directas e inversas con tipo, dirección y tipo de party en cada extremo |
+| `GET /parties/{party_sk}/services?status=` | Vínculos de servicio persistentes con UES, rol, estado, fechas, referencia en la fuente y linaje |
 | `GET /parties/{party_sk}/audit?merge_sk=&arco_request_id=` | Trazabilidad del party, filtrable por merge o por solicitud ARCO |
 | `POST /pipeline/{source}/run?mode=full\|delta` | Ejecutar ingesta de una fuente |
 | `POST /parties/match-preview` | Body con atributos de un registro → candidatos y score sin persistir (§8.6) |
@@ -773,7 +812,7 @@ unmerge restaura desde `pre_merge_snapshot` y re-ejecuta survivorship en ambos.
 | `POST /rdm/mappings` | Alta de homologación fuente→canónico |
 | `POST /rdm/rehomologate?catalog=` | Reprocesa los `UNKNOWN` del catálogo (§7.2) |
 | `GET /parties/{party_sk}/contactability?contact_point_sk=&purpose=COMMERCIAL` | → `{is_eligible, reason}` por punto de contacto; sin `contact_point_sk` devuelve todos los vínculos del party |
-| `GET /audiences?purpose=&channel=&role=&segment=` | Audiencia elegible (§10.4) |
+| `GET /audiences?purpose=&channel=&role=&segment=&service=&enrollment_status=` | Audiencia elegible (§10.4) |
 | `POST /parties/{party_sk}/consents` | Alta/cambio de autorización por tipo (crea fila nueva, cierra la anterior) |
 | `POST /parties/{party_sk}/arco` · `GET /arco/requests?sla=OVERDUE` | Solicitudes ARCO con `due_at` y estado de SLA derivado |
 | `POST /rne/sync` | Equivalente API de `rne-sync` |
@@ -802,8 +841,9 @@ unmerge restaura desde `pre_merge_snapshot` y re-ejecuta survivorship en ambos.
 3. **Vista 360 del golden record**: perfil de un party recorriendo las 8 capas en
    orden (Sources → Core → Identity → Roles y Relaciones → Contactability →
    Governance → Golden Record → Consents), con la fuente ganadora por campo
-   (survivorship) visible, el linaje de cada fila, los segmentos por tipo, el grafo
-   de relaciones (persona/organización), los contactos con su rol de uso (propio,
+   (survivorship) visible, el linaje de cada fila, los segmentos por tipo, los
+   vínculos de servicio por UES con su estado y referencia, el grafo de relaciones
+   (persona/organización), los contactos con su rol de uso (propio,
    compartido, acudiente) y la elegibilidad por contacto y finalidad. Usar la
    leyenda de colores del modelo: Core azul, Identity amarillo, Contactability
    púrpura, Relationships verde, Governance naranja, Golden Record rosa, Consents
@@ -840,10 +880,12 @@ plantados (cada uno con test que verifica su desenlace):
 | O · Relaciones P/O | Persona LEGAL_REP_OF organización; organización SUBSIDIARY_OF organización; padres PARENT_OF hijo | Las tres se consultan desde ambos extremos con la inversa generada; un `SPOUSE_OF` persona→organización es rechazado en DQ |
 | P · Rehomologación | Registro CRM con `RLTYP=ZPRV` sin mapeo → `UNKNOWN` + DQ `VALIDITY`; se agrega el mapeo ZPRV→VENDOR y se ejecuta `rehomologate` | El rol queda VENDOR, el hallazgo cerrado (`resolved_at`), audit `REHOMOLOGATE`, sin nueva extracción |
 | Q · Fallecido y SLA | SF_EC informa terminación por fallecimiento; una consulta ARCO creada hace 12 días hábiles | `party_status=DECEASED` y toda elegibilidad `DECEASED`; la solicitud aparece en `GET /arco/requests?sla=OVERDUE` |
+| R · Vínculos de servicio | Afiliado con CUOTA_MONETARIA (CRM), dos CREDITO_SOCIAL (SD, referencias distintas, uno CLOSED) y SALUD_EPS (SD); el mismo registro trae una estadía en HOTEL y una compra en SUPERMERCADO | Cuatro `PARTY_SERVICE_ENROLLMENT` (uno CLOSED con `PARTY_DATA_RETENTION` FINANCIAL_10Y desde `closed_at`); HOTEL y SUPERMERCADO rechazados con `VALIDITY` "servicio transaccional no vinculable"; Vista 360 muestra los roles a nivel de UES y los vínculos debajo |
+| S · Cobranza solo con obligación vigente | Titular con consent DATA_PROCESSING GRANTED y teléfono elegible, sin ningún vínculo de CREDITO activo | PHONE/COLLECTIONS → `NO_ACTIVE_SERVICE`; al cargar un CREDITO_SOCIAL ACTIVE en delta → `ELIGIBLE` (recálculo de caché por cambio de vínculo); PHONE/BENEFITS no cambia |
 
 `make demo` = levantar → migrar → sembrar RDM → generar sintéticos → ingerir las 5
 fuentes → `rne-sync` → correr matching → dejar la consola con los casos B y K
-pendientes. `DEMO.md` narra el guion sobre estos 17 casos.
+pendientes. `DEMO.md` narra el guion sobre estos 19 casos.
 
 ---
 
@@ -852,11 +894,11 @@ pendientes. `DEMO.md` narra el guion sobre estos 17 casos.
 | Fase | Contenido | Criterios de aceptación (todos verificados por pytest donde aplique) |
 |---|---|---|
 | **F0** | Scaffolding: repo, docker-compose (db+api+ui), Alembic, Makefile, healthchecks, `docs/reference/` | `docker compose up` levanta los 3 servicios; `GET /health` OK; `make test` corre |
-| **F1 · RDM** | Esquema `rdm` (con `data_owner`/`data_steward`), migración semilla (40 catálogos poblados, miembros 0/−1, EAV de relaciones, finalidades y servicios), vistas (3 tipadas), endpoints RDM, trigger de inmutabilidad | Prueba canónica: (`SAP_CRM`,`GESCHL`,`1`) → `M` por vista y por endpoint; UPDATE a un canónico activo es rechazado; deprecar funciona; `VW_RDM_CROSSWALK` resuelve `SEXKZ=1` ↔ `GESCHL=1`; `VW_RDM_CAT_RELATIONSHIP_TYPE` expone from/to/inverso; ningún mapeo usa un sistema no registrado |
-| **F2 · Staging + pipeline** | Esquema `staging` + `mdm` (28 tablas; FKs cruzadas al final vía `ALTER TABLE`; índice de unicidad golden), generador sintético, etapas 1–5, CLI, `rehomologate` | Ingesta de las 5 fuentes deja registros `DQ_PASSED`/`DQ_QUARANTINE` correctos; homologación aplicada; hallazgos en `PARTY_DQ_ISSUE`; sin campos multivaluados; linaje presente en toda fila de hechos; contactos resueltos sin duplicar valores; casos I, O y P pasan |
+| **F1 · RDM** | Esquema `rdm` (con `data_owner`/`data_steward`), migración semilla (42 catálogos poblados, miembros 0/−1, EAV de relaciones, finalidades y servicios con `service_kind`), vistas (3 tipadas), endpoints RDM, trigger de inmutabilidad | Prueba canónica: (`SAP_CRM`,`GESCHL`,`1`) → `M` por vista y por endpoint; UPDATE a un canónico activo es rechazado; deprecar funciona; `VW_RDM_CROSSWALK` resuelve `SEXKZ=1` ↔ `GESCHL=1`; `VW_RDM_CAT_RELATIONSHIP_TYPE` expone from/to/inverso; ningún mapeo usa un sistema no registrado |
+| **F2 · Staging + pipeline** | Esquema `staging` + `mdm` (29 tablas; FKs cruzadas al final vía `ALTER TABLE`; índice de unicidad golden), generador sintético, etapas 1–5, CLI, `rehomologate` | Ingesta de las 5 fuentes deja registros `DQ_PASSED`/`DQ_QUARANTINE` correctos; homologación aplicada; hallazgos en `PARTY_DQ_ISSUE`; sin campos multivaluados; linaje presente en toda fila de hechos; contactos resueltos sin duplicar valores; casos I, O, P y R pasan |
 | **F3 · Matching + Golden** | Etapas 6–7, blocking por tipo, scoring, umbrales, merge automático, survivorship, `pre_merge_snapshot`, `match-preview`, unmerge | Casos A, C, D, G, L y N pasan; `score_detail` desglosado presente; XREF evita re-matching; survivorship registra fuente ganadora por campo; el teléfono compartido no puntúa |
 | **F4 · UI + workflow** | Consola de Stewardship con tareas por owner, Admin RDM, Vista 360 | Casos B y K decidibles desde la consola; regla de cierre entre owners verificada; unmerge desde UI; alta de valor y homologación desde Admin RDM sin tocar SKs; rehomologar desde UI |
-| **F5 · Cumplimiento + demo** | Contactabilidad por contacto, consents multi-tipo, ARCO con SLA, `rne-sync`, audiencias, purga simulada, `make demo`, `DEMO.md`, `README.md` | Casos E, F, H, J, M y Q pasan; `make demo` end-to-end en verde desde cero; suite completa en verde |
+| **F5 · Cumplimiento + demo** | Contactabilidad por contacto, consents multi-tipo, ARCO con SLA, `rne-sync`, audiencias, purga simulada, `make demo`, `DEMO.md`, `README.md` | Casos E, F, H, J, M, Q y S pasan; `make demo` end-to-end en verde desde cero; suite completa en verde |
 
 ---
 
@@ -867,7 +909,7 @@ pendientes. `DEMO.md` narra el guion sobre estos 17 casos.
 | Varios segmentos por party (afiliación, riesgo financiero...) | `PARTY_SEGMENT` + `CAT_SEGMENT_TYPE` jerárquico; caso I |
 | Varias autorizaciones por finalidad (comercial, financiera, historia clínica) | `PARTY_CONSENT` una fila por `consent_type_cd`; `CAT_CONSENT_TYPE` ampliado; mapeo finalidad→consentimiento en EAV |
 | Relaciones P↔P, O↔P, O↔O con tipo | `PARTY_RELATIONSHIP` sobre el supertipo `PARTY`; EAV de tipos permitidos e inversa; caso O |
-| Todos los roles y el servicio | `PARTY_ROLE` N filas con `business_unit_cd` + `service_cd`; survivorship `UNION` |
+| Todos los roles y el servicio | `PARTY_ROLE` N filas a nivel de UES + `PARTY_SERVICE_ENROLLMENT` por vínculo persistente (`CAT_SERVICE` con `service_kind`); survivorship `UNION`; casos R y S |
 | Integración respetando IDs originales | `XREF_PARTY_SOURCE.external_id` nativo; regla dura §3.4; §7.1 |
 | Contacto con identidad propia y extensible | `CONTACT_POINT.contact_point_sk` |
 | Contacto compartido entre parties (grupo familiar) | `PARTY_CONTACT_POINT` N:M con `usage_role_cd`; caso J |
@@ -881,8 +923,10 @@ pendientes. `DEMO.md` narra el guion sobre estos 17 casos.
 | Prevención de duplicados en origen | `match-preview`; caso N |
 | SLA ARCO | `due_at` + estado derivado; caso Q |
 | Cambios RDM posteriores a la carga | `rehomologate`; caso P |
-| Retención y purga | `CAT_RETENTION_RULE` con política corporativa; `purge --dry-run` |
+| Retención y purga | `CAT_RETENTION_RULE` con política corporativa, disparada por el cierre del vínculo; `purge --dry-run` |
 | Versionado del golden | `golden_version`, `completeness_score`, `rule_version` |
+| Servicio persistente vs transacción puntual | regla dura §3.18; `CAT_SERVICE_KIND`; DQ rechaza vínculos transaccionales; caso R |
+| Cobranza solo sobre obligación vigente | precedencia (5) de elegibilidad, `NO_ACTIVE_SERVICE`; caso S |
 
 ---
 
