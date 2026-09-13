@@ -1,59 +1,18 @@
 # ESPECIFICACIÓN DE PROTOTIPO FUNCIONAL — MDM/RDM in-house · Dominio Party
-**Colsubsidio · Jefatura de Gobierno de Datos (ARC)** · Versión 1.5 · 2026-09-13
+**Colsubsidio · Jefatura de Gobierno de Datos (ARC)** · Versión 2.0 · 2026-09-13
 **Documento de handoff para Claude Code** — autor del modelo: David Alejandro Ballesteros Díaz
 
-> **Registro de cambios v1.5** — **una o varias finalidades por contacto y party.**
-> Se elimina el campo escalar `purpose_scope_cd` del vínculo (solo admitía una
-> finalidad o "cualquiera") y se reemplaza por **preferencias a nivel de contacto**:
-> `PARTY_CONTACT_PREF` gana `party_contact_sk FK NULL`; con valor, la fila aplica a ese
-> contacto concreto (una fila por finalidad, 1NF); con NULL, aplica al canal completo
-> como hasta ahora. La preferencia de contacto prevalece sobre la de canal. Un email
-> puede quedar habilitado para BENEFITS y COLLECTIONS y denegado para COMMERCIAL con
-> tres filas explícitas y auditables. Los contactos de cobranza o de tercero nacen
-> con sus filas por finalidad escritas por la carga. Caso T ampliado. Sin tablas ni
-> catálogos nuevos: **29 tablas, 43 catálogos creados.**
->
-> **Registro de cambios v1.4** — el vínculo party↔contacto gana **contexto de uso y
-> confianza**: `purpose_scope_cd` (alcance de finalidad, p. ej. solo cobranza),
-> `confirmation_status_cd` (nuevo `CAT_CONTACT_CONFIRMATION`: confirmado por el
-> titular, no confirmado, confirmado por el contacto, persona equivocada, inválido) y
-> `origin_cd` (de dónde salió el vínculo: titular, gestión de cobranza, referencia de
-> tercero). Nuevo rol de uso `REFERENCE`. La elegibilidad excluye automáticamente
-> contactos fuera de su alcance, no confirmados o de terceros para cualquier finalidad
-> distinta a la que los originó; el matching solo puntúa teléfonos confirmados por el
-> titular. Caso demo T. 29 tablas, 43 catálogos creados. *(El `purpose_scope_cd`
-> escalar introducido aquí fue reemplazado en v1.5 por preferencias por contacto.)*
->
-> **Registro de cambios v1.3** — incorpora el **vínculo de servicio** como entidad
-> propia (`PARTY_SERVICE_ENROLLMENT`, capa 4): la relación que perdura en el tiempo
-> con una UES (cliente de Crédito Social, usuario de Salud, beneficiario de cuota
-> monetaria) se distingue de la transacción puntual (hotel, Piscilago, supermercado),
-> que **no** entra al MDM de Party. `CAT_SERVICE` se marca por tipo de relación
-> (`CAT_SERVICE_KIND`: PERSISTENT / TRANSACTIONAL) y solo los persistentes son
-> vinculables; `PARTY_ROLE` vuelve a nivel de UES. Nuevos: `CAT_ENROLLMENT_STATUS`,
-> razón de elegibilidad `NO_ACTIVE_SERVICE` (la cobranza solo aplica con vínculo
-> activo cobrable), retención disparada por el cierre del vínculo, filtro `service`
-> en audiencias, casos demo R y S. 29 tablas núcleo, 42 catálogos creados.
->
-> **Registro de cambios v1.2** — cierra los 4 pendientes de la revisión 1.1 y resuelve
-> en el modelo (no como "futuro") las 10 necesidades funcionales planteadas por el
-> autor, más 9 capacidades MDM adicionales identificadas en revisión experta.
-> Resumen: 28 tablas núcleo (25 + `PARTY_SEGMENT`, `CONTACT_POINT`,
-> `MATCH_REVIEW_TASK`); punto de contacto con identidad propia y compartible entre
-> parties (grupos familiares); segmentación multi-tipo; servicio en el rol; workflow
-> de zona gris entre owners de fuente; `source_system_cd` en toda tabla de hechos;
-> snapshot pre-merge para unmerge determinista; ciclo de vida de negocio del party
-> (fallecidos, menores de edad); unicidad de documento entre goldens; API de
-> audiencias (caso financiero 3 / SAP CDP); prevención de duplicados en origen
-> (`match-preview`); SLA ARCO; rehomologación tras cambios RDM; purga por retención
-> en modo simulación. Homologaciones registradas por sistema fuente exacto;
-> `rne-sync` limitado a finalidad comercial y anclado al número (Ley 2300/2023 art. 5);
-> universo RDM de 41 catálogos (37 del diccionario maestro + 4 de esta versión).
+> **Versión 2.0 consolidada.** Integra y depura las versiones 1.0 a 1.5 (historial en
+> el Anexo B). Cifras vigentes: **29 tablas núcleo** en 8 capas + **1 tabla de bitácora
+> de carga** en `staging`; **43 catálogos RDM** creados y poblados (universo de 44);
+> **20 casos demo** (A–T); **6 fases** de construcción. Cubre las 10 necesidades
+> funcionales del autor y 12 capacidades MDM adicionales (matriz de cobertura en §15).
 >
 > **Pendiente de reconciliación con el diccionario maestro de la Jefatura (41 tablas):**
-> las cuatro tablas nuevas (v1.2 y v1.3) y los campos agregados en §5 deben incorporarse al diccionario
-> y al diagrama `mdm_party_diagram.mermaid`. Hasta entonces, esta especificación es la
-> fuente de verdad del prototipo.
+> las cuatro tablas nuevas (`PARTY_SEGMENT`, `CONTACT_POINT`, `MATCH_REVIEW_TASK`,
+> `PARTY_SERVICE_ENROLLMENT`) y los campos agregados en §5 deben incorporarse al
+> diccionario y al diagrama `mdm_party_diagram.mermaid`. Hasta entonces, esta
+> especificación es la fuente de verdad del prototipo.
 
 ---
 
@@ -75,6 +34,8 @@ este documento. Tu trabajo es materializarlo, no rediseñarlo.
    entra en conflicto con una regla dura, gana la regla dura.
 4. Idiomas: **identificadores de esquema, código y APIs en inglés** (`PARTY`,
    `party_sk`, `id_type_cd`); **documentación, UI y mensajes al usuario en español**.
+   Todo endpoint de lista pagina con `limit` y `cursor`; ningún endpoint devuelve
+   colecciones sin acotar.
 5. Cada fase termina con: tests `pytest` en verde, un commit con mensaje
    `feat(fase-N): ...`, y actualización del `README.md`.
 6. El prototipo opera **exclusivamente con datos sintéticos** (Faker `es_CO`, seed
@@ -131,7 +92,8 @@ internacional como complemento técnico):
 **Dentro del alcance:**
 - Esquema `rdm` completo (5 capas) + semilla de catálogos (§6) + vistas de consumo.
 - Esquema `mdm` con las **29 tablas núcleo** de las 8 capas (§5.2).
-- Esquema `staging` con 5 tablas RAW (una por fuente, §5.3).
+- Esquema `staging` con 5 tablas RAW (una por fuente) + `LOAD_BATCH` (bitácora de
+  carga, §5.3).
 - Pipeline batch de 7 etapas por fuente, ejecutable por CLI (§7) + comandos
   operativos (`rne-sync`, `rehomologate`, `purge --dry-run`).
 - Motor de matching con pesos y umbrales exactos (§8) + survivorship (§9) +
@@ -248,7 +210,7 @@ internacional como complemento técnico):
 
 | Componente | Prototipo | Producción (referencia, no implementar) |
 |---|---|---|
-| Base de datos | PostgreSQL 16 (Docker) | PostgreSQL / evaluación SAP HANA Cloud |
+| Base de datos | PostgreSQL 16 (Docker; alternativa sin Docker: `make db-local` levanta un clúster con `initdb`/`pg_ctl` en `.pgdata/`, mismo DDL) | PostgreSQL / evaluación SAP HANA Cloud |
 | Backend / API | Python 3.11+, FastAPI, SQLAlchemy 2, Alembic | Igual |
 | Matching | RapidFuzz (Jaro-Winkler), Jellyfish (Soundex/Metaphone) | Splink (Fellegi-Sunter, EM, DuckDB/Spark) para >10M |
 | Estandarización | `phonenumbers` (E.164), `nameparser`; direcciones con normalizador propio simple | + libpostal |
@@ -263,10 +225,11 @@ internacional como complemento técnico):
 ```
 mdm-rdm-prototype/
 ├── docker-compose.yml            # db + api + ui
-├── Makefile                      # make up / make demo / make test
+├── Makefile                      # make up | db-local / migrate / seed / demo / test / export-drive
 ├── README.md                     # arranque y operación
 ├── DEMO.md                       # guion de demostración
 ├── docs/reference/               # diccionario maestro y .mermaid (solo lectura)
+├── docs/drive/                   # entregables exportados a Google Drive por fase (§17)
 ├── backend/
 │   ├── alembic/                  # migraciones (una por fase)
 │   ├── app/
@@ -375,17 +338,17 @@ Convención de linaje (regla dura §3.14): donde la tabla dice **[linaje]** llev
 
 | Tabla | Propósito y campos clave |
 |---|---|
-| **`CONTACT_POINT`** | **Identidad del punto de contacto, independiente del party** (regla dura §3.15). `contact_point_sk`, `channel_cd FK` (EMAIL/PHONE/SMS/WHATSAPP/PHYSICAL_MAIL), `contact_value` (E.164 para teléfono, lowercase para email; para PHYSICAL_MAIL referencia a `PARTY_ADDRESS.address_sk`), `contact_hash`, **`rne_excluded`** bool, **`rne_synced_at`** (Ley 2300/2023 art. 5: la exclusión del RNE es del **número**, no de la persona), `is_verified` (validez **técnica** del medio: formato, existencia, entregabilidad; la confianza de la relación con la persona vive en el vínculo), `verified_at`, `created_at`. UNIQUE(`channel_cd`, `contact_hash`). Cualquier extensión futura (rebotes, verificación, historial de uso) cuelga de `contact_point_sk` |
+| **`CONTACT_POINT`** | **Identidad del punto de contacto, independiente del party** (regla dura §3.15). `contact_point_sk`, `channel_cd FK` (EMAIL/PHONE/SMS/WHATSAPP/PHYSICAL_MAIL), `contact_value` (E.164 para teléfono, lowercase para email, dirección normalizada para PHYSICAL_MAIL), **`address_sk FK NULL`** (solo cuando `channel_cd = PHYSICAL_MAIL`, apunta a `PARTY_ADDRESS`), `contact_hash`, **`rne_excluded`** bool, **`rne_synced_at`** (Ley 2300/2023 art. 5: la exclusión del RNE es del **número**, no de la persona), `is_verified` (validez **técnica** del medio: formato, existencia, entregabilidad; la confianza de la relación con la persona vive en el vínculo), `verified_at`, `created_at`. UNIQUE(`channel_cd`, `contact_hash`). Cualquier extensión futura (rebotes, verificación, historial de uso) cuelga de `contact_point_sk` |
 | `PARTY_CONTACT_POINT` **[linaje]** | **Relación N:M** party ↔ punto de contacto. `party_contact_sk`, `party_sk FK`, `contact_point_sk FK`, `usage_role_cd FK` (`CAT_CONTACT_USAGE_ROLE`: OWNER = titular del medio; SHARED = lo usa pero no es el titular; GUARDIAN = acudiente que recibe comunicaciones por un menor; REFERENCE = medio de un tercero dado como referencia), **`confirmation_status_cd FK`** (`CAT_CONTACT_CONFIRMATION`: grado de confianza de que el medio pertenece o llega a esta persona; se actualiza desde la gestión y se audita), **`origin_cd FK`** (reutiliza `CAT_PREF_ORIGIN`: TITULAR, LEGAL_REP, INTERNAL_POLICY, COLLECTIONS_MANAGEMENT, THIRD_PARTY_REFERENCE), `is_primary`, `valid_from`, `valid_to`. UNIQUE(`party_sk`, `contact_point_sk`, `valid_from`). El celular del hijo puede estar vinculado al hijo como OWNER y a la madre como GUARDIAN sin duplicar el número; un teléfono aportado por cobranza queda vinculado con `origin_cd = COLLECTIONS_MANAGEMENT` y `confirmation_status_cd = UNCONFIRMED` hasta que una gestión lo confirme. **Las finalidades para las que sirve cada vínculo no viven aquí**: se declaran como filas de `PARTY_CONTACT_PREF` con `party_contact_sk` (una por finalidad, §5.2 capa 5), de modo que un mismo email puede tener una o varias finalidades habilitadas y otras denegadas |
 | `PARTY_ADDRESS` **[linaje]** | Direcciones con geografía DIVIPOLA. `address_sk`, `party_sk FK`, `address_line`, `country_cd FK`, `divipola_cd FK` (municipio), `locality_type` vía RDM, `geocoding_status_cd FK` |
 | `PARTY_CONTACT_PREF` | Preferencias por finalidad, **a nivel de canal o de contacto concreto** (Ley 2300/2023 art. 3). `pref_sk`, `party_sk FK`, `channel_cd FK`, **`party_contact_sk FK NULL`** (NULL = la preferencia aplica a todo el canal; con valor = aplica solo a ese vínculo party↔contacto, y su `channel_cd` debe coincidir con el del contacto), `purpose_cd FK`, `allowed` bool, `frequency_cd FK`, `origin_cd FK` (`CAT_PREF_ORIGIN`), `declared_at`, `valid_from`, `valid_to`. **UNIQUE(`party_sk`, `channel_cd`, `party_contact_sk`, `purpose_cd`, `valid_from`)** (una fila por finalidad; 1NF). **Precedencia:** la fila de contacto prevalece sobre la de canal para la misma finalidad; si un contacto no tiene fila para una finalidad, hereda la del canal; si tampoco existe, se asume permitido salvo lo que dicten las precedencias de §10.3. Ejemplo: email `maria@…` con filas (BENEFITS, true), (COLLECTIONS, true), (COMMERCIAL, false) → sirve para dos finalidades y no para la tercera, aunque el canal EMAIL esté permitido para COMMERCIAL |
-| `PARTY_CONTACT_ELIGIBILITY_CACHE` | Caché materializada de elegibilidad. Clave compuesta **`(party_sk, contact_point_sk, purpose_cd)`** (el canal se deriva del punto de contacto), campos `is_eligible`, `reason_cd FK`, `computed_at`. Se recalcula al cambiar consents, prefs, vínculos de contacto, `rne_excluded`, `party_status_cd`, `birth_date`, el estado de un vínculo de servicio, la confirmación de un vínculo de contacto o una preferencia de canal o de contacto |
+| `PARTY_CONTACT_ELIGIBILITY_CACHE` | Caché materializada de elegibilidad. Clave compuesta **`(party_contact_sk, purpose_cd)`** (el vínculo party↔contacto ya fija party, contacto, canal, rol de uso y confirmación), campos `party_sk` (desnormalizado para consultas de audiencia), `is_eligible`, `reason_cd FK`, `computed_at`. Se recalcula al cambiar consents, prefs, vínculos de contacto, `rne_excluded`, `party_status_cd`, `birth_date`, el estado de un vínculo de servicio, la confirmación de un vínculo de contacto o una preferencia de canal o de contacto |
 
 **Capa 6 · Governance (naranja):**
 
 | Tabla | Propósito y campos clave |
 |---|---|
-| `MATCH_RULE` | Reglas y pesos de matching versionados (los de §8 se siembran aquí). `rule_sk`, `entity_type_cd FK` (reutiliza `CAT_PARTY_TYPE`), `attribute`, `weight`, `algorithm`, `threshold_note`, `version`, `is_active` |
+| `MATCH_RULE` | Reglas y pesos de matching versionados (los de §8 se siembran aquí). `rule_sk`, `entity_type_cd FK` (reutiliza `CAT_PARTY_TYPE`), `attribute`, `weight`, `algorithm`, **`params JSONB`** (umbral, puntaje parcial, tolerancia: p. ej. `{"jw_min":0.92,"partial":15}`; estructurado para que la consola muestre la regla aplicada sin texto libre), `version`, `is_active` |
 | `PARTY_DQ_ISSUE` | Hallazgos de calidad de la etapa DQ. `dq_issue_sk`, `staging_ref`, `party_sk FK NULL`, `dq_category_cd FK`, `field`, `detail`, `severity_cd FK`, `detected_at`, **`resolved_at`** (se puebla cuando `rehomologate` o una carga posterior corrige el hallazgo) |
 | `PARTY_AUDIT_LOG` | Bitácora central (Ley 1581/2012 art. 17). `audit_sk`, `party_sk FK NULL`, `entity`, `entity_sk`, `action_cd FK`, `old_value JSONB`, `new_value JSONB`, `actor`, `source_system_cd FK NULL`, `batch_id NULL`, `arco_request_id FK NULL` (trazabilidad ARCO, Ley 1581/2012 arts. 14–15), **`merge_sk FK NULL`** (agrupa todos los reapuntamientos de un merge/unmerge), `occurred_at` |
 | `PARTY_DATA_RETENTION` | Política de retención aplicada por party/entidad. `retention_sk`, `party_sk FK`, `entity`, `retention_rule_cd FK`, `purge_after`, `legal_basis`, **`purge_status`** (`CHECK ('SCHEDULED','HOLD','PURGED')`, columna de estado de máquina, excepción §3.5(b)) |
@@ -420,9 +383,18 @@ Una tabla RAW por fuente, misma estructura operativa:
 `STG_ECC_MM_RAW` (Proveedores · LFA1), `STG_CRM_BP_RAW` (Business Partner ·
 BUT000/BUT020/ADRC), `STG_WEB_PORTAL_RAW` (Usuarios Digitales).
 
-Campos comunes: `raw_sk`, `batch_id`, `external_id`, `payload JSONB` (registro fuente
+Campos comunes: `raw_sk`, `batch_id FK`, `external_id`, `payload JSONB` (registro fuente
 completo), `source_hash`, `raw_status` (`PENDING` → `STANDARDIZED` → `HOMOLOGATED` →
 `DQ_PASSED` / `DQ_QUARANTINE` → `LOADED`), `loaded_at`, `processed_at`.
+
+**`staging.LOAD_BATCH` — bitácora de carga** (ISO/IEC 27001:2022 A.8.15; es la
+evidencia operativa de cada ejecución del pipeline): `batch_id`, `source_system_cd FK`,
+`mode` (`CHECK ('FULL','DELTA','RNE_SYNC','REHOMOLOGATE')`, estado de máquina,
+excepción §3.5(b)), `started_at`, `finished_at`, `status` (`CHECK ('RUNNING','OK',
+'FAILED')`), y contadores por etapa: `extracted`, `unchanged_hash`, `standardized`,
+`homologated`, `unknown_codes`, `dq_passed`, `dq_quarantined`, `xref_hits`,
+`matched`, `auto_merged`, `probable`, `loaded`, `actor`. `GET /stats` y el caso G
+(caché XREF) se verifican leyendo esta tabla, no contando filas a mano.
 
 ### 5.4 DDL de referencia (patrones obligatorios)
 
@@ -451,6 +423,14 @@ CREATE UNIQUE INDEX ux_identifier_golden
 -- value_code/value_name en rdm.reference_value cuando is_active = true;
 -- el cambio permitido es deprecar (is_active=false, valid_to=now()) y crear valor nuevo.
 ```
+
+**Índices obligatorios (rendimiento del matching y de las audiencias):**
+`pg_trgm` GIN sobre `PARTY_PERSON.full_name_normalized` y
+`PARTY_ORG.legal_name_normalized`; B-tree sobre `PARTY_IDENTIFIER (id_type_cd,
+id_number)`, `CONTACT_POINT (channel_cd, contact_hash)`, `XREF_PARTY_SOURCE
+(source_system_cd, external_id)`, `PARTY_BUCKET (blocking_strategy_cd,
+blocking_key)`, `PARTY_CONTACT_ELIGIBILITY_CACHE (purpose_cd, is_eligible,
+party_sk)` y `PARTY_AUDIT_LOG (occurred_at)` (alimenta el feed de cambios, §11).
 
 **Orden de migración (FKs cruzadas entre capas):** crear primero todas las tablas
 y agregar al final de la migración, vía `ALTER TABLE`, las FKs que cruzan capas —
@@ -775,7 +755,7 @@ unmerge restaura desde `pre_merge_snapshot` y re-ejecuta survivorship en ambos.
    prototipo = revocar consents + marcar retención `PURGE_ELIGIBLE` (no borrado
    físico inmediato: trazabilidad primero).
 3. **Contactabilidad (Ley 2300/2023 arts. 3 y 5; Res. CRC 7356/2024)** — la
-   elegibilidad se computa por `(party_sk, contact_point_sk, purpose_cd)` en este
+   elegibilidad se computa por `(party_contact_sk, purpose_cd)` en este
    orden de precedencia, y el primer criterio que falla fija `reason_cd`:
    **(1)** `party_status_cd = DECEASED` → `DECEASED`;
    **(2)** titular menor de edad (derivado de `birth_date`) y finalidad COMMERCIAL →
@@ -866,7 +846,8 @@ unmerge restaura desde `pre_merge_snapshot` y re-ejecuta survivorship en ambos.
 | `POST /parties/{party_sk}/arco` · `GET /arco/requests?sla=OVERDUE` | Solicitudes ARCO con `due_at` y estado de SLA derivado |
 | `POST /rne/sync` | Equivalente API de `rne-sync` |
 | `GET /retention/purge-candidates` | Simulación de purga (§10.5) |
-| `GET /stats` | Contadores para el dashboard (parties por estado, goldens, matches por decisión, tareas abiertas, DQ, ARCO vencidas) |
+| `GET /changes?since=&entity=&limit=&cursor=` | **Feed de cambios del golden** para consumidores (SAP CDP, campañas, analítica): derivado de `PARTY_AUDIT_LOG` (sin tabla nueva), devuelve `party_sk`, entidad, acción, `golden_version` y `occurred_at`; en producción es el mismo contrato que el tópico Kafka |
+| `GET /stats` | Contadores para el dashboard desde `LOAD_BATCH` y las tablas núcleo (parties por estado, goldens, matches por decisión, tareas abiertas, DQ, ARCO vencidas, última carga por fuente) |
 
 ---
 
@@ -946,12 +927,12 @@ pendientes. `DEMO.md` narra el guion sobre estos 20 casos.
 
 | Fase | Contenido | Criterios de aceptación (todos verificados por pytest donde aplique) |
 |---|---|---|
-| **F0** | Scaffolding: repo, docker-compose (db+api+ui), Alembic, Makefile, healthchecks, `docs/reference/` | `docker compose up` levanta los 3 servicios; `GET /health` OK; `make test` corre |
+| **F0** | Scaffolding: repo, docker-compose (db+api+ui) y `make db-local` sin Docker, Alembic, Makefile, healthchecks, `docs/reference/`, `docs/drive/` | `docker compose up` levanta los 3 servicios; `GET /health` OK; `make test` corre |
 | **F1 · RDM** | Esquema `rdm` (con `data_owner`/`data_steward`), migración semilla (43 catálogos poblados, miembros 0/−1, EAV de relaciones, finalidades y servicios con `service_kind`), vistas (3 tipadas), endpoints RDM, trigger de inmutabilidad | Prueba canónica: (`SAP_CRM`,`GESCHL`,`1`) → `M` por vista y por endpoint; UPDATE a un canónico activo es rechazado; deprecar funciona; `VW_RDM_CROSSWALK` resuelve `SEXKZ=1` ↔ `GESCHL=1`; `VW_RDM_CAT_RELATIONSHIP_TYPE` expone from/to/inverso; ningún mapeo usa un sistema no registrado |
-| **F2 · Staging + pipeline** | Esquema `staging` + `mdm` (29 tablas; FKs cruzadas al final vía `ALTER TABLE`; índice de unicidad golden), generador sintético, etapas 1–5, CLI, `rehomologate` | Ingesta de las 5 fuentes deja registros `DQ_PASSED`/`DQ_QUARANTINE` correctos; homologación aplicada; hallazgos en `PARTY_DQ_ISSUE`; sin campos multivaluados; linaje presente en toda fila de hechos; contactos resueltos sin duplicar valores; casos I, O, P y R pasan |
+| **F2 · Staging + pipeline** | Esquema `staging` (5 RAW + `LOAD_BATCH`) + `mdm` (29 tablas; índices de §5.4; FKs cruzadas al final vía `ALTER TABLE`; índice de unicidad golden), generador sintético, etapas 1–5, CLI, `rehomologate` | Ingesta de las 5 fuentes deja registros `DQ_PASSED`/`DQ_QUARANTINE` correctos; homologación aplicada; hallazgos en `PARTY_DQ_ISSUE`; sin campos multivaluados; linaje presente en toda fila de hechos; contactos resueltos sin duplicar valores; casos I, O, P y R pasan |
 | **F3 · Matching + Golden** | Etapas 6–7, blocking por tipo, scoring, umbrales, merge automático, survivorship, `pre_merge_snapshot`, `match-preview`, unmerge | Casos A, C, D, G, L y N pasan; `score_detail` desglosado presente; XREF evita re-matching; survivorship registra fuente ganadora por campo; el teléfono compartido o no confirmado no puntúa |
 | **F4 · UI + workflow** | Consola de Stewardship con tareas por owner, Admin RDM, Vista 360 | Casos B y K decidibles desde la consola; regla de cierre entre owners verificada; unmerge desde UI; alta de valor y homologación desde Admin RDM sin tocar SKs; rehomologar desde UI |
-| **F5 · Cumplimiento + demo** | Contactabilidad por contacto, consents multi-tipo, ARCO con SLA, `rne-sync`, audiencias, purga simulada, `make demo`, `DEMO.md`, `README.md` | Casos E, F, H, J, M, Q, S y T pasan; `make demo` end-to-end en verde desde cero; suite completa en verde |
+| **F5 · Cumplimiento + demo** | Contactabilidad por contacto, consents multi-tipo, ARCO con SLA, `rne-sync`, audiencias, feed de cambios, purga simulada, `make demo`, `make export-drive`, `DEMO.md`, `README.md` | Casos E, F, H, J, M, Q, S y T pasan; `make demo` end-to-end en verde desde cero; suite completa en verde |
 
 ---
 
@@ -982,6 +963,8 @@ pendientes. `DEMO.md` narra el guion sobre estos 20 casos.
 | Cobranza solo sobre obligación vigente | precedencia (8) de elegibilidad, `NO_ACTIVE_SERVICE`; caso S |
 | Contactos de cobranza no confirmados y de terceros | `PARTY_CONTACT_POINT.confirmation_status_cd`, `origin_cd`; rol `REFERENCE`; precedencias (5) y (7); caso T |
 | Una o varias finalidades por contacto y party | `PARTY_CONTACT_PREF.party_contact_sk` (una fila por finalidad, prevalece sobre el canal); precedencia (6); `PUT .../purposes`; caso T |
+| Bitácora de cada carga con contadores por etapa | `staging.LOAD_BATCH`; `GET /stats`; caso G |
+| Publicación de cambios del golden a consumidores | `GET /changes` (feed derivado de auditoría; contrato del tópico de producción) |
 
 ---
 
@@ -996,7 +979,40 @@ derivado de IBM InfoSphere (`DomainDataModel.xml`).
 
 ---
 
-## ANEXO — PROMPT DE ARRANQUE SUGERIDO PARA CLAUDE CODE
+## 17. REPOSITORIOS Y ENTORNO DE EJECUCIÓN (código, documentos y evidencia)
+
+Google Drive es almacenamiento, no cómputo: **el prototipo no se ejecuta en Drive**.
+La división de responsabilidades es:
+
+| Activo | Dónde vive | Por qué |
+|---|---|---|
+| Código, migraciones, tests, `docker-compose.yml` | Repositorio GitHub del prototipo (`mdm-rdm-prototype`), commits por fase (`feat(fase-N)`) | Versionado, trazabilidad de cada decisión, reproducible en cualquier máquina |
+| Ejecución y pruebas | (a) entorno remoto de Claude Code con PostgreSQL 16 local vía `make db-local`; (b) máquina del autor con `docker compose up` | Ambos corren el mismo DDL y la misma suite `pytest` |
+| Documentación viva y evidencia por fase | Carpeta de Google Drive `MDM_RDM_Prototipo/` (estructura abajo), alimentada por `make export-drive` | Es lo que el Comité, Legal y las UES consultan; no necesitan el repositorio |
+| Datos | Solo sintéticos, dentro del repositorio (`app/synth/`) y en los exports de Drive | Regla 6 de §0; ningún dato personal real en ningún lugar |
+
+**Estructura de la carpeta de Drive** (creada en F0, poblada al cierre de cada fase):
+
+```
+MDM_RDM_Prototipo/
+├── 00_Especificacion/      SPEC_PROTOTIPO_MDM_RDM_PARTY (v2.0 y siguientes)
+├── 01_Modelo/              Diccionario de datos (Excel: 29 tablas + campos), diagrama ER y por capas (Mermaid → PNG)
+├── 02_RDM/                 Catálogos RDM (Excel: 43 catálogos, valores, EAV, homologaciones por fuente)
+├── 03_Matching/            Pesos, umbrales, survivorship (Excel) y evidencia de los casos A–D, K, L, N
+├── 04_Cumplimiento/        Matriz de elegibilidad (12 precedencias), consents, ARCO, RNE, retención; evidencia de E, F, H, J, M, Q, S, T
+├── 05_Evidencia_Fases/     Por fase: resultado de `make test`, capturas de UI, `LOAD_BATCH` exportado
+├── 06_Demo/                DEMO.md (guion), video o capturas del recorrido de los 20 casos
+└── 07_Comite/              Resumen ejecutivo por fase (una página) con trazabilidad al caso financiero
+```
+
+`make export-drive` genera en `docs/drive/` los archivos Excel, PNG y Markdown de la
+fase cerrada; la carga a Drive se hace desde la sesión de Claude Code (conector
+Google Drive) o manualmente. Nada se sube a Drive sin haber pasado los tests de la
+fase.
+
+---
+
+## ANEXO A — PROMPT DE ARRANQUE SUGERIDO PARA CLAUDE CODE
 
 > Lee completo el archivo `SPEC_PROTOTIPO_MDM_RDM_PARTY.md` de este repositorio.
 > Es la especificación cerrada de un prototipo funcional MDM/RDM: no rediseñes el
@@ -1004,3 +1020,17 @@ derivado de IBM InfoSphere (`DomainDataModel.xml`).
 > aceptación estén en verde; muéstrame el resultado antes de pasar a la Fase 1.
 > Respeta sin excepción las reglas duras de la §3 y el inventario de tablas de la
 > §5 — no crees nada fuera de él. Trabaja con commits por fase y tests pytest.
+
+---
+
+## ANEXO B — HISTORIAL DE VERSIONES (resumen)
+
+| Versión | Cambio esencial |
+|---|---|
+| 1.0 | Diseño base: 26 tablas anunciadas, 37 catálogos, pipeline de 7 etapas, matching, survivorship, consola, cumplimiento. |
+| 1.1 | Conteo corregido a 25; survivorship sobre las 5 fuentes activas; excepciones a la regla de los `_cd`; 15 catálogos operativos; RNE con caso H; orden de migración de FKs cruzadas. |
+| 1.2 | Homologaciones por sistema exacto; `rne-sync` limitado a COMMERCIAL; `PARTY_SEGMENT`, `CONTACT_POINT` (N:M), `MATCH_REVIEW_TASK`; linaje por fila; snapshot pre-merge; fallecidos y menores; unicidad de documento entre goldens; audiencias; `match-preview`; SLA ARCO; rehomologación; purga simulada. |
+| 1.3 | `PARTY_SERVICE_ENROLLMENT` (vínculo persistente vs transacción puntual); `CAT_SERVICE` jerárquico con `service_kind`; cobranza solo con obligación vigente; retención por cierre del vínculo. |
+| 1.4 | Contexto y confianza del contacto: `confirmation_status_cd`, `origin_cd`, rol `REFERENCE`; el matching solo puntúa teléfonos confirmados por el titular. |
+| 1.5 | Una o varias finalidades por contacto: preferencias a nivel de contacto en `PARTY_CONTACT_PREF` (reemplaza el alcance escalar de 1.4). |
+| 2.0 | Consolidación: `staging.LOAD_BATCH`, caché de elegibilidad por vínculo, `MATCH_RULE.params`, feed de cambios, índices obligatorios, paginación, ejecución sin Docker, estrategia GitHub + Drive (§17). |
