@@ -34,9 +34,17 @@ def _pending(fase: str) -> None:
 
 
 @cli.command("rdm-seed")
-def rdm_seed() -> None:
-    """F1 · Siembra dominios, catálogos, valores, EAV, vistas y homologaciones."""
-    _pending("Fase 1")
+def rdm_seed(actor: str = typer.Option("rdm-seed", help="Actor registrado en RDM_AUDIT_LOG")) -> None:
+    """F1 · Siembra dominios, catálogos, valores, EAV, sistemas fuente y homologaciones (idempotente)."""
+    from app.core.db import SessionLocal
+    from app.rdm.seed import seed_rdm
+
+    with SessionLocal() as session:
+        rep = seed_rdm(session, actor=actor)
+        session.commit()
+    for k, v in rep.as_dict().items():
+        typer.echo(f"{k:15s} creados: {v}")
+    typer.echo("RDM sembrado. Prueba canónica: GET /api/v1/rdm/homologate?system=SAP_CRM&field=GESCHL&value=1 → M")
 
 
 @cli.command("ingest")

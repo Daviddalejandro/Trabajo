@@ -11,6 +11,9 @@ from fastapi.testclient import TestClient
 def migrated_db():
     r = subprocess.run([sys.executable, "-m", "alembic", "upgrade", "head"], capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
+    # F1: el RDM precede al MDM (regla dura §3.1); la semilla es idempotente
+    r = subprocess.run([sys.executable, "cli.py", "rdm-seed", "--actor", "pytest"], capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
     yield
 
 

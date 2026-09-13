@@ -10,7 +10,7 @@ Opera **exclusivamente con datos sintéticos**.
 | Fase | Contenido | Estado |
 |---|---|---|
 | F0 | Scaffolding: db + api + ui, Alembic, Makefile, healthchecks, PostgreSQL local sin Docker | ✅ tests en verde |
-| F1 | RDM: 43 catálogos, vistas, trigger de inmutabilidad, endpoints RDM | pendiente |
+| F1 | RDM: 43 catálogos (263 valores), 6 sistemas fuente, 24 homologaciones, 6 vistas, trigger de inmutabilidad, auditoría por trigger, endpoints RDM | ✅ 25 tests en verde |
 | F2 | Staging + `mdm` (29 tablas), generador sintético, etapas 1–5 | pendiente |
 | F3 | Matching, survivorship, merge/unmerge, match-preview | pendiente |
 | F4 | Consola de Stewardship, Admin RDM, Vista 360 | pendiente |
@@ -69,6 +69,35 @@ mdm-rdm-prototype/
 │   └── tests/             pytest por fase
 └── frontend/src/          Stewardship, Admin RDM, Vista 360 (React + Vite + Tailwind)
 ```
+
+## RDM (Fase 1)
+
+```bash
+make migrate && make seed          # crea rdm.* y siembra 43 catálogos (idempotente)
+curl "localhost:8000/api/v1/rdm/homologate?system=SAP_CRM&field=GESCHL&value=1"   # → M
+curl "localhost:8000/api/v1/rdm/crosswalk?from_system=SAP_ECC_HCM&field=SEXKZ&value=1"
+curl "localhost:8000/api/v1/rdm/catalogs?domain=GEOGRAPHY"
+curl "localhost:8000/api/v1/rdm/catalogs/CAT_SERVICE/values"
+```
+
+Decisiones de implementación de la Fase 1 (todas dentro de las reglas duras):
+
+- **Miembros técnicos globales.** `value_sk 0 = UNKNOWN` y `-1 = NOT_APPLICABLE` son dos
+  filas únicas sin catálogo (`CHECK (value_sk <= 0) = (catalog_sk IS NULL)`), insertadas una
+  sola vez con `OVERRIDING SYSTEM VALUE`. Todo `_cd` del MDM tiene `DEFAULT 0` y FK a ellas;
+  la API los antepone en la lista de valores de cualquier catálogo (regla dura §3.3).
+- **Inmutabilidad por trigger.** `UPDATE` de `value_code`/`value_name`/`catalog_sk` sobre un
+  valor activo falla; deprecar fija `valid_to`; un valor deprecado no se reactiva ni se
+  recicla (regla dura §3.7).
+- **Auditoría por trigger**, no por aplicación: `catalog`, `reference_value`,
+  `reference_field_value` y `source_value_mapping` escriben `rdm_audit_log` con el actor
+  de `SET LOCAL app.actor` (cabecera `X-Actor` en la API).
+- **Un mapeo vigente por (integración, valor fuente)**: cambiar el canónico cierra el
+  vigente (`valid_to`) y crea uno nuevo; nunca se edita.
+- **Sistema fuente exacto** (regla dura §3.4): `SAP_ECC` no existe; SEXKZ se registra bajo
+  `SAP_ECC_HCM` (inactivo en el prototipo) para que el crosswalk SEXKZ ↔ GESCHL sea verificable.
+- `CAT_PARTY_SUB_ROLE` siembra 12 sub-roles (2 por rol principal) para coincidir con la
+  cifra del diccionario maestro.
 
 ## Convenciones (reglas duras de la especificación, §3)
 

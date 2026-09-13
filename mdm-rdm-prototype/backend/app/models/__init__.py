@@ -5,3 +5,6 @@ from sqlalchemy.orm import DeclarativeBase
 
 class Base(DeclarativeBase):
     pass
+
+
+from app.models import rdm as rdm_models  # noqa: E402,F401  (registra las tablas rdm en la metadata)

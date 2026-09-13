@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api import health
+from app.api import health, rdm
 from app.core.config import settings
 
 app = FastAPI(
@@ -21,3 +21,4 @@ app.add_middleware(
 )
 app.include_router(health.router)
 app.include_router(health.router, prefix=settings.api_prefix)
+app.include_router(rdm.router, prefix=settings.api_prefix)
