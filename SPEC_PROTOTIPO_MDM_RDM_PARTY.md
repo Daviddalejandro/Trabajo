@@ -1,7 +1,17 @@
 # ESPECIFICACIÓN DE PROTOTIPO FUNCIONAL — MDM/RDM in-house · Dominio Party
-**Colsubsidio · Jefatura de Gobierno de Datos (ARC)** · Versión 1.3 · 2026-09-13
+**Colsubsidio · Jefatura de Gobierno de Datos (ARC)** · Versión 1.4 · 2026-09-13
 **Documento de handoff para Claude Code** — autor del modelo: David Alejandro Ballesteros Díaz
 
+> **Registro de cambios v1.4** — el vínculo party↔contacto gana **contexto de uso y
+> confianza**: `purpose_scope_cd` (alcance de finalidad, p. ej. solo cobranza),
+> `confirmation_status_cd` (nuevo `CAT_CONTACT_CONFIRMATION`: confirmado por el
+> titular, no confirmado, confirmado por el contacto, persona equivocada, inválido) y
+> `origin_cd` (de dónde salió el vínculo: titular, gestión de cobranza, referencia de
+> tercero). Nuevo rol de uso `REFERENCE`. La elegibilidad excluye automáticamente
+> contactos fuera de su alcance, no confirmados o de terceros para cualquier finalidad
+> distinta a la que los originó; el matching solo puntúa teléfonos confirmados por el
+> titular. Caso demo T. **29 tablas, 43 catálogos creados.**
+>
 > **Registro de cambios v1.3** — incorpora el **vínculo de servicio** como entidad
 > propia (`PARTY_SERVICE_ENROLLMENT`, capa 4): la relación que perdura en el tiempo
 > con una UES (cliente de Crédito Social, usuario de Salud, beneficiario de cuota
@@ -11,7 +21,7 @@
 > vinculables; `PARTY_ROLE` vuelve a nivel de UES. Nuevos: `CAT_ENROLLMENT_STATUS`,
 > razón de elegibilidad `NO_ACTIVE_SERVICE` (la cobranza solo aplica con vínculo
 > activo cobrable), retención disparada por el cierre del vínculo, filtro `service`
-> en audiencias, casos demo R y S. **29 tablas núcleo, 42 catálogos creados.**
+> en audiencias, casos demo R y S. 29 tablas núcleo, 42 catálogos creados.
 >
 > **Registro de cambios v1.2** — cierra los 4 pendientes de la revisión 1.1 y resuelve
 > en el modelo (no como "futuro") las 10 necesidades funcionales planteadas por el
@@ -353,11 +363,11 @@ Convención de linaje (regla dura §3.14): donde la tabla dice **[linaje]** llev
 
 | Tabla | Propósito y campos clave |
 |---|---|
-| **`CONTACT_POINT`** | **Identidad del punto de contacto, independiente del party** (regla dura §3.15). `contact_point_sk`, `channel_cd FK` (EMAIL/PHONE/SMS/WHATSAPP/PHYSICAL_MAIL), `contact_value` (E.164 para teléfono, lowercase para email; para PHYSICAL_MAIL referencia a `PARTY_ADDRESS.address_sk`), `contact_hash`, **`rne_excluded`** bool, **`rne_synced_at`** (Ley 2300/2023 art. 5: la exclusión del RNE es del **número**, no de la persona), `is_verified`, `verified_at`, `created_at`. UNIQUE(`channel_cd`, `contact_hash`). Cualquier extensión futura (rebotes, verificación, historial de uso) cuelga de `contact_point_sk` |
-| `PARTY_CONTACT_POINT` **[linaje]** | **Relación N:M** party ↔ punto de contacto. `party_contact_sk`, `party_sk FK`, `contact_point_sk FK`, `usage_role_cd FK` (`CAT_CONTACT_USAGE_ROLE`: OWNER = titular del medio; SHARED = lo usa pero no es el titular; GUARDIAN = acudiente que recibe comunicaciones por un menor), `is_primary`, `valid_from`, `valid_to`. UNIQUE(`party_sk`, `contact_point_sk`, `valid_from`). El celular del hijo puede estar vinculado al hijo como OWNER y a la madre como GUARDIAN sin duplicar el número |
+| **`CONTACT_POINT`** | **Identidad del punto de contacto, independiente del party** (regla dura §3.15). `contact_point_sk`, `channel_cd FK` (EMAIL/PHONE/SMS/WHATSAPP/PHYSICAL_MAIL), `contact_value` (E.164 para teléfono, lowercase para email; para PHYSICAL_MAIL referencia a `PARTY_ADDRESS.address_sk`), `contact_hash`, **`rne_excluded`** bool, **`rne_synced_at`** (Ley 2300/2023 art. 5: la exclusión del RNE es del **número**, no de la persona), `is_verified` (validez **técnica** del medio: formato, existencia, entregabilidad; la confianza de la relación con la persona vive en el vínculo), `verified_at`, `created_at`. UNIQUE(`channel_cd`, `contact_hash`). Cualquier extensión futura (rebotes, verificación, historial de uso) cuelga de `contact_point_sk` |
+| `PARTY_CONTACT_POINT` **[linaje]** | **Relación N:M** party ↔ punto de contacto. `party_contact_sk`, `party_sk FK`, `contact_point_sk FK`, `usage_role_cd FK` (`CAT_CONTACT_USAGE_ROLE`: OWNER = titular del medio; SHARED = lo usa pero no es el titular; GUARDIAN = acudiente que recibe comunicaciones por un menor; REFERENCE = medio de un tercero dado como referencia), **`purpose_scope_cd FK`** (reutiliza `CAT_CONTACT_PURPOSE`; `-1 = NOT_APPLICABLE` significa "cualquier finalidad"; un valor concreto restringe el uso del vínculo a esa finalidad, p. ej. COLLECTIONS), **`confirmation_status_cd FK`** (`CAT_CONTACT_CONFIRMATION`: grado de confianza de que el medio pertenece o llega a esta persona; se actualiza desde la gestión y se audita), **`origin_cd FK`** (reutiliza `CAT_PREF_ORIGIN`: TITULAR, LEGAL_REP, INTERNAL_POLICY, COLLECTIONS_MANAGEMENT, THIRD_PARTY_REFERENCE), `is_primary`, `valid_from`, `valid_to`. UNIQUE(`party_sk`, `contact_point_sk`, `valid_from`). El celular del hijo puede estar vinculado al hijo como OWNER y a la madre como GUARDIAN sin duplicar el número; un teléfono aportado por cobranza queda vinculado con `origin_cd = COLLECTIONS_MANAGEMENT`, `purpose_scope_cd = COLLECTIONS` y `confirmation_status_cd = UNCONFIRMED` hasta que una gestión lo confirme |
 | `PARTY_ADDRESS` **[linaje]** | Direcciones con geografía DIVIPOLA. `address_sk`, `party_sk FK`, `address_line`, `country_cd FK`, `divipola_cd FK` (municipio), `locality_type` vía RDM, `geocoding_status_cd FK` |
 | `PARTY_CONTACT_PREF` | Preferencias por canal y finalidad (Ley 2300/2023 art. 3). `pref_sk`, `party_sk FK`, `channel_cd FK`, `purpose_cd FK`, `allowed` bool, `frequency_cd FK`, `origin_cd FK` (`CAT_PREF_ORIGIN`: TITULAR / LEGAL_REP / INTERNAL_POLICY), `declared_at` |
-| `PARTY_CONTACT_ELIGIBILITY_CACHE` | Caché materializada de elegibilidad. Clave compuesta **`(party_sk, contact_point_sk, purpose_cd)`** (el canal se deriva del punto de contacto), campos `is_eligible`, `reason_cd FK`, `computed_at`. Se recalcula al cambiar consents, prefs, vínculos de contacto, `rne_excluded`, `party_status_cd`, `birth_date` o el estado de un vínculo de servicio |
+| `PARTY_CONTACT_ELIGIBILITY_CACHE` | Caché materializada de elegibilidad. Clave compuesta **`(party_sk, contact_point_sk, purpose_cd)`** (el canal se deriva del punto de contacto), campos `is_eligible`, `reason_cd FK`, `computed_at`. Se recalcula al cambiar consents, prefs, vínculos de contacto, `rne_excluded`, `party_status_cd`, `birth_date`, el estado de un vínculo de servicio o la confirmación/alcance de un vínculo de contacto |
 
 **Capa 6 · Governance (naranja):**
 
@@ -443,11 +453,12 @@ no depende de la ubicación editorial de las tablas.
 
 ## 6. CATÁLOGOS RDM — SEMILLA DEL PROTOTIPO
 
-**Universo RDM: 43 catálogos** = 37 del diccionario maestro (22 base + 15
-adicionales) + 6 incorporados por las versiones 1.2 y 1.3 (`CAT_SERVICE`,
+**Universo RDM: 44 catálogos** = 37 del diccionario maestro (22 base + 15
+adicionales) + 7 incorporados por las versiones 1.2 a 1.4 (`CAT_SERVICE`,
 `CAT_CONTACT_USAGE_ROLE`, `CAT_PARTY_STATUS`, `CAT_STEWARD_DECISION`,
-`CAT_SERVICE_KIND`, `CAT_ENROLLMENT_STATUS`), todos gobernados en `rdm.CATALOG` con
-miembros técnicos, inmutabilidad y auditoría. El prototipo **crea 42 y puebla 42**;
+`CAT_SERVICE_KIND`, `CAT_ENROLLMENT_STATUS`, `CAT_CONTACT_CONFIRMATION`), todos
+gobernados en `rdm.CATALOG` con miembros técnicos, inmutabilidad y auditoría. El
+prototipo **crea 43 y puebla 43**;
 el restante queda reservado al diccionario maestro
 de la Jefatura (no inventar su nombre). Fuentes oficiales colombianas donde aplica:
 DANE/DIVIPOLA (geografía), DIAN (CIIU), MinSalud, Supersalud.
@@ -478,7 +489,7 @@ DANE/DIVIPOLA (geografía), DIAN (CIIU), MinSalud, Supersalud.
 | `CAT_GEO_DIVIPOLA` | GEOGRAPHY | Jerárquico DANE. Semilla mínima obligatoria: `11` Bogotá D.C. → `11001` Bogotá D.C. (CABECERA); `05` Antioquia → `05001` Medellín; `25` Cundinamarca → `25286` Funza, `25754` Soacha; `76` Valle del Cauca → `76001` Cali. **Verificación de la regla §3.9: `11` NUNCA es Cundinamarca** |
 | `CAT_SEGMENT_TYPE` | BUSINESS | **Jerárquico (`is_hierarchical = true`)**. Nivel 1 = tipo de segmento; nivel 2 = valor. Semilla: `AFFILIATION` → `A`, `B`, `C` (categorías de afiliado); `FINANCIAL_RISK` → `LOW`, `MEDIUM`, `HIGH`; `COMMERCIAL` → `BASIC`, `PREMIUM`. Un party puede tener un valor vigente por cada tipo |
 
-**Tabla B · Catálogos operativos (21), FK obligatorias de las tablas núcleo desde la
+**Tabla B · Catálogos operativos (22), FK obligatorias de las tablas núcleo desde la
 Fase 2 — sembrar exactamente estos valores mínimos:**
 
 | Catálogo | Dominio | Valores mínimos |
@@ -491,9 +502,10 @@ Fase 2 — sembrar exactamente estos valores mínimos:**
 | `CAT_SEVERITY` | GOVERNANCE | `BLOCKING`, `WARNING`, `INFO` |
 | `CAT_SURVIVORSHIP_STRATEGY` | MDM_OPS | `SOURCE_PRIORITY`, `MOST_RECENT`, `MOST_COMPLETE`, `MOST_FREQUENT`, `MANUAL_OVERRIDE` |
 | `CAT_AUDIT_ACTION` | GOVERNANCE | `INSERT`, `UPDATE`, `MERGE`, `UNMERGE`, `REVIEW_DECISION`, `ARCO_READ`, `ARCO_UPDATE`, `REHOMOLOGATE`, `PURGE_MARK`, `PURGE_SIMULATED` |
-| `CAT_ELIGIBILITY_REASON` | CONTACT | `ELIGIBLE`, `DECEASED`, `MINOR`, `RNE_EXCLUSION`, `NO_ACTIVE_SERVICE`, `NO_CONSENT`, `CONSENT_REVOKED`, `CHANNEL_DENIED`, `FREQUENCY_EXCEEDED`, `SHARED_CONTACT_RESTRICTED`, `NO_CONTACT_POINT` |
-| `CAT_PREF_ORIGIN` | CONTACT | `TITULAR`, `LEGAL_REP`, `INTERNAL_POLICY` |
-| `CAT_CONTACT_USAGE_ROLE` | CONTACT | `OWNER`, `SHARED`, `GUARDIAN` |
+| `CAT_ELIGIBILITY_REASON` | CONTACT | `ELIGIBLE`, `DECEASED`, `MINOR`, `RNE_EXCLUSION`, `THIRD_PARTY_CONTACT`, `PURPOSE_OUT_OF_SCOPE`, `UNCONFIRMED_CONTACT`, `NO_ACTIVE_SERVICE`, `NO_CONSENT`, `CONSENT_REVOKED`, `CHANNEL_DENIED`, `FREQUENCY_EXCEEDED`, `SHARED_CONTACT_RESTRICTED`, `NO_CONTACT_POINT` |
+| `CAT_PREF_ORIGIN` | CONTACT | Origen de una preferencia o de un vínculo de contacto: `TITULAR`, `LEGAL_REP`, `INTERNAL_POLICY`, `COLLECTIONS_MANAGEMENT` (aportado por la gestión de cobranza), `THIRD_PARTY_REFERENCE` (aportado por un tercero como referencia) |
+| `CAT_CONTACT_USAGE_ROLE` | CONTACT | `OWNER`, `SHARED`, `GUARDIAN`, `REFERENCE` (el medio pertenece a un tercero; nunca elegible para finalidades distintas de COLLECTIONS) |
+| `CAT_CONTACT_CONFIRMATION` | CONTACT | `CONFIRMED_BY_TITULAR` (el titular declaró el medio), `CONFIRMED_BY_CONTACT` (alguien contestó y confirmó la relación con la persona), `UNCONFIRMED` (aportado sin verificación, estado inicial de todo contacto de cobranza o de tercero), `WRONG_PERSON` (contestó otra persona sin relación), `INVALID` (no existe o no entrega). Solo `CONFIRMED_BY_TITULAR` habilita finalidades distintas a la de origen y puntúa en matching |
 | `CAT_BLOCKING_STRATEGY` | MDM_OPS | `DOC_HASH`, `EMAIL_HASH`, `PHONE_HASH`, `SURNAME_SOUNDEX`, `NIT_HASH`, `LEGAL_NAME_TOKENS` |
 | `CAT_GROUP_TYPE` | DEMOGRAPHICS | `FAMILY`, `CORPORATE_GROUP` |
 | `CAT_GROUP_MEMBER_ROLE` | DEMOGRAPHICS | `ANCHOR`, `MEMBER`, `BENEFICIARY` |
@@ -508,7 +520,9 @@ Fase 2 — sembrar exactamente estos valores mínimos:**
 **Reutilizaciones declaradas (prohibido crear catálogos duplicados):** `purpose_cd`
 → `CAT_CONTACT_PURPOSE`; `MATCH_RULE.entity_type_cd` y `PARTY_BUCKET.party_type_cd`
 → `CAT_PARTY_TYPE`; `member_role_cd` → `CAT_GROUP_MEMBER_ROLE`;
-`MATCH_REVIEW_TASK.task_status_cd` → `CAT_REQUEST_STATUS`; `segment_type_cd` y
+`MATCH_REVIEW_TASK.task_status_cd` → `CAT_REQUEST_STATUS`;
+`PARTY_CONTACT_POINT.purpose_scope_cd` → `CAT_CONTACT_PURPOSE`;
+`PARTY_CONTACT_POINT.origin_cd` → `CAT_PREF_ORIGIN`; `segment_type_cd` y
 `segment_cd` → `CAT_SEGMENT_TYPE` (niveles 1 y 2); `PARTY_SERVICE_ENROLLMENT.business_unit_cd`
 → `CAT_BUSINESS_UNIT` (mismo valor que el nivel 1 de `CAT_SERVICE`).
 
@@ -532,6 +546,7 @@ regla dura §3.4: sistema fuente exacto):
 | SAP_ECC_SD | `KTOKD` (grupo de cuentas) | `ZCRE` / `ZSAL` | `CREDITO_SOCIAL` / `SALUD_EPS` | CAT_SERVICE |
 | SAP_ECC_SD | `LOEVM` (marca de borrado) | `X` | `CLOSED` | CAT_ENROLLMENT_STATUS |
 | SAP_CRM | `RLTYP` | `ZSUB` | `CUOTA_MONETARIA` | CAT_SERVICE |
+| SAP_CRM | `ZZ_ORIGEN_TEL` (origen del teléfono en BUT020/ADR2, campo Z) | `TIT` / `COB` / `REF` | `TITULAR` / `COLLECTIONS_MANAGEMENT` / `THIRD_PARTY_REFERENCE` | CAT_PREF_ORIGIN |
 
 **Prueba canónica de salida del RDM (test obligatorio):** dado
 (`SAP_CRM`, `GESCHL`, `1`), la vista `VW_RDM_SOURCE_TO_CANONICAL` y el endpoint
@@ -577,7 +592,10 @@ regla dura §3.4: sistema fuente exacto):
    (los vínculos de servicio se crean o cierran según el estado en la fuente y
    generan/actualizan su `PARTY_DATA_RETENTION` al cerrarse),
    resolución de puntos de contacto contra `CONTACT_POINT` por (`channel_cd`,
-   `contact_hash`) (si el número ya existe se vincula, nunca se duplica), aplicación
+   `contact_hash`) (si el número ya existe se vincula, nunca se duplica; el vínculo
+   nace con `origin_cd` homologado desde la fuente, `purpose_scope_cd = COLLECTIONS`
+   y `confirmation_status_cd = UNCONFIRMED` cuando el origen es cobranza o tercero,
+   y `-1` / `CONFIRMED_BY_TITULAR` cuando lo declaró el titular), aplicación
    de survivorship (§9), recálculo de `completeness_score`, materialización de
    elegibilidad de contacto, y escritura en `PARTY_AUDIT_LOG` por cada cambio (con
    `source_system_cd` y `batch_id`).
@@ -636,7 +654,7 @@ exacto de email, hash exacto de teléfono E.164, más **Soundex del primer apell
 | Fecha de nacimiento | 15 | exacto / ±1 año (puntaje parcial) |
 | Segundo apellido | 10 | Jaro-Winkler ≥ 0.92 |
 | Email | 5 | exacto normalizado |
-| Teléfono E.164 | 3 | exacto **solo si el vínculo es OWNER en ambos** (un celular compartido en un grupo familiar no suma evidencia de identidad) |
+| Teléfono E.164 | 3 | exacto **solo si el vínculo es OWNER y `CONFIRMED_BY_TITULAR` en ambos** (un celular compartido, de referencia o no confirmado no suma evidencia de identidad) |
 | Municipio DIVIPOLA | 2 | exacto |
 
 ### 8.3 Pesos ORGANIZATION
@@ -753,15 +771,23 @@ unmerge restaura desde `pre_merge_snapshot` y re-ejecuta survivorship en ambos.
    **(4)** el vínculo del party con el contacto es SHARED o GUARDIAN y el OWNER del
    contacto es menor de edad y la finalidad es COMMERCIAL →
    `SHARED_CONTACT_RESTRICTED`;
-   **(5)** finalidad COLLECTIONS sin ningún `PARTY_SERVICE_ENROLLMENT` en estado
+   **(5)** vínculo con `usage_role_cd = REFERENCE` y finalidad distinta de
+   COLLECTIONS → `THIRD_PARTY_CONTACT` (el medio de un tercero solo existe para la
+   gestión que lo originó; Ley 1581/2012 art. 4 lit. b, principio de finalidad);
+   **(6)** `purpose_scope_cd` distinto de `-1` y distinto de la finalidad consultada →
+   `PURPOSE_OUT_OF_SCOPE`;
+   **(7)** `confirmation_status_cd` distinto de `CONFIRMED_BY_TITULAR` y finalidad
+   distinta de la de origen (`purpose_scope_cd`) → `UNCONFIRMED_CONTACT`;
+   `WRONG_PERSON` e `INVALID` → no elegible para ninguna finalidad;
+   **(8)** finalidad COLLECTIONS sin ningún `PARTY_SERVICE_ENROLLMENT` en estado
    ACTIVE o SUSPENDED cuyo servicio tenga `collections_applies = true` →
    `NO_ACTIVE_SERVICE` (la cobranza solo es legítima sobre una obligación vigente,
    Ley 2300/2023 art. 3);
-   **(6)** sin consent `GRANTED` del tipo requerido por la finalidad (EAV
+   **(9)** sin consent `GRANTED` del tipo requerido por la finalidad (EAV
    `required_consent_type`) → `NO_CONSENT` / `CONSENT_REVOKED`;
-   **(7)** preferencia del canal no permitida → `CHANNEL_DENIED`;
-   **(8)** frecuencia excedida → `FREQUENCY_EXCEEDED`;
-   **(9)** en otro caso → `ELIGIBLE`.
+   **(10)** preferencia del canal no permitida → `CHANNEL_DENIED`;
+   **(11)** frecuencia excedida → `FREQUENCY_EXCEEDED`;
+   **(12)** en otro caso → `ELIGIBLE`.
    La sincronización del RNE se simula con `python cli.py rne-sync --file
    app/synth/rne_sample.csv`: marca `rne_excluded = true` en los `CONTACT_POINT`
    cuyo hash coincide y **nunca toca preferencias ni finalidades distintas de
@@ -811,7 +837,9 @@ unmerge restaura desde `pre_merge_snapshot` y re-ejecuta survivorship en ambos.
 | `GET /rdm/homologate?system=SAP_CRM&field=GESCHL&value=1` | → `M` (prueba canónica RDM) |
 | `POST /rdm/mappings` | Alta de homologación fuente→canónico |
 | `POST /rdm/rehomologate?catalog=` | Reprocesa los `UNKNOWN` del catálogo (§7.2) |
-| `GET /parties/{party_sk}/contactability?contact_point_sk=&purpose=COMMERCIAL` | → `{is_eligible, reason}` por punto de contacto; sin `contact_point_sk` devuelve todos los vínculos del party |
+| `GET /parties/{party_sk}/contactability?contact_point_sk=&purpose=COMMERCIAL` | → `{is_eligible, reason, usage_role, origin, purpose_scope, confirmation_status}` por punto de contacto; sin `contact_point_sk` devuelve todos los vínculos del party |
+| `GET /parties/{party_sk}/contacts?purpose_scope=COLLECTIONS&confirmation=UNCONFIRMED` | Vínculos de contacto filtrables por alcance, origen, rol de uso y confirmación (lista de trabajo de cobranza) |
+| `POST /parties/{party_sk}/contacts/{party_contact_sk}/confirmation` | Body: `{status: CONFIRMED_BY_TITULAR\|CONFIRMED_BY_CONTACT\|WRONG_PERSON\|INVALID, evidence}` → actualiza el estado desde la gestión, recalcula elegibilidad y audita |
 | `GET /audiences?purpose=&channel=&role=&segment=&service=&enrollment_status=` | Audiencia elegible (§10.4) |
 | `POST /parties/{party_sk}/consents` | Alta/cambio de autorización por tipo (crea fila nueva, cierra la anterior) |
 | `POST /parties/{party_sk}/arco` · `GET /arco/requests?sla=OVERDUE` | Solicitudes ARCO con `due_at` y estado de SLA derivado |
@@ -844,7 +872,9 @@ unmerge restaura desde `pre_merge_snapshot` y re-ejecuta survivorship en ambos.
    (survivorship) visible, el linaje de cada fila, los segmentos por tipo, los
    vínculos de servicio por UES con su estado y referencia, el grafo de relaciones
    (persona/organización), los contactos con su rol de uso (propio,
-   compartido, acudiente) y la elegibilidad por contacto y finalidad. Usar la
+   compartido, acudiente, referencia), origen, alcance de finalidad, estado de
+   confirmación y la elegibilidad por contacto y finalidad (los de cobranza no
+   confirmados se muestran agrupados y marcados). Usar la
    leyenda de colores del modelo: Core azul, Identity amarillo, Contactability
    púrpura, Relationships verde, Governance naranja, Golden Record rosa, Consents
    rojo, Reference gris.
@@ -882,10 +912,11 @@ plantados (cada uno con test que verifica su desenlace):
 | Q · Fallecido y SLA | SF_EC informa terminación por fallecimiento; una consulta ARCO creada hace 12 días hábiles | `party_status=DECEASED` y toda elegibilidad `DECEASED`; la solicitud aparece en `GET /arco/requests?sla=OVERDUE` |
 | R · Vínculos de servicio | Afiliado con CUOTA_MONETARIA (CRM), dos CREDITO_SOCIAL (SD, referencias distintas, uno CLOSED) y SALUD_EPS (SD); el mismo registro trae una estadía en HOTEL y una compra en SUPERMERCADO | Cuatro `PARTY_SERVICE_ENROLLMENT` (uno CLOSED con `PARTY_DATA_RETENTION` FINANCIAL_10Y desde `closed_at`); HOTEL y SUPERMERCADO rechazados con `VALIDITY` "servicio transaccional no vinculable"; Vista 360 muestra los roles a nivel de UES y los vínculos debajo |
 | S · Cobranza solo con obligación vigente | Titular con consent DATA_PROCESSING GRANTED y teléfono elegible, sin ningún vínculo de CREDITO activo | PHONE/COLLECTIONS → `NO_ACTIVE_SERVICE`; al cargar un CREDITO_SOCIAL ACTIVE en delta → `ELIGIBLE` (recálculo de caché por cambio de vínculo); PHONE/BENEFITS no cambia |
+| T · Teléfonos de cobranza no confirmados | Cliente de CREDITO_SOCIAL ACTIVE con su celular declarado (OWNER, CONFIRMED_BY_TITULAR) y tres teléfonos aportados por la gestión: uno de origen COLLECTIONS_MANAGEMENT (OWNER, UNCONFIRMED), uno de un tercero (REFERENCE, UNCONFIRMED) y uno marcado WRONG_PERSON | Vista 360 lista los cuatro con origen y estado; PHONE/COLLECTIONS: celular declarado `ELIGIBLE`, cobranza no confirmado `ELIGIBLE`, referencia `ELIGIBLE`, WRONG_PERSON no elegible; PHONE/COMMERCIAL: solo el celular declarado `ELIGIBLE`, los demás `PURPOSE_OUT_OF_SCOPE` o `THIRD_PARTY_CONTACT`; `GET /audiences?purpose=COMMERCIAL&channel=PHONE` devuelve un único número; al confirmar el de cobranza como `CONFIRMED_BY_TITULAR` y ampliar su alcance a `-1`, pasa a elegible comercial con audit; ninguno de los tres puntúa en matching |
 
 `make demo` = levantar → migrar → sembrar RDM → generar sintéticos → ingerir las 5
 fuentes → `rne-sync` → correr matching → dejar la consola con los casos B y K
-pendientes. `DEMO.md` narra el guion sobre estos 19 casos.
+pendientes. `DEMO.md` narra el guion sobre estos 20 casos.
 
 ---
 
@@ -894,11 +925,11 @@ pendientes. `DEMO.md` narra el guion sobre estos 19 casos.
 | Fase | Contenido | Criterios de aceptación (todos verificados por pytest donde aplique) |
 |---|---|---|
 | **F0** | Scaffolding: repo, docker-compose (db+api+ui), Alembic, Makefile, healthchecks, `docs/reference/` | `docker compose up` levanta los 3 servicios; `GET /health` OK; `make test` corre |
-| **F1 · RDM** | Esquema `rdm` (con `data_owner`/`data_steward`), migración semilla (42 catálogos poblados, miembros 0/−1, EAV de relaciones, finalidades y servicios con `service_kind`), vistas (3 tipadas), endpoints RDM, trigger de inmutabilidad | Prueba canónica: (`SAP_CRM`,`GESCHL`,`1`) → `M` por vista y por endpoint; UPDATE a un canónico activo es rechazado; deprecar funciona; `VW_RDM_CROSSWALK` resuelve `SEXKZ=1` ↔ `GESCHL=1`; `VW_RDM_CAT_RELATIONSHIP_TYPE` expone from/to/inverso; ningún mapeo usa un sistema no registrado |
+| **F1 · RDM** | Esquema `rdm` (con `data_owner`/`data_steward`), migración semilla (43 catálogos poblados, miembros 0/−1, EAV de relaciones, finalidades y servicios con `service_kind`), vistas (3 tipadas), endpoints RDM, trigger de inmutabilidad | Prueba canónica: (`SAP_CRM`,`GESCHL`,`1`) → `M` por vista y por endpoint; UPDATE a un canónico activo es rechazado; deprecar funciona; `VW_RDM_CROSSWALK` resuelve `SEXKZ=1` ↔ `GESCHL=1`; `VW_RDM_CAT_RELATIONSHIP_TYPE` expone from/to/inverso; ningún mapeo usa un sistema no registrado |
 | **F2 · Staging + pipeline** | Esquema `staging` + `mdm` (29 tablas; FKs cruzadas al final vía `ALTER TABLE`; índice de unicidad golden), generador sintético, etapas 1–5, CLI, `rehomologate` | Ingesta de las 5 fuentes deja registros `DQ_PASSED`/`DQ_QUARANTINE` correctos; homologación aplicada; hallazgos en `PARTY_DQ_ISSUE`; sin campos multivaluados; linaje presente en toda fila de hechos; contactos resueltos sin duplicar valores; casos I, O, P y R pasan |
-| **F3 · Matching + Golden** | Etapas 6–7, blocking por tipo, scoring, umbrales, merge automático, survivorship, `pre_merge_snapshot`, `match-preview`, unmerge | Casos A, C, D, G, L y N pasan; `score_detail` desglosado presente; XREF evita re-matching; survivorship registra fuente ganadora por campo; el teléfono compartido no puntúa |
+| **F3 · Matching + Golden** | Etapas 6–7, blocking por tipo, scoring, umbrales, merge automático, survivorship, `pre_merge_snapshot`, `match-preview`, unmerge | Casos A, C, D, G, L y N pasan; `score_detail` desglosado presente; XREF evita re-matching; survivorship registra fuente ganadora por campo; el teléfono compartido o no confirmado no puntúa |
 | **F4 · UI + workflow** | Consola de Stewardship con tareas por owner, Admin RDM, Vista 360 | Casos B y K decidibles desde la consola; regla de cierre entre owners verificada; unmerge desde UI; alta de valor y homologación desde Admin RDM sin tocar SKs; rehomologar desde UI |
-| **F5 · Cumplimiento + demo** | Contactabilidad por contacto, consents multi-tipo, ARCO con SLA, `rne-sync`, audiencias, purga simulada, `make demo`, `DEMO.md`, `README.md` | Casos E, F, H, J, M, Q y S pasan; `make demo` end-to-end en verde desde cero; suite completa en verde |
+| **F5 · Cumplimiento + demo** | Contactabilidad por contacto, consents multi-tipo, ARCO con SLA, `rne-sync`, audiencias, purga simulada, `make demo`, `DEMO.md`, `README.md` | Casos E, F, H, J, M, Q, S y T pasan; `make demo` end-to-end en verde desde cero; suite completa en verde |
 
 ---
 
@@ -926,7 +957,8 @@ pendientes. `DEMO.md` narra el guion sobre estos 19 casos.
 | Retención y purga | `CAT_RETENTION_RULE` con política corporativa, disparada por el cierre del vínculo; `purge --dry-run` |
 | Versionado del golden | `golden_version`, `completeness_score`, `rule_version` |
 | Servicio persistente vs transacción puntual | regla dura §3.18; `CAT_SERVICE_KIND`; DQ rechaza vínculos transaccionales; caso R |
-| Cobranza solo sobre obligación vigente | precedencia (5) de elegibilidad, `NO_ACTIVE_SERVICE`; caso S |
+| Cobranza solo sobre obligación vigente | precedencia (8) de elegibilidad, `NO_ACTIVE_SERVICE`; caso S |
+| Contactos de cobranza no confirmados y de terceros, con alcance de finalidad | `PARTY_CONTACT_POINT.purpose_scope_cd`, `confirmation_status_cd`, `origin_cd`; rol `REFERENCE`; precedencias (5) a (7); caso T |
 
 ---
 
