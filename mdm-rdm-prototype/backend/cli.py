@@ -58,6 +58,17 @@ def synth_generate(seed: int = typer.Option(None, help="Seed fija (por defecto S
     typer.echo(f"Casos plantados: {', '.join(sorted(m['cases']))}")
 
 
+@cli.command("validation-generate")
+def validation_generate(seed: int = typer.Option(20260914, help="Seed fija del conjunto de validación")) -> None:
+    """Validación · Genera data/validation/: extracto SAP ECC (KNA1) y sistema de crédito (CREDITO_CORE) con casos plantados V1–V25."""
+    from app.synth.validation import generate
+
+    m = generate(seed)
+    for k, v in m["counts"].items():
+        typer.echo(f"{k:24s} {v} registros")
+    typer.echo(f"Casos plantados: {', '.join(sorted(m['cases']))}")
+
+
 @cli.command("ingest")
 def ingest(source: str = typer.Option(..., help="sf_ec | ecc_sd | ecc_mm | crm_bp | web_portal | all"),
            mode: str = typer.Option("full", help="full | delta"),
@@ -65,10 +76,12 @@ def ingest(source: str = typer.Option(..., help="sf_ec | ecc_sd | ecc_mm | crm_b
            actor: str = typer.Option("pipeline")) -> None:
     """F2 · Pipeline de 7 etapas para una fuente (replica <fuente>_full_load / _delta_nightly)."""
     from app.core.db import SessionLocal
-    from app.pipeline.run import run_ingest
+    from app.pipeline.run import DATA_DIR, run_ingest
     from app.pipeline.sources import SOURCES
 
-    sources = list(SOURCES) if source == "all" else [source]
+    # `all` = las fuentes del escenario demo (las que tienen CSV por defecto en data/synth/); el conjunto de
+    # validación (CREDITO_CORE) se ingiere explícitamente con --file
+    sources = [s for s in SOURCES if (DATA_DIR / f"{s}.csv").exists()] if source == "all" else [source]
     with SessionLocal() as session:
         for src in sources:
             r = run_ingest(session, src, mode, file, actor)

@@ -83,7 +83,9 @@ def run_dq(std: dict, hom: Homologator, unresolved: list[dict]) -> tuple[list[di
     kept = []
     for e in std["enrollments"]:
         svc = e["service"]
-        if svc.get("unknown"):
+        if svc.get("unknown"):          # producto sin homologar: se conserva en UNKNOWN para que `rehomologate` lo corrija (§7.2)
+            e["business_unit_code"] = None
+            kept.append(e)
             continue
         if (svc.get("attrs") or {}).get("service_kind") != "PERSISTENT":
             issues.append(issue("VALIDITY", "service", "WARNING",

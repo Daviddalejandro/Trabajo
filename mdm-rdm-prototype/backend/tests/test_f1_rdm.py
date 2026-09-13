@@ -105,8 +105,9 @@ def test_deprecate_then_cannot_reactivate_and_audited(client):
 def test_relationship_typed_view():
     rows = {r[0]: (r[1], r[2], r[3]) for r in q(
         "SELECT value_code, from_party_type, to_party_type, inverse_code FROM rdm.vw_rdm_cat_relationship_type").all()}
-    assert len(rows) == 10
+    assert len(rows) == 12                                   # 10 de §6 + GUARANTOR_OF / GUARANTEED_BY (codeudor, conjunto de validación)
     assert rows["PARENT_OF"] == ("PERSON", "PERSON", "CHILD_OF")
+    assert rows["GUARANTOR_OF"] == ("ANY", "ANY", "GUARANTEED_BY")
     assert rows["LEGAL_REP_OF"] == ("PERSON", "ORGANIZATION", "")
     assert rows["SUBSIDIARY_OF"] == ("ORGANIZATION", "ORGANIZATION", "")
 
@@ -146,7 +147,7 @@ def test_purpose_requires_consent_type_eav():
 # ------------------------------------------------------------------ regla 3.4: sistema exacto
 def test_no_mapping_to_unregistered_system():
     systems = set(q("SELECT source_system_cd FROM rdm.source_system").scalars().all())
-    assert "SAP_ECC" not in systems and {"SAP_ECC_HCM", "SAP_ECC_SD", "SAP_ECC_MM", "SAP_CRM", "SF_EC", "WEB_PORTAL", "MDM_CONSOLE"} == systems   # MDM_CONSOLE: escrituras internas (F5)
+    assert "SAP_ECC" not in systems and {"SAP_ECC_HCM", "SAP_ECC_SD", "SAP_ECC_MM", "SAP_CRM", "SF_EC", "WEB_PORTAL", "MDM_CONSOLE", "CREDITO_CORE"} == systems   # MDM_CONSOLE (F5) y CREDITO_CORE (validación)
     used = set(q("SELECT DISTINCT source_system_cd FROM rdm.vw_rdm_source_to_canonical").scalars().all())
     assert used <= systems
     assert q("SELECT is_prototype_active FROM rdm.source_system WHERE source_system_cd='SAP_ECC_HCM'").scalar_one() is False

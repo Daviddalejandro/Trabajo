@@ -9,6 +9,7 @@ SOURCES = {
     "ecc_mm": ("SAP_ECC_MM", "stg_ecc_mm_raw"),
     "crm_bp": ("SAP_CRM", "stg_crm_bp_raw"),
     "web_portal": ("WEB_PORTAL", "stg_web_portal_raw"),
+    "credito_core": ("CREDITO_CORE", "stg_credito_core_raw"),
 }
 
 

@@ -1,7 +1,7 @@
 """Aplica las reglas de survivorship (SPEC §9) sobre un party a partir de los registros
 estandarizados de todas sus fuentes (XREF → staging.standardized).
 
-- nombre, documento, fecha de nacimiento: SOURCE_PRIORITY SF_EC > SAP_CRM > SAP_ECC_SD > SAP_ECC_MM > WEB_PORTAL
+- nombre, documento, fecha de nacimiento: SOURCE_PRIORITY SF_EC > SAP_CRM > SAP_ECC_SD > SAP_ECC_MM > CREDITO_CORE > WEB_PORTAL
 - fallecimiento / estado DECEASED: MOST_RECENT (cualquier fuente que lo informe prevalece)
 - email / teléfono (vínculo primario): MOST_RECENT por captured_at del vínculo
 - resto (género, CIIU, tipo de organización): MOST_COMPLETE

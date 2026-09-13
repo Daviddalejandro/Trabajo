@@ -42,6 +42,9 @@ def rehomologate(session: Session, catalog: str | None = None, actor: str = "rdm
         result["resolved"] += resolved
         result["batches"].append(batch_id)
         set_context(session, actor)
+    if touched := sorted({r["party_sk"] for r in rows if r["party_sk"]}):
+        from app.compliance.eligibility import recompute_parties
+        result["eligibility_recomputed"] = recompute_parties(session, touched)
     session.commit()
     return result
 

@@ -64,7 +64,7 @@ mdm-rdm-prototype/
 │   ├── app/stewardship    decisiones, tareas por owner, merge/unmerge (§8.5)
 │   ├── app/survivorship   estrategias (§9)
 │   ├── app/compliance     elegibilidad, audiencias, ARCO, retención (§10)
-│   ├── app/synth          generador sintético (§13)
+│   ├── app/synth          generador sintético (§13) y conjunto de validación (validation.py)
 │   ├── cli.py             comandos operativos (nombres de los DAGs)
 │   └── tests/             pytest por fase
 ├── frontend/src/          pages/ (Dashboard, Stewardship, AdminRdm, Vista360), components/ui (React + Vite + Tailwind)
@@ -243,6 +243,19 @@ Decisiones de implementación de la Fase 5:
 - **Frecuencia** (precedencia 11): sin historial de envíos en el prototipo, solo `NEVER` se considera excedida.
 - **Caso H** trae ahora un crédito activo en SD para que la cobranza sea legítima (precedencia 8) mientras el RNE bloquea solo lo comercial; **caso S** recibe su crédito en `data/synth/ecc_sd_delta.csv` (corrida delta) y pasa de `NO_ACTIVE_SERVICE` a `ELIGIBLE` sin tocar BENEFITS.
 - **`make demo`** verifica los 20 casos sobre la base reconstruida y falla si alguno no cumple; F, L, M y N se ejecutan desde la API o la consola según el guion.
+
+## Conjunto de validación (SAP ECC + sistema de crédito)
+
+```bash
+make test-validation                          # 32 pruebas: genera, ingiere y verifica los casos V1–V25
+python backend/cli.py validation-generate     # backend/data/validation/*.csv + manifest_validacion.json
+```
+
+Dos fuentes distintas de las del escenario demo: un extracto SAP ECC (KNA1, adaptador `ecc_sd`) y un
+sistema de crédito / core de cartera (`CREDITO_CORE`, adaptador nuevo con obligaciones, teléfonos de
+gestión, calificación, autorizaciones y codeudor). Recorre RDM, pipeline, matching, survivorship,
+stewardship, cumplimiento, feed, Vista 360, match-preview y export. Detalle y desenlaces esperados en
+[`docs/validation/README.md`](docs/validation/README.md).
 
 ## Convenciones (reglas duras de la especificación, §3)
 
