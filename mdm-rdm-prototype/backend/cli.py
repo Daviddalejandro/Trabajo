@@ -103,9 +103,14 @@ def reset_mdm(yes: bool = typer.Option(False, "--yes", help="Confirma el vaciado
 
 
 @cli.command("match")
-def match() -> None:
-    """F3 · Blocking, scoring, umbrales, merge automático y survivorship."""
-    _pending("Fase 3")
+def match(actor: str = typer.Option("matching")) -> None:
+    """F3 · Blocking, scoring, umbrales, merge automático (snapshot) y survivorship sobre los CANDIDATE."""
+    from app.core.db import SessionLocal
+    from app.matching.engine import run_matching
+
+    with SessionLocal() as session:
+        r = run_matching(session, actor)
+    typer.echo(" · ".join(f"{k}={v}" for k, v in r.items()))
 
 
 @cli.command("rne-sync")

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api import health, parties, pipeline, rdm
+from app.api import health, matches, parties, pipeline, rdm
 from app.core.config import settings
 
 app = FastAPI(
@@ -23,4 +23,5 @@ app.include_router(health.router)
 app.include_router(health.router, prefix=settings.api_prefix)
 app.include_router(rdm.router, prefix=settings.api_prefix)
 app.include_router(pipeline.router, prefix=settings.api_prefix)
+app.include_router(matches.router, prefix=settings.api_prefix)
 app.include_router(parties.router, prefix=settings.api_prefix)

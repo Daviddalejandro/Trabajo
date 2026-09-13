@@ -49,7 +49,8 @@ def write_issues(session: Session, issues: list[dict], hom: Homologator, source_
              "f": i["field"], "d": json.dumps(i["detail"], default=_json), "sev": hom.sk("CAT_SEVERITY", i["severity"]), "s": source_sk, "b": batch_id})
 
 
-def run_ingest(session: Session, source: str, mode: str = "full", path: str | None = None, actor: str = "pipeline") -> dict:
+def run_ingest(session: Session, source: str, mode: str = "full", path: str | None = None, actor: str = "pipeline",
+               match: bool = True) -> dict:
     adapter = get_adapter(source)
     system_cd, table = SOURCES[source]
     source_sk = session.execute(text("SELECT source_system_sk FROM rdm.source_system WHERE source_system_cd=:c"), {"c": system_cd}).scalar_one()
@@ -57,10 +58,12 @@ def run_ingest(session: Session, source: str, mode: str = "full", path: str | No
     set_context(session, actor, batch_id, source_sk)
     session.commit()
     counters = dict(extracted=0, unchanged_hash=0, standardized=0, homologated=0, unknown_codes=0, dq_passed=0,
-                    dq_quarantined=0, xref_hits=0, loaded=0)
+                    dq_quarantined=0, xref_hits=0, loaded=0, matched=0, auto_merged=0, probable=0)
     try:
         hom = Homologator(session, system_cd)
         loader = Loader(session, hom, source_sk, batch_id)
+        new_parties: list[int] = []
+        updated_goldens: list[int] = []
         # 1 · Extracción (CSV que replica la estructura nativa; en producción: conector real)
         rows = adapter.extract(path or DATA_DIR / f"{source}.csv")
         counters["extracted"] = len(rows)
@@ -97,12 +100,25 @@ def run_ingest(session: Session, source: str, mode: str = "full", path: str | No
             # 6 · Crosswalk (XREF) y 7 · Carga
             party_sk, created = loader.load(external_id, std, h, staging_ref)
             counters["xref_hits"] += 0 if created else 1
+            (new_parties if created else updated_goldens).append(party_sk)
             counters["loaded"] += 1
             write_issues(session, issues, hom, source_sk, batch_id, staging_ref, party_sk)
             session.execute(text(f"UPDATE staging.{table} SET raw_status='LOADED' WHERE raw_sk=:k"), {"k": raw_sk})
         loader.finish()
         loader.attach_targets()
         write_issues(session, loader.issues, hom, source_sk, batch_id, "batch")
+        # XREF hit sobre un GOLDEN: re-survivorship (SPEC §9) con los datos actualizados de la fuente
+        from app.survivorship.engine import apply_survivorship
+        for psk in updated_goldens:
+            if session.execute(text("SELECT g.value_code FROM mdm.party p JOIN rdm.reference_value g ON g.value_sk=p.golden_status_cd WHERE p.party_sk=:p"), {"p": psk}).scalar() == "GOLDEN":
+                apply_survivorship(session, psk)
+        # 6b · Matching de los candidatos nuevos de este lote (regla dura §3.11: solo registros nuevos)
+        if match and new_parties:
+            from app.matching.engine import MatchingEngine
+            set_context(session, actor, batch_id, None)
+            m = MatchingEngine(session).run(actor, batch_id, new_parties)
+            counters.update(matched=m["matched"], auto_merged=m["auto_merged"], probable=m["probable"])
+            set_context(session, actor, batch_id, source_sk)
         close_batch(session, batch_id, "OK", counters, {"source": source, "path": str(path or DATA_DIR / f"{source}.csv")})
         session.commit()
     except Exception as exc:  # noqa: BLE001 — se registra en la bitácora y se propaga

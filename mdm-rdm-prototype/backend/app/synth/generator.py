@@ -275,6 +275,8 @@ class Universe:
         # --- Caso C · posible: homónimos con fecha distinta
         c1, c2 = P[2], P[3]
         c2.first, c2.middle, c2.sur1, c2.sur2 = c1.first, c1.middle, c1.sur1, c1.sur2
+        c2.birth = c1.birth + timedelta(days=200)   # fecha distinta dentro del año: puntaje parcial → zona POSSIBLE
+        c2.city = c1.city
         cases["C"] = {"crm_bp": self.emit_crm_person(c1, categoria="C"), "web_portal": self.emit_portal(c2)}
         # --- Caso D · organización duplicada: mismo NIT, "La Espiga S.A.S." vs "LA ESPIGA"
         d = O[0]; d.legal, d.trade, d.org_type = "La Espiga S.A.S.", "LA ESPIGA", "SAS"

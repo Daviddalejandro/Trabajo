@@ -12,7 +12,7 @@ Opera **exclusivamente con datos sintéticos**.
 | F0 | Scaffolding: db + api + ui, Alembic, Makefile, healthchecks, PostgreSQL local sin Docker | ✅ tests en verde |
 | F1 | RDM: 43 catálogos (263 valores), 6 sistemas fuente, 24 homologaciones, 6 vistas, trigger de inmutabilidad, auditoría por trigger, endpoints RDM | ✅ 25 tests en verde |
 | F2 | Staging (5 RAW + `LOAD_BATCH`) + `mdm` (29 tablas, triggers de auditoría y de unicidad golden), generador sintético (1.580 registros, 21 casos plantados), pipeline de 7 etapas con carga de candidatos, `rehomologate`, API de parties y stats | ✅ 42 tests en verde |
-| F3 | Matching, survivorship, merge/unmerge, match-preview | pendiente |
+| F3 | Matching (blocking + scoring con evidencia + umbrales), merge automático con snapshot, survivorship por atributo, cola de stewardship con tareas por owner, unmerge, match-preview | ✅ 56 tests en verde |
 | F4 | Consola de Stewardship, Admin RDM, Vista 360 | pendiente |
 | F5 | Cumplimiento, audiencias, ARCO, RNE, `make demo`, export a Drive | pendiente |
 
@@ -137,6 +137,44 @@ Decisiones de implementación de la Fase 2:
 - **Estructuras fuente sintéticas.** Los CSV replican campos nativos (KNA1, LFA1, BUT000,
   OData de SF_EC); los campos `ZZ_*` de CRM y SD son campos Z ilustrativos que deben confirmarse
   con cada UES (SPEC §7.1).
+
+## Matching, survivorship y stewardship (Fase 3)
+
+```bash
+python backend/cli.py match                      # blocking → scoring → umbrales → merge/promoción → survivorship
+curl "localhost:8000/api/v1/matches?status=PENDING"            # cola de stewardship (PROBABLE / POSSIBLE)
+curl "localhost:8000/api/v1/matches/17"                        # score_detail atributo por atributo
+curl -X POST "localhost:8000/api/v1/matches/17/decision" -H "X-Actor: steward.mdm" -H "X-Role: STEWARD" \
+     -d '{"decision":"MERGE","justification":"Documento confirmado con la UES"}'
+curl "localhost:8000/api/v1/review-tasks?assignee=steward.crm"  # tareas por owner de fuente (§8.5)
+curl -X POST "localhost:8000/api/v1/parties/545/unmerge" -d '{"merge_sk":3,"reason":"Homónimos"}'
+curl -X POST "localhost:8000/api/v1/parties/match-preview" -d '{"party_type":"PERSON","id_type":"CC","id_number":"..."}'
+```
+
+| Elemento | Implementación |
+|---|---|
+| Blocking | `DOC_HASH`, `EMAIL_HASH`, `PHONE_HASH` (solo OWNER + CONFIRMED_BY_TITULAR), `SURNAME_SOUNDEX` (soundex tolerante al español: LL/Y, B/V, C/S/Z, H muda); organizaciones: `NIT_HASH`, `LEGAL_NAME_TOKENS` (sin S.A.S./LTDA/de Colombia). Los buckets se persisten en `PARTY_BUCKET`/`BUCKET_CANDIDATE`. |
+| Scoring | `MATCH_RULE` v1: PERSON 30/20/15/15/10/5/3/2 (documento, primer apellido, nombre, fecha de nacimiento, email, teléfono, municipio, género); ORGANIZATION 50/25/10/10/5. Cada par guarda `score_detail` (atributo, valores, algoritmo, similitud, puntos, nota). |
+| Umbrales | ≥ 85 `AUTO_MERGE` · 70–84 `PROBABLE` · 50–69 `POSSIBLE` · < 50 `NO_MATCH` (no se persiste). |
+| Merge | `PARTY_MERGE_HISTORY.pre_merge_snapshot` con las capas 2–5 y 8 de ambos parties; reapunte fila a fila con savepoint (las que chocan por unicidad se quedan en el absorbido, nunca se borran); absorbido `MERGED`, sobreviviente `GOLDEN`; auditoría con `merge_sk`. |
+| Survivorship | `SOURCE_PRIORITY` SF_EC > SAP_CRM > SAP_ECC_SD > SAP_ECC_MM > WEB_PORTAL para nombres y documento; `MOST_RECENT` para email, teléfono principal y fallecido; `MOST_COMPLETE` de respaldo. Cada atributo escribe `PARTY_SURVIVORSHIP` (valor, fuente, estrategia). |
+| Stewardship | `GET /matches` cola; decisión con justificación obligatoria (422 sin ella) y cabecera `X-Role` (`STEWARD` / `JEFATURA`); par con más de una fuente → `MATCH_REVIEW_TASK` por fuente asignada a su `data_steward`; regla de cierre §8.5 (consenso → `OWNER_CONSENSUS`, desacuerdo → escalado a Jefatura). |
+| Unmerge | Restaura fila a fila desde el snapshot, marca el par `NO_MATCH` (decisión vinculante para el motor), re-survivorship en ambos; si el absorbido comparte documento con un golden queda `CANDIDATE` con hallazgo `UNIQUENESS` (regla dura §3.16). |
+| Prevención en origen | `POST /parties/match-preview` compara contra los goldens sin persistir nada (§8.6). |
+
+Decisiones de implementación de la Fase 3:
+
+- **El matching corre dentro de cada lote.** Tras la etapa 7, los parties nuevos del lote se comparan
+  contra goldens y candidatos (regla dura §3.11: XREF primero, matching solo para registros nuevos).
+  `cli.py match` / `POST /matching/run` reprocesan los `CANDIDATE` que quedaron pendientes.
+- **Unicidad de documento golden.** Un candidato con el documento de un golden nunca se promueve
+  automáticamente: se abre un par `PROBABLE` forzado y un hallazgo `UNIQUENESS` (regla dura §3.16).
+- **Decisiones humanas vinculantes.** Un par resuelto `NO_MATCH` (steward o unmerge) no vuelve a
+  proponerse aunque el score lo supere; el motor lo omite en corridas posteriores.
+- **Actor de auditoría.** En merges `AUTO` el actor es el del pipeline y `decided_by = engine.v1`;
+  en merges humanos el actor es el steward u owner que decidió (Ley 1581/2012 art. 17; ISO/IEC 27001:2022 A.8.15).
+- **Corrida sobre los sintéticos** (5 fuentes, 1.580 registros): 684 merges automáticos, 894 goldens,
+  2 pares `PROBABLE` (casos B y K) y 1 `POSSIBLE` (caso C); ninguna persona se compara con una organización.
 
 ## Convenciones (reglas duras de la especificación, §3)
 

@@ -55,6 +55,28 @@ El guion final recorre los 20 casos plantados de la especificación (§13, A–T
 10. **Caso T (anticipo):** cuatro teléfonos con origen, uso y confirmación; los de cobranza nacen
     con finalidades por contacto (COLLECTIONS sí, BENEFITS y COMMERCIAL no).
 
-## Fases 3–5 (pendiente)
+## Fase 3 · Matching, survivorship y stewardship
 
-Casos A–H, K–N, Q, S según §13.
+1. `python backend/cli.py match` (o el matching implícito de `ingest`) → `candidates`, `buckets`,
+   `compared`, `matched`, `auto_merged`, `probable`, `possible`, `promoted`, `forced_review`.
+2. **Caso A:** las tres fuentes (SD, CRM, SF_EC) apuntan al mismo golden; `PARTY_MERGE_HISTORY`
+   con `merge_type=AUTO`, `decided_by=engine.v1` y `pre_merge_snapshot`; `PARTY_SURVIVORSHIP`
+   registra la fuente ganadora por atributo (nombre desde SF_EC, email más reciente).
+3. **Caso B:** usuario del portal sin documento vs. golden CRM → `PROBABLE` en `GET /matches`;
+   `POST /matches/{sk}/decision` sin justificación → 422; con `X-Role: STEWARD` y justificación → merge `STEWARD`.
+4. **Caso C:** homónimos con fecha de nacimiento distinta → `POSSIBLE`, sin merge; `score_detail`
+   muestra 0 puntos en documento y fecha.
+5. **Caso D:** proveedor MM `LA ESPIGA` y cliente SD `La Espiga S.A.S.` con el mismo NIT → merge
+   automático (NIT 50 + razón social 25 + municipio 10).
+6. **Caso G:** `POST /pipeline/ecc_sd/run?mode=delta` → `loaded=0`, `matched=0`, `auto_merged=0`.
+7. **Caso J:** el celular compartido madre/hijo (GUARDIAN) no aporta puntos ni bloquea (solo OWNER confirmado).
+8. **Caso K:** par con fuentes de dos owners → dos `MATCH_REVIEW_TASK`; ambos owners aprueban →
+   merge `OWNER_CONSENSUS`; un desacuerdo escala a Jefatura.
+9. **Caso L:** `POST /parties/{sk}/unmerge` → filas restauradas desde el snapshot, par `NO_MATCH`
+   resuelto, audit `UNMERGE`; una nueva corrida de matching no vuelve a fusionarlos.
+10. **Caso N:** `POST /parties/match-preview` con el documento de un golden → candidato con
+    `AUTO_MERGE` y evidencia, sin persistir (`persisted=false`).
+
+## Fases 4–5 (pendiente)
+
+Casos E, F, H, M, Q, S, T según §13; B y K desde la consola (F4).

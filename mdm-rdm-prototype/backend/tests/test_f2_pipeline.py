@@ -78,10 +78,11 @@ def test_no_multivalued_fields_in_facts():
     for table, col in [("party_role", "role_cd::text"), ("party_service_enrollment", "source_reference"),
                        ("contact_point", "contact_value"), ("party_segment", "segment_cd::text")]:
         assert q(f"SELECT count(*) FROM mdm.{table} WHERE {col} LIKE '%;%'").scalar_one() == 0
-    # RLTYP 'ZAFI;ZSUB' del caso R → 1 rol AFFILIATE + 1 vínculo CUOTA_MONETARIA
+    # RLTYP 'ZAFI;ZSUB' del caso R → 1 rol AFFILIATE + 1 vínculo CUOTA_MONETARIA (filas con linaje SAP_CRM)
     p = party_of("SAP_CRM", CASES["R"]["crm_bp"])
-    assert q("SELECT count(*) FROM mdm.party_role WHERE party_sk=:p", p=p).scalar_one() == 1
-    assert q("SELECT v.value_code FROM mdm.party_service_enrollment e JOIN rdm.reference_value v ON v.value_sk=e.service_cd WHERE e.party_sk=:p", p=p).scalar_one() == "CUOTA_MONETARIA"
+    crm = "(SELECT source_system_sk FROM rdm.source_system WHERE source_system_cd='SAP_CRM')"
+    assert q(f"SELECT count(*) FROM mdm.party_role WHERE party_sk=:p AND source_system_cd={crm}", p=p).scalar_one() == 1
+    assert q(f"SELECT v.value_code FROM mdm.party_service_enrollment e JOIN rdm.reference_value v ON v.value_sk=e.service_cd WHERE e.party_sk=:p AND e.source_system_cd={crm}", p=p).scalar_one() == "CUOTA_MONETARIA"
 
 
 def test_lineage_on_every_fact_row():
@@ -114,10 +115,11 @@ def test_audit_rows_carry_batch_and_source():
     rows = q("""SELECT a.entity, ac.value_code, a.batch_id, s.source_system_cd, a.actor FROM mdm.party_audit_log a
                 JOIN rdm.reference_value ac ON ac.value_sk=a.action_cd LEFT JOIN rdm.source_system s ON s.source_system_sk=a.source_system_cd
                 WHERE a.party_sk=:p""", p=p).all()
-    entities = {r[0] for r in rows}
+    # MERGE_HISTORY y SURVIVORSHIP son escrituras entre fuentes (F3): sin sistema fuente, con merge_sk
+    inserts = [r for r in rows if r[1] == "INSERT" and r[0] not in ("PARTY_MERGE_HISTORY", "PARTY_SURVIVORSHIP")]
+    entities = {r[0] for r in inserts}
     assert {"PARTY", "PARTY_PERSON", "XREF_PARTY_SOURCE", "PARTY_IDENTIFIER", "PARTY_CONTACT_POINT"} <= entities
-    assert {r[1] for r in rows} <= {"INSERT", "UPDATE"}
-    assert all(r[2] is not None and r[3] == "SAP_CRM" and r[4] == "pytest" for r in rows)
+    assert all(r[2] is not None and r[3] in ("SAP_CRM", "SAP_ECC_SD") and r[4] == "pytest" for r in inserts)
 
 
 # ------------------------------------------------------------------ casos I, O, P, R
@@ -127,9 +129,11 @@ def test_case_I_segments_multi_type():
         return {r[0]: (r[1], r[2]) for r in q("""SELECT st.value_code, sg.value_code, s.source_system_cd FROM mdm.party_segment g
             JOIN rdm.reference_value st ON st.value_sk=g.segment_type_cd JOIN rdm.reference_value sg ON sg.value_sk=g.segment_cd
             JOIN rdm.source_system s ON s.source_system_sk=g.source_system_cd WHERE g.party_sk=:p AND g.valid_to IS NULL""", p=p).all()}
-    assert segs("SAP_CRM", CASES["I"]["crm_bp"]) == {"AFFILIATION": ("A", "SAP_CRM")}
-    assert segs("SAP_ECC_SD", CASES["I"]["ecc_sd"]) == {"FINANCIAL_RISK": ("HIGH", "SAP_ECC_SD")}
-    assert segs("WEB_PORTAL", CASES["I"]["web_portal"]) == {"AFFILIATION": ("A", "WEB_PORTAL"), "COMMERCIAL": ("PREMIUM", "WEB_PORTAL")}
+    # tras el matching (F3) las tres fuentes apuntan al mismo golden con un segmento vigente por tipo y su fuente
+    golden = {party_of(s, CASES["I"][k]) for s, k in (("SAP_CRM", "crm_bp"), ("SAP_ECC_SD", "ecc_sd"), ("WEB_PORTAL", "web_portal"))}
+    assert len(golden) == 1
+    got = segs("SAP_CRM", CASES["I"]["crm_bp"])
+    assert got["AFFILIATION"][0] == "A" and got["FINANCIAL_RISK"] == ("HIGH", "SAP_ECC_SD") and got["COMMERCIAL"] == ("PREMIUM", "WEB_PORTAL")
     # un solo segmento vigente por tipo: un segundo AFFILIATION vigente viola el índice único parcial
     p = party_of("SAP_CRM", CASES["I"]["crm_bp"])
     with pytest.raises(IntegrityError):
@@ -176,8 +180,8 @@ def test_case_R_service_enrollments_and_retention():
         FROM mdm.party_service_enrollment e JOIN rdm.reference_value sv ON sv.value_sk=e.service_cd
         JOIN rdm.reference_value es ON es.value_sk=e.enrollment_status_cd JOIN rdm.reference_value bu ON bu.value_sk=e.business_unit_cd
         WHERE e.party_sk=:p""", p=sd).all()}
-    assert rows == {"CR-1001": ("CREDITO_SOCIAL", "ACTIVE", "CREDITO"), "CR-0990": ("CREDITO_SOCIAL", "CLOSED", "CREDITO"),
-                    "EPS-77": ("SALUD_EPS", "ACTIVE", "SALUD")}
+    assert {k: rows[k] for k in ("CR-1001", "CR-0990", "EPS-77")} == {"CR-1001": ("CREDITO_SOCIAL", "ACTIVE", "CREDITO"),
+                    "CR-0990": ("CREDITO_SOCIAL", "CLOSED", "CREDITO"), "EPS-77": ("SALUD_EPS", "ACTIVE", "SALUD")}
     ret = q("""SELECT rr.value_code, r.purge_after, e.closed_at FROM mdm.party_data_retention r
                JOIN rdm.reference_value rr ON rr.value_sk=r.retention_rule_cd
                JOIN mdm.party_service_enrollment e ON e.enrollment_sk=r.entity_sk WHERE r.party_sk=:p""", p=sd).one()
@@ -185,7 +189,7 @@ def test_case_R_service_enrollments_and_retention():
     tx = q("SELECT detail->>'service' FROM mdm.party_dq_issue WHERE party_sk=:p AND field='service'", p=sd).scalars().all()
     assert sorted(tx) == ["HOTEL", "SUPERMERCADO"]
     crm = party_of("SAP_CRM", CASES["R"]["crm_bp"])
-    assert q("SELECT source_reference FROM mdm.party_service_enrollment WHERE party_sk=:p", p=crm).scalar_one() == "AF-R00012"
+    assert crm == sd and rows["AF-R00012"][0] == "CUOTA_MONETARIA"   # una sola persona con los 4 vínculos (F3)
 
 
 # ------------------------------------------------------------------ otros casos con efecto en F2
@@ -227,13 +231,13 @@ def test_case_G_rerun_is_resolved_by_hash_and_xref(client):
 def test_api_search_golden_sources_stats(client):
     ext = CASES["R"]["ecc_sd"]
     s = client.get("/api/v1/parties", params={"external_id": ext}).json()
-    assert len(s["items"]) == 1 and s["items"][0]["golden_status"] == "CANDIDATE"
+    assert len(s["items"]) == 1 and s["items"][0]["golden_status"] == "GOLDEN"
     sk = s["items"][0]["party_sk"]
     g = client.get(f"/api/v1/parties/{sk}/golden").json()
     assert set(g) == {"core", "sources", "identity", "roles_relationships", "contactability", "governance", "golden_record", "consents"}
-    assert len(g["roles_relationships"]["services"]) == 3 and g["sources"][0]["source_system_cd"] == "SAP_ECC_SD"
+    assert len(g["roles_relationships"]["services"]) == 4 and {x["source_system_cd"] for x in g["sources"]} == {"SAP_ECC_SD", "SAP_CRM"}
     src = client.get(f"/api/v1/parties/{sk}/sources").json()
-    assert src["lineage"]["party_service_enrollment"][0]["rows"] == 3
+    assert {x["source_system_cd"]: x["rows"] for x in src["lineage"]["party_service_enrollment"]} == {"SAP_ECC_SD": 3, "SAP_CRM": 1}
     st = client.get("/api/v1/stats").json()
     assert sum(x["n"] for x in st["parties"]) == q("SELECT count(*) FROM mdm.party").scalar_one()
     assert client.get("/api/v1/parties", params={"service": "CREDITO_SOCIAL", "limit": 5}).json()["items"]
