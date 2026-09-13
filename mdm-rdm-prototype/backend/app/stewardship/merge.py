@@ -152,6 +152,8 @@ def merge_parties(session: Session, surviving: int, merged: int, match_sk: int |
             session.execute(text("UPDATE mdm.party_match SET match_status='RESOLVED' WHERE match_sk=:k"), {"k": match_sk})
         from app.survivorship.engine import apply_survivorship
         apply_survivorship(session, surviving)
+        from app.compliance.eligibility import recompute_parties
+        recompute_parties(session, [surviving, merged])
     finally:
         _set(session, "app.merge_sk", None); _set(session, "app.audit_action", None)
     return merge_sk
@@ -199,6 +201,8 @@ def unmerge(session: Session, merge_sk: int, actor: str, reason: str) -> dict:
                                               "merge_sk": merge_sk, "other_party": surviving})})
         from app.survivorship.engine import apply_survivorship
         apply_survivorship(session, surviving); apply_survivorship(session, merged)
+        from app.compliance.eligibility import recompute_parties
+        recompute_parties(session, [surviving, merged])
     finally:
         _set(session, "app.merge_sk", None); _set(session, "app.audit_action", None)
     return {"merge_sk": merge_sk, "surviving_party_sk": surviving, "merged_party_sk": merged, "restored_rows": restored, "merged_party_status": status}

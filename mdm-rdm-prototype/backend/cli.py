@@ -1,5 +1,5 @@
 """CLI operativa (SPEC §7). Los comandos replican los nombres lógicos de los DAGs de
-producción. En F0 solo existen `db-check` y `migrate`; el resto se habilita por fase."""
+producción. Todas las fases están habilitadas (F0–F5)."""
 import subprocess
 import sys
 
@@ -140,21 +140,86 @@ def match(actor: str = typer.Option("matching")) -> None:
 
 
 @cli.command("rne-sync")
-def rne_sync(file: str = typer.Option(..., help="CSV de números excluidos (simulado)")) -> None:
-    """F5 · Marca rne_excluded en CONTACT_POINT (solo finalidad COMMERCIAL)."""
-    _pending("Fase 5")
+def rne_sync(file: str = typer.Option("data/synth/rne_sample.csv", help="CSV de números excluidos (simulado)"),
+             actor: str = typer.Option("rne-sync")) -> None:
+    """F5 · Marca rne_excluded en CONTACT_POINT y recalcula elegibilidad (solo afecta la finalidad COMMERCIAL, Ley 2300/2023 art. 5)."""
+    from app.compliance.service import rne_sync as _rne
+    from app.core.db import SessionLocal
+
+    with SessionLocal() as session:
+        r = _rne(session, file, actor)
+        session.commit()
+    typer.echo(" · ".join(f"{k}={v}" for k, v in r.items()))
+
+
+@cli.command("purge")
+def purge(dry_run: bool = typer.Option(True, "--dry-run/--no-dry-run", help="El prototipo solo simula (SPEC §10.5)"),
+          actor: str = typer.Option("retention")) -> None:
+    """F5 · Lista los parties con purge_after vencido, sin LEGAL_HOLD y sin vínculo activo; audita PURGE_SIMULATED. Nunca borra."""
+    from app.compliance.service import purge_candidates
+    from app.core.db import SessionLocal
+
+    if not dry_run:
+        typer.echo("El prototipo no borra datos: se ejecuta como simulación (SPEC §10.5).")
+    with SessionLocal() as session:
+        r = purge_candidates(session, actor, dry_run=True)
+        session.commit()
+    typer.echo(f"Candidatos a purga: {r['count']}")
+    for it in r["items"]:
+        typer.echo(f"  party {it['party_sk']} · {it['display_name']} · {it['rule']} · purge_after {it['purge_after']} · {it['legal_basis']}")
+
+
+@cli.command("eligibility-recompute")
+def eligibility_recompute(party: int = typer.Option(None, help="party_sk; vacío = todos")) -> None:
+    """F5 · Recalcula la caché de elegibilidad (12 precedencias, SPEC §10.3)."""
+    from app.compliance.eligibility import recompute_all, recompute_party
+    from app.core.db import SessionLocal
+
+    with SessionLocal() as session:
+        n = 1 if party else recompute_all(session)
+        if party:
+            recompute_party(session, party)
+        session.commit()
+    typer.echo(f"Elegibilidad recalculada para {n} parties.")
 
 
 @cli.command("demo")
-def demo() -> None:
-    """F5 · make demo end-to-end."""
-    _pending("Fase 5")
+def demo(actor: str = typer.Option("demo")) -> None:
+    """F5 · make demo end-to-end: rebuild (migrar → sembrar → sintéticos → ingerir con matching) → rne-sync → caso Q (ARCO vencida)
+    → deja la consola con B y K pendientes e imprime el estado de los 20 casos."""
+    from app.demo import plant_and_report
+
+    rc = subprocess.call([sys.executable, "cli.py", "rebuild", "--yes", "--actor", actor])
+    if rc:
+        raise typer.Exit(code=rc)
+    rc = subprocess.call([sys.executable, "cli.py", "rne-sync", "--actor", actor])
+    if rc:
+        raise typer.Exit(code=rc)
+    from app.core.db import SessionLocal
+
+    with SessionLocal() as session:
+        report = plant_and_report(session, actor)
+        session.commit()
+    typer.echo("")
+    typer.echo(f"{'Caso':6s}{'Estado':10s}Evidencia")
+    for row in report:
+        typer.echo(f"{row['case']:6s}{('OK' if row['ok'] else 'REVISAR'):10s}{row['evidence']}")
+    if not all(r["ok"] for r in report):
+        raise typer.Exit(code=1)
+    typer.echo("\nDemo lista: consola con los casos B y K pendientes en http://localhost:5173/#/stewardship")
 
 
 @cli.command("export-drive")
-def export_drive() -> None:
-    """F5 · Genera en docs/drive/ los entregables de la fase (SPEC §17)."""
-    _pending("Fase 5")
+def export_drive(out: str = typer.Option("../docs/drive", help="Carpeta de salida (SPEC §17)")) -> None:
+    """F5 · Genera en docs/drive/ los entregables por carpeta de Drive: diccionario, catálogos, matching, cumplimiento, evidencia, demo y comité."""
+    from app.core.db import SessionLocal
+    from app.export.drive import export_all
+
+    with SessionLocal() as session:
+        files = export_all(session, out)
+    for f in files:
+        typer.echo(f)
+    typer.echo(f"{len(files)} archivos generados en {out}")
 
 
 if __name__ == "__main__":

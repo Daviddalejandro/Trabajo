@@ -50,6 +50,7 @@ class MatchingEngine:
         return pairs, buckets_persisted
 
     def run(self, actor: str = "matching", batch_id: int | None = None, candidate_sks: list[int] | None = None) -> dict:
+        from app.compliance.eligibility import recompute_party
         from app.stewardship.merge import merge_parties
         from app.survivorship.engine import apply_survivorship
 
@@ -116,6 +117,7 @@ class MatchingEngine:
                 continue
             self.s.execute(text("UPDATE mdm.party SET golden_status_cd=:g, updated_at=now() WHERE party_sk=:c"), {"g": golden, "c": c})
             apply_survivorship(self.s, c)
+            recompute_party(self.s, c)
             counters["promoted"] += 1
         if batch_id:
             self.s.execute(text("UPDATE staging.load_batch SET matched=:m, auto_merged=:am, probable=:pr WHERE batch_id=:b"),

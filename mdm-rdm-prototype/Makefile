@@ -3,7 +3,7 @@ SHELL := /bin/bash
 LOCAL_DB_URL ?= postgresql+psycopg://mdm@127.0.0.1:5433/mdm_prototype
 export DATABASE_URL ?= $(LOCAL_DB_URL)
 
-.PHONY: up down logs db-local db-local-stop migrate seed ingest match rebuild demo test test-backend test-frontend test-e2e api ui export-drive
+.PHONY: up down logs db-local db-local-stop migrate seed ingest match rebuild rne-sync purge demo test test-backend test-frontend test-e2e api ui export-drive
 
 up:            ## Levanta db + api + ui con Docker
 	docker compose up -d --build
@@ -23,7 +23,11 @@ migrate:       ## Aplica migraciones Alembic (una por fase)
 seed:          ## F1: siembra el RDM (43 catálogos, vistas, homologaciones)
 	cd backend && python cli.py rdm-seed
 
-demo:          ## F5: levantar → migrar → sembrar → sintéticos → ingerir → rne-sync → matching
+rne-sync:      ## F5: sincroniza el RNE simulado (solo finalidad COMMERCIAL)
+	cd backend && python cli.py rne-sync
+purge:         ## F5: purga simulada (nunca borra)
+	cd backend && python cli.py purge --dry-run
+demo:          ## F5: rebuild → rne-sync → caso Q → verificación de los 20 casos; deja B y K en la consola
 	cd backend && python cli.py demo
 
 rebuild:       ## Reconstruye rdm + mdm + staging desde cero con sintéticos (deja B y K en la consola)
@@ -42,5 +46,5 @@ api:           ## API local (sin Docker)
 ui:            ## UI local (sin Docker)
 	cd frontend && npm run dev
 
-export-drive:  ## F5: genera en docs/drive/ los entregables de la fase para Google Drive
-	cd backend && python cli.py export-drive
+export-drive:  ## F5: genera en docs/drive/ los entregables por carpeta de Drive (SPEC §17)
+	cd backend && python cli.py export-drive --out ../docs/drive

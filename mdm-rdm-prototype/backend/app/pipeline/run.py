@@ -119,7 +119,12 @@ def run_ingest(session: Session, source: str, mode: str = "full", path: str | No
             m = MatchingEngine(session).run(actor, batch_id, new_parties)
             counters.update(matched=m["matched"], auto_merged=m["auto_merged"], probable=m["probable"])
             set_context(session, actor, batch_id, source_sk)
-        close_batch(session, batch_id, "OK", counters, {"source": source, "path": str(path or DATA_DIR / f"{source}.csv")})
+        # 8 · Elegibilidad de contacto (SPEC §10.3) de todo party tocado por el lote (carga, merge o survivorship)
+        from app.compliance.eligibility import recompute_parties
+        touched = session.execute(text("SELECT DISTINCT party_sk FROM mdm.party_audit_log WHERE batch_id=:b AND party_sk IS NOT NULL"), {"b": batch_id}).scalars().all()
+        counters["eligibility_recomputed"] = recompute_parties(session, list(touched) + new_parties + updated_goldens)
+        close_batch(session, batch_id, "OK", {k: v for k, v in counters.items() if k != "eligibility_recomputed"},
+                    {"source": source, "path": str(path or DATA_DIR / f"{source}.csv"), "eligibility_recomputed": counters["eligibility_recomputed"]})
         session.commit()
     except Exception as exc:  # noqa: BLE001 — se registra en la bitácora y se propaga
         session.rollback()

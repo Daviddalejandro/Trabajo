@@ -175,6 +175,7 @@ CATALOGS: dict[str, tuple[str, str, str | None, bool, list]] = {
         ("REVIEW_DECISION", "Decisión de revisión"), ("ARCO_READ", "Lectura por solicitud ARCO"),
         ("ARCO_UPDATE", "Cambio por solicitud ARCO"), ("REHOMOLOGATE", "Rehomologación"),
         ("PURGE_MARK", "Marca de purga"), ("PURGE_SIMULATED", "Purga simulada"),
+        ("AUDIENCE_RUN", "Ejecución de audiencia (tratamiento con finalidad declarada)"), ("RNE_SYNC", "Sincronización del RNE"),
     ]),
     "CAT_ELIGIBILITY_REASON": ("CONTACT", "Razón de elegibilidad de contacto", "Ley 2300/2023; Ley 1581/2012", False, [
         ("ELIGIBLE", "Elegible"), ("DECEASED", "Titular fallecido"), ("MINOR", "Titular menor de edad"),
@@ -184,6 +185,7 @@ CATALOGS: dict[str, tuple[str, str, str | None, bool, list]] = {
         ("NO_CONSENT", "Sin autorización"), ("CONSENT_REVOKED", "Autorización revocada o negada"),
         ("CHANNEL_DENIED", "Canal denegado"), ("FREQUENCY_EXCEEDED", "Frecuencia excedida"),
         ("SHARED_CONTACT_RESTRICTED", "Contacto compartido restringido"), ("NO_CONTACT_POINT", "Sin punto de contacto"),
+        ("INVALID_CONTACT", "Contacto marcado como persona equivocada o inválido"),
     ]),
     "CAT_PREF_ORIGIN": ("CONTACT", "Origen de preferencia o vínculo de contacto", "Interno", False, [
         ("TITULAR", "Declarado por el titular"), ("LEGAL_REP", "Declarado por representante legal"),
@@ -267,6 +269,7 @@ SOURCE_SYSTEMS = [
     ("SAP_CRM", "SAP CRM · Business Partner (BUT000/BUT020/ADRC)", True, "Gerencia de Afiliaciones", "steward.crm"),
     ("SF_EC", "SuccessFactors Employee Central", True, "Gerencia de Gestión Humana", "steward.sfec"),
     ("WEB_PORTAL", "Portal web · usuarios digitales", True, "Gerencia de Canales Digitales", "steward.portal"),
+    ("MDM_CONSOLE", "MDM · consola de stewardship y API (escrituras internas: ARCO, consentimientos, preferencias)", True, "Jefatura de Gobierno de Datos", "steward.mdm"),
 ]
 
 # (system, source_field, catalog, source_value, canonical_code)

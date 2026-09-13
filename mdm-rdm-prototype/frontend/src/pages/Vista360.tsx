@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, errorText } from "../api";
 import { Badge, JsonView, KV, LayerSection, Notice, Spinner, Table, fmtDate, fmtDay, partyLink, statusTone } from "../components/ui";
+import { useCallback } from "react";
 
 // Vista 360 del golden record (SPEC §12.3): las 8 capas en orden, fuente ganadora por campo
 // (survivorship), linaje por fila, segmentos por tipo, vínculos por UES, relaciones, contactos con
@@ -39,12 +40,24 @@ function Party({ sk }: { sk: number }) {
   const [src, setSrc] = useState<any | null>(null);
   const [audit, setAudit] = useState<any[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  useEffect(() => {
-    setG(null); setErr(null);
+  const [msg, setMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+  const load = useCallback(() => {
+    setErr(null);
     api(`/parties/${sk}/golden`).then(setG).catch((e) => setErr(errorText(e)));
     api(`/parties/${sk}/sources`).then(setSrc).catch(() => setSrc(null));
     api(`/parties/${sk}/audit`, { params: { limit: 100 } }).then(setAudit).catch(() => setAudit(null));
   }, [sk]);
+  useEffect(() => { setG(null); setMsg(null); load(); }, [load]);
+  const confirm = async (pcs: number) => {
+    const evidence = window.prompt("Evidencia de la confirmación por el titular (fecha, canal, gestor):", "Llamada de gestión · titular confirma");
+    if (evidence === null) return;
+    try { await api(`/parties/${sk}/contacts/${pcs}/confirmation`, { method: "POST", body: { status: "CONFIRMED_BY_TITULAR", evidence } }); setMsg({ kind: "ok", text: "Contacto confirmado por el titular; elegibilidad recalculada y auditada." }); load(); }
+    catch (e) { setMsg({ kind: "error", text: errorText(e) }); }
+  };
+  const togglePurpose = async (pcs: number, purpose: string, allowed: boolean) => {
+    try { await api(`/parties/${sk}/contacts/${pcs}/purposes`, { method: "PUT", body: [{ purpose, allowed }] }); setMsg({ kind: "ok", text: `${purpose} ${allowed ? "habilitada" : "denegada"} para el contacto (fila nueva, histórico conservado).` }); load(); }
+    catch (e) { setMsg({ kind: "error", text: errorText(e) }); }
+  };
   if (err) return <Notice kind="error">{err}</Notice>;
   if (!g) return <Spinner />;
 
@@ -138,20 +151,25 @@ function Party({ sk }: { sk: number }) {
       </LayerSection>
 
       <LayerSection k="contact" title="5 · Contactability (finalidades por contacto y por canal)" count={ct.contacts.length}>
+        {msg && <div className="mb-2"><Notice kind={msg.kind}>{msg.text}</Notice></div>}
         {groups.map(([label, tone, pred]) => {
           const rows = ct.contacts.filter(pred);
           if (!rows.length) return null;
           return (
             <div key={label} className="mb-3">
               <p className="mb-1 text-xs font-semibold uppercase text-slate-500"><Badge tone={tone as any}>{label}</Badge> <span className="ml-1">{rows.length}</span></p>
-              <Table head={["Canal", "Valor", "Rol de uso", "Origen", "Confirmación", "Finalidades", "Elegibilidad", "Fuente"]} rows={rows.map((x: any) => {
+              <Table head={["Canal", "Valor", "Rol de uso", "Origen", "Confirmación", "Finalidades", "Elegibilidad", "Fuente", "Acciones"]} rows={rows.map((x: any) => {
                 const pu = purposesOf(x); const el = elig(x.party_contact_sk);
                 return [x.channel, <span className="font-mono">{x.contact_value}{x.is_primary ? " ★" : ""}{x.rne_excluded ? <Badge tone="red">RNE</Badge> : null}</span>,
                   <Badge tone={x.usage_role === "OWNER" ? "green" : "purple"}>{x.usage_role}</Badge>, x.origin,
                   <Badge tone={x.confirmation?.startsWith("CONFIRMED") ? "green" : x.confirmation === "UNCONFIRMED" ? "yellow" : "red"}>{x.confirmation}</Badge>,
                   <span className="flex flex-wrap gap-1">{Object.entries(pu).map(([p, v]) => <Badge key={p} tone={v.allowed ? "green" : "red"} title={v.level === "CONTACT" ? "preferencia del contacto" : "preferencia del canal"}>{p} {v.allowed ? "✓" : "✗"} <span className="opacity-70">{v.level === "CONTACT" ? "contacto" : "canal"}</span></Badge>)}{!Object.keys(pu).length && <span className="text-slate-400">por defecto</span>}</span>,
-                  <span className="flex flex-wrap gap-1">{el.map((e: any) => <Badge key={e.purpose} tone={e.is_eligible ? "green" : "red"}>{e.purpose}: {e.reason}</Badge>)}{!el.length && <span className="text-xs text-slate-400">se calcula en F5</span>}</span>,
-                  x.source_system_cd];
+                  <span className="flex flex-wrap gap-1">{el.map((e: any) => <Badge key={e.purpose} tone={e.is_eligible ? "green" : "red"}>{e.purpose}: {e.reason}</Badge>)}{!el.length && <span className="text-xs text-slate-400">sin caché</span>}</span>,
+                  x.source_system_cd,
+                  <span className="flex flex-col gap-1 text-xs">
+                    {x.confirmation !== "CONFIRMED_BY_TITULAR" && x.confirmation !== "WRONG_PERSON" && x.confirmation !== "INVALID" && <button className="text-left text-blue-700 underline" onClick={() => confirm(x.party_contact_sk)}>confirmar por titular</button>}
+                    {["COLLECTIONS", "BENEFITS", "COMMERCIAL"].map((p) => <button key={p} className="text-left text-slate-700 underline" onClick={() => togglePurpose(x.party_contact_sk, p, !(pu[p]?.allowed ?? true))}>{pu[p]?.allowed === false ? `habilitar ${p}` : `denegar ${p}`}</button>)}
+                  </span>];
               })} />
             </div>
           );

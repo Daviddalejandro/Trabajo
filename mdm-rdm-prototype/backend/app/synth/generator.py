@@ -68,6 +68,7 @@ class Universe:
         self.persons: list[Person] = []
         self.orgs: list[Org] = []
         self.rows: dict[str, list[dict]] = {k: [] for k in ["sf_ec", "ecc_sd", "ecc_mm", "crm_bp", "web_portal"]}
+        self.delta_rows: dict[str, list[dict]] = {"ecc_sd": []}   # corridas delta plantadas (caso S)
         self.manifest: dict = {"seed": seed, "cases": {}}
         self._docs: set[str] = set()
         self._next = {"pernr": 10000, "kunnr": 300000, "lifnr": 500000, "partner": 7000000, "user": 1}
@@ -290,7 +291,8 @@ class Universe:
         cases["G"] = {"source": "ecc_sd"}
         # --- Caso H · RNE: titular con consent COMMERCIAL GRANTED cuyo celular está en el RNE simulado
         h = P[5]
-        cases["H"] = {"crm_bp": self.emit_crm_person(h, categoria="B", consent_com="Y"), "phone": h.phone}
+        cases["H"] = {"crm_bp": self.emit_crm_person(h, categoria="B", consent_com="Y"),
+                      "ecc_sd": self.emit_sd_person(h, contracts=[("CR-H0005", "ZCRE", "A")]), "phone": h.phone}   # crédito vigente: cobranza legítima
         # --- Caso I · segmentos multi-tipo: AFFILIATION=A (CRM), FINANCIAL_RISK=HIGH (SD), COMMERCIAL=PREMIUM (portal)
         i = P[6]
         cases["I"] = {"crm_bp": self.emit_crm_person(i, categoria="A"), "ecc_sd": self.emit_sd_person(i, risk="003"),
@@ -335,8 +337,10 @@ class Universe:
                                                     risk="002", extra_services="ZHOT;ZSUP"), "doc": r_.doc}
         # --- Caso S · cobranza solo con obligación vigente: consent DP sí, sin crédito activo
         s = P[13]
-        cases["S"] = {"crm_bp": self.emit_crm_person(s, categoria="B", consent_dp="Y", consent_com="N"), "doc": s.doc,
-                      "delta_kunnr": None}
+        cases["S"] = {"crm_bp": self.emit_crm_person(s, categoria="B", consent_dp="Y", consent_com="N"), "doc": s.doc}
+        # el crédito de S llega después, en una corrida delta de ECC_SD (archivo aparte, no en la carga inicial)
+        cases["S"]["delta_kunnr"] = self.emit_sd_person(s, contracts=[("CR-S0013", "ZCRE", "A")])
+        self.delta_rows["ecc_sd"].append(self.rows["ecc_sd"].pop())
         # --- Caso T · finalidades por contacto y teléfonos de cobranza
         t = P[14]
         t_tels = [f"{t.phone}:TIT:OWN:TIT", f"30{rng.randint(10_000_000, 99_999_999)}:COB:OWN:UNC",
@@ -356,6 +360,10 @@ class Universe:
             path = out_dir / f"{src}.csv"
             with path.open("w", newline="", encoding="utf-8") as f:
                 w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+                w.writeheader(); w.writerows(rows)
+        for src, rows in self.delta_rows.items():   # corridas delta (caso S): <fuente>_delta.csv
+            with (out_dir / f"{src}_delta.csv").open("w", newline="", encoding="utf-8") as f:
+                w = csv.DictWriter(f, fieldnames=list(self.rows[src][0].keys()))
                 w.writeheader(); w.writerows(rows)
         # RNE simulado (caso H) — solo números, sin persona
         with (out_dir / "rne_sample.csv").open("w", newline="", encoding="utf-8") as f:

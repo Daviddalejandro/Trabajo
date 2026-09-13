@@ -37,5 +37,8 @@ def test_cli_db_check():
 
 
 def test_cli_phase_gates():
-    r = subprocess.run([sys.executable, "cli.py", "demo"], capture_output=True, text=True)
-    assert r.returncode == 2 and "Fase 5" in r.stdout
+    # todas las fases están habilitadas; las operaciones destructivas exigen confirmación explícita
+    r = subprocess.run([sys.executable, "cli.py", "reset-mdm"], capture_output=True, text=True)
+    assert r.returncode == 2 and "--yes" in r.stdout
+    r = subprocess.run([sys.executable, "cli.py", "rebuild"], capture_output=True, text=True)
+    assert r.returncode == 2 and "--yes" in r.stdout

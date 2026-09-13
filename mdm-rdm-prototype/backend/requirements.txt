@@ -12,3 +12,4 @@ phonenumbers>=8.13
 nameparser>=1.1
 jellyfish>=1.0
 rapidfuzz>=3.9
+openpyxl>=3.1

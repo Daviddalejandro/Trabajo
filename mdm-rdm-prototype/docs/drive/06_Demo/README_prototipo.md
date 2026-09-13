@@ -14,7 +14,7 @@ Opera **exclusivamente con datos sintéticos**.
 | F2 | Staging (5 RAW + `LOAD_BATCH`) + `mdm` (29 tablas, triggers de auditoría y de unicidad golden), generador sintético (1.580 registros, 21 casos plantados), pipeline de 7 etapas con carga de candidatos, `rehomologate`, API de parties y stats | ✅ 42 tests en verde |
 | F3 | Matching (blocking + scoring con evidencia + umbrales), merge automático con snapshot, survivorship por atributo, cola de stewardship con tareas por owner, unmerge, match-preview | ✅ 56 tests en verde |
 | F4 | UI: Consola de Stewardship (cola con evidencia lado a lado, tareas por owner, historial de merges con snapshot y unmerge), Admin RDM (valores, homologaciones, probador, rehomologar con conteo previo), Vista 360 (8 capas), tablero; endpoints de apoyo; e2e con Playwright | ✅ 63 tests backend + 6 e2e en verde |
-| F5 | Cumplimiento embebido: elegibilidad por contacto y finalidad (12 precedencias), consentimientos multi-tipo, ARCO con SLA en días hábiles, RNE, audiencias auditadas, purga simulada, feed de cambios, módulo Cumplimiento en la UI, `make demo` (20 casos verificados) y `make export-drive` | ✅ 77 tests backend + 7 e2e en verde |
+| F5 | Cumplimiento embebido: elegibilidad por contacto y finalidad (12 precedencias), consentimientos multi-tipo, ARCO con SLA en días hábiles, RNE, audiencias auditadas, purga simulada, feed de cambios, módulo Cumplimiento en la UI, `make demo` (20 casos verificados) y `make export-drive` | ✅ 76 tests backend + 7 e2e en verde |
 
 ## Arranque
 

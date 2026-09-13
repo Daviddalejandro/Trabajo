@@ -10,7 +10,7 @@ UI_PORT="${E2E_UI_PORT:-5174}"
 if [[ "${1:-}" == "--no-rebuild" ]]; then
   shift
 else
-  (cd backend && python cli.py rebuild --yes --actor e2e)
+  (cd backend && python cli.py demo --actor e2e)   # rebuild + rne-sync + caso Q + verificación de los 20 casos
 fi
 
 for port in "$API_PORT" "$UI_PORT"; do

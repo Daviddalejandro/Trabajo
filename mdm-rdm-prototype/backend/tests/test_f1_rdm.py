@@ -146,7 +146,7 @@ def test_purpose_requires_consent_type_eav():
 # ------------------------------------------------------------------ regla 3.4: sistema exacto
 def test_no_mapping_to_unregistered_system():
     systems = set(q("SELECT source_system_cd FROM rdm.source_system").scalars().all())
-    assert "SAP_ECC" not in systems and {"SAP_ECC_HCM", "SAP_ECC_SD", "SAP_ECC_MM", "SAP_CRM", "SF_EC", "WEB_PORTAL"} == systems
+    assert "SAP_ECC" not in systems and {"SAP_ECC_HCM", "SAP_ECC_SD", "SAP_ECC_MM", "SAP_CRM", "SF_EC", "WEB_PORTAL", "MDM_CONSOLE"} == systems   # MDM_CONSOLE: escrituras internas (F5)
     used = set(q("SELECT DISTINCT source_system_cd FROM rdm.vw_rdm_source_to_canonical").scalars().all())
     assert used <= systems
     assert q("SELECT is_prototype_active FROM rdm.source_system WHERE source_system_cd='SAP_ECC_HCM'").scalar_one() is False
