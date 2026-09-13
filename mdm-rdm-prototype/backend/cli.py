@@ -47,11 +47,59 @@ def rdm_seed(actor: str = typer.Option("rdm-seed", help="Actor registrado en RDM
     typer.echo("RDM sembrado. Prueba canónica: GET /api/v1/rdm/homologate?system=SAP_CRM&field=GESCHL&value=1 → M")
 
 
+@cli.command("synth-generate")
+def synth_generate(seed: int = typer.Option(None, help="Seed fija (por defecto SYNTH_SEED)")) -> None:
+    """F2 · Genera los CSV sintéticos de las 5 fuentes y el manifiesto de casos (§13)."""
+    from app.synth.generator import generate
+
+    m = generate(seed or settings.synth_seed)
+    for k, v in m["counts"].items():
+        typer.echo(f"{k:12s} {v} registros")
+    typer.echo(f"Casos plantados: {', '.join(sorted(m['cases']))}")
+
+
 @cli.command("ingest")
-def ingest(source: str = typer.Option(..., help="sf_ec | ecc_sd | ecc_mm | crm_bp | web_portal"),
-           mode: str = typer.Option("full", help="full | delta")) -> None:
-    """F2 · Pipeline de 7 etapas para una fuente."""
-    _pending("Fase 2")
+def ingest(source: str = typer.Option(..., help="sf_ec | ecc_sd | ecc_mm | crm_bp | web_portal | all"),
+           mode: str = typer.Option("full", help="full | delta"),
+           file: str = typer.Option(None, help="CSV alterno (por defecto data/synth/<fuente>.csv)"),
+           actor: str = typer.Option("pipeline")) -> None:
+    """F2 · Pipeline de 7 etapas para una fuente (replica <fuente>_full_load / _delta_nightly)."""
+    from app.core.db import SessionLocal
+    from app.pipeline.run import run_ingest
+    from app.pipeline.sources import SOURCES
+
+    sources = list(SOURCES) if source == "all" else [source]
+    with SessionLocal() as session:
+        for src in sources:
+            r = run_ingest(session, src, mode, file, actor)
+            typer.echo(" · ".join(f"{k}={v}" for k, v in r.items()))
+
+
+@cli.command("rehomologate")
+def rehomologate_cmd(catalog: str = typer.Option(None, help="Catálogo (p. ej. CAT_PARTY_ROLE); vacío = todos"),
+                     actor: str = typer.Option("rdm-admin")) -> None:
+    """F2 · Reprocesa los campos en UNKNOWN tras un cambio en SOURCE_VALUE_MAPPING (§7.2)."""
+    from app.core.db import SessionLocal
+    from app.pipeline.rehomologate import rehomologate
+
+    with SessionLocal() as session:
+        typer.echo(rehomologate(session, catalog, actor))
+
+
+@cli.command("reset-mdm")
+def reset_mdm(yes: bool = typer.Option(False, "--yes", help="Confirma el vaciado de staging y mdm (el RDM se conserva)")) -> None:
+    """Vacía staging.* y mdm.* (datos sintéticos) conservando el RDM. Base de `make demo` desde cero."""
+    if not yes:
+        typer.echo("Agrega --yes para confirmar. Solo vacía datos sintéticos de staging y mdm; el RDM no se toca.")
+        raise typer.Exit(code=2)
+    from sqlalchemy import text
+    from app.core.db import engine
+
+    with engine.begin() as conn:
+        tables = conn.execute(text("SELECT table_schema||'.'||table_name FROM information_schema.tables "
+                                   "WHERE table_schema IN ('staging','mdm') AND table_type='BASE TABLE'")).scalars().all()
+        conn.execute(text("TRUNCATE " + ", ".join(tables) + " RESTART IDENTITY CASCADE"))
+    typer.echo(f"Vaciadas {len(tables)} tablas de staging y mdm.")
 
 
 @cli.command("match")

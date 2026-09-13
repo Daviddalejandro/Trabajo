@@ -37,5 +37,5 @@ def test_cli_db_check():
 
 
 def test_cli_phase_gates():
-    r = subprocess.run([sys.executable, "cli.py", "ingest", "--source", "sf_ec"], capture_output=True, text=True)
-    assert r.returncode == 2 and "Fase 2" in r.stdout
+    r = subprocess.run([sys.executable, "cli.py", "match"], capture_output=True, text=True)
+    assert r.returncode == 2 and "Fase 3" in r.stdout

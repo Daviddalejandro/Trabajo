@@ -183,4 +183,5 @@ def test_navigation_endpoints(client):
     v2 = client.get("/api/v1/rdm/catalogs/CAT_MDM_ENTITY/values", params={"limit": 10, "cursor": v["next_cursor"]}).json()
     assert v2["items"][0]["technical"] is False
     assert client.get("/api/v1/rdm/catalogs/CAT_NOPE/values").status_code == 404
-    assert client.post("/api/v1/rdm/rehomologate", params={"catalog": "CAT_GENDER"}).status_code == 501
+    r = client.post("/api/v1/rdm/rehomologate", params={"catalog": "CAT_GENDER"})
+    assert r.status_code == 200 and r.json()["candidates"] == 0   # F2: sin UNKNOWN de género pendientes

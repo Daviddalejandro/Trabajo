@@ -108,11 +108,6 @@ def create_mapping(body: MappingIn, actor: str = Depends(actor_header), session:
         session.rollback(); raise HTTPException(409, str(e.orig))
 
 
-@router.post("/rehomologate", summary="Reprocesa los UNKNOWN de un catálogo (§7.2)")
-def rehomologate(catalog: str):
-    raise HTTPException(501, "Disponible a partir de la Fase 2: requiere staging y mdm (SPEC §14).")
-
-
 @router.get("/source-systems", summary="Sistemas fuente registrados (owner y steward)")
 def source_systems(session: Session = Depends(get_session)):
     return service.list_source_systems(session)
