@@ -77,6 +77,34 @@ El guion final recorre los 20 casos plantados de la especificación (§13, A–T
 10. **Caso N:** `POST /parties/match-preview` con el documento de un golden → candidato con
     `AUTO_MERGE` y evidencia, sin persistir (`persisted=false`).
 
-## Fases 4–5 (pendiente)
+## Fase 4 · Interfaz
 
-Casos E, F, H, M, Q, S, T según §13; B y K desde la consola (F4).
+Requisito: `make rebuild` (deja B y K pendientes) y `make api` + `cd frontend && npm run dev`.
+
+1. **Tablero** (`#/`): goldens, candidatos, fusionados, pares en cola, última carga por fuente.
+2. **Caso B desde la consola** (`#/stewardship`, actor `steward.mdm`): seleccionar el par con solo
+   `WEB_PORTAL`; el desglose muestra 0 en documento y puntos plenos en apellido, nombre, fecha y
+   correo; el botón **Fusionar** está deshabilitado hasta escribir la justificación; al fusionar
+   aparece "Fusionado (STEWARD)" y el par sale de la cola.
+3. **Caso K desde la consola**: el par `SF_EC · SAP_CRM` ofrece **Fusionar (pedir a owners)** →
+   "En revisión: tareas creadas para SAP_CRM, SF_EC". Cambiar **Actúa como** a `steward.sfec`,
+   pestaña **Tareas por owner**, decidir MERGE → "faltan otros owners (1/2)". Cambiar a
+   `steward.crm`, decidir MERGE → "Fusionado (OWNER_CONSENSUS)". Variante: NO_MATCH de un owner
+   resuelve el par; decisiones divididas escalan a `jefatura.gd` (rol JEFATURA, MANUAL_OVERRIDE).
+4. **Unmerge desde la UI** (pestaña **Historial de merges**): abrir un merge `AUTO`, revisar las
+   filas por tabla del `pre_merge_snapshot` y la auditoría por `merge_sk`, escribir la razón y
+   **Deshacer merge** → filas restauradas, merge marcado REVERTIDO, par `NO_MATCH`.
+5. **Admin RDM** (`#/rdm`): Contactabilidad → `CAT_CONTACT_FREQUENCY` → **Nuevo valor canónico**
+   (la SK la asigna la base) → **deprecar** (confirmación; el código no se recicla). Homologaciones
+   `SAP_CRM` → **Nueva homologación** `RLTYP` / `CAT_PARTY_ROLE` / `ZPRV` → `VENDOR`. **Rehomologar**:
+   elegir `CAT_PARTY_ROLE`, el conteo previo muestra "Se corregirían ahora 1", ejecutar → "corregidos 1"
+   (caso P). **Probador**: `SAP_CRM` / `GESCHL` / `1` → `CAT_GENDER.M`.
+6. **Vista 360** (`#/party`): buscar `ESPIGA` (caso D) → las 8 capas en orden; la capa Core muestra
+   la fuente ganadora por campo; Golden Record lista survivorship y el merge AUTO. Buscar el afiliado
+   del caso R para ver roles por UES y vínculos de servicio debajo; el del caso T para ver los
+   teléfonos de cobranza agrupados y marcados con sus finalidades por contacto.
+7. `make test-e2e` reproduce 2–6 con Playwright (6 pruebas).
+
+## Fase 5 (pendiente)
+
+Casos E, F, H, M, Q, S, T según §13; `make demo` y `make export-drive`.

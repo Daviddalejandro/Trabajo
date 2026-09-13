@@ -1,1 +1,1 @@
-{"root":["./src/App.tsx","./src/api.ts","./src/main.tsx"],"version":"5.9.3"}
+{"root":["./src/App.tsx","./src/api.ts","./src/main.tsx","./src/components/ui.tsx","./src/pages/AdminRdm.tsx","./src/pages/Dashboard.tsx","./src/pages/Stewardship.tsx","./src/pages/Vista360.tsx"],"version":"5.9.3"}

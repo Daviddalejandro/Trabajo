@@ -102,6 +102,32 @@ def reset_mdm(yes: bool = typer.Option(False, "--yes", help="Confirma el vaciado
     typer.echo(f"Vaciadas {len(tables)} tablas de staging y mdm.")
 
 
+@cli.command("rebuild")
+def rebuild(yes: bool = typer.Option(False, "--yes", help="Confirma: elimina los esquemas rdm, mdm y staging y los reconstruye"),
+            actor: str = typer.Option("rebuild")) -> None:
+    """Reconstruye desde cero: drop de esquemas → migrate → rdm-seed → synth-generate → ingest all (con matching).
+    Deja la consola con los casos B y K pendientes (base de las pruebas e2e y de `make demo`)."""
+    if not yes:
+        typer.echo("Agrega --yes para confirmar. Elimina y reconstruye rdm, mdm y staging con datos sintéticos.")
+        raise typer.Exit(code=2)
+    from sqlalchemy import text
+    from app.core.db import engine
+
+    with engine.begin() as conn:
+        for sch in ("staging", "mdm", "rdm"):
+            conn.execute(text(f"DROP SCHEMA IF EXISTS {sch} CASCADE"))
+        conn.execute(text("DROP TABLE IF EXISTS public.alembic_version"))
+    engine.dispose()
+    rc = subprocess.call([sys.executable, "-m", "alembic", "upgrade", "head"])
+    if rc:
+        raise typer.Exit(code=rc)
+    for args in (["rdm-seed", "--actor", actor], ["synth-generate"], ["ingest", "--source", "all", "--actor", actor]):
+        rc = subprocess.call([sys.executable, "cli.py", *args])
+        if rc:
+            raise typer.Exit(code=rc)
+    typer.echo("Reconstrucción completa: RDM sembrado, sintéticos generados, 5 fuentes ingeridas y matching aplicado.")
+
+
 @cli.command("match")
 def match(actor: str = typer.Option("matching")) -> None:
     """F3 · Blocking, scoring, umbrales, merge automático (snapshot) y survivorship sobre los CANDIDATE."""

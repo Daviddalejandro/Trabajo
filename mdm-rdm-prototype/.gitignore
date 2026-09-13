@@ -7,3 +7,6 @@ node_modules/
 frontend/dist/
 docs/drive/*
 !docs/drive/.gitkeep
+frontend/e2e-report/
+frontend/test-results/
+frontend/tsconfig.tsbuildinfo

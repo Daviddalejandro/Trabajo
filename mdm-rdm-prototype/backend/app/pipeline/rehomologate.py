@@ -44,3 +44,20 @@ def rehomologate(session: Session, catalog: str | None = None, actor: str = "rdm
         set_context(session, actor)
     session.commit()
     return result
+
+
+def rehomologate_preview(session: Session, catalog: str | None = None) -> dict:
+    """§7.2 · Cuántos campos UNKNOWN hay por catálogo y cuántos se corregirían hoy con los mapeos
+    vigentes (sin escribir nada). Alimenta el botón "Rehomologar" del Admin RDM (SPEC §12)."""
+    rows = session.execute(text("""
+        SELECT i.detail->>'catalog' AS catalog, s.source_system_cd AS system_cd, i.detail->>'source_field' AS source_field,
+               i.detail->>'source_value' AS source_value, count(*) AS n,
+               EXISTS (SELECT 1 FROM rdm.vw_rdm_source_to_canonical v WHERE v.source_system_cd=s.source_system_cd
+                       AND v.source_field=i.detail->>'source_field' AND v.source_value=i.detail->>'source_value'
+                       AND v.catalog_code=i.detail->>'catalog') AS resolvable
+        FROM mdm.party_dq_issue i JOIN rdm.source_system s ON s.source_system_sk = i.source_system_cd
+        WHERE i.resolved_at IS NULL AND i.detail ? 'target_table' AND (CAST(:c AS TEXT) IS NULL OR i.detail->>'catalog' = :c)
+        GROUP BY 1,2,3,4,6 ORDER BY 1,2,3,4"""), {"c": catalog}).mappings().all()
+    items = [dict(r) for r in rows]
+    return {"catalog": catalog, "unknown": sum(r["n"] for r in items), "resolvable": sum(r["n"] for r in items if r["resolvable"]),
+            "items": items}

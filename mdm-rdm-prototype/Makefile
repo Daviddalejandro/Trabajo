@@ -3,7 +3,7 @@ SHELL := /bin/bash
 LOCAL_DB_URL ?= postgresql+psycopg://mdm@127.0.0.1:5433/mdm_prototype
 export DATABASE_URL ?= $(LOCAL_DB_URL)
 
-.PHONY: up down logs db-local db-local-stop migrate seed ingest match demo test test-backend test-frontend api ui export-drive
+.PHONY: up down logs db-local db-local-stop migrate seed ingest match rebuild demo test test-backend test-frontend test-e2e api ui export-drive
 
 up:            ## Levanta db + api + ui con Docker
 	docker compose up -d --build
@@ -26,11 +26,16 @@ seed:          ## F1: siembra el RDM (43 catálogos, vistas, homologaciones)
 demo:          ## F5: levantar → migrar → sembrar → sintéticos → ingerir → rne-sync → matching
 	cd backend && python cli.py demo
 
-test: test-backend   ## Suite completa
+rebuild:       ## Reconstruye rdm + mdm + staging desde cero con sintéticos (deja B y K en la consola)
+	cd backend && python cli.py rebuild --yes
+
+test: test-backend test-frontend   ## Suite completa (backend + build de la UI)
 test-backend:
 	cd backend && python -m pytest -q
 test-frontend:
 	cd frontend && npm run build
+test-e2e:      ## F4: Playwright contra API :8001 y UI :5174 sobre una base reconstruida
+	scripts/e2e.sh
 
 api:           ## API local (sin Docker)
 	cd backend && uvicorn app.main:app --reload --port 8000

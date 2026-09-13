@@ -1,87 +1,76 @@
 import { useEffect, useState } from "react";
-import { getHealth, type Health } from "./api";
+import { ACTORS, getHealth, getSession, setSession, type Health, type SessionUser } from "./api";
+import { LAYERS, useHash } from "./components/ui";
+import Dashboard from "./pages/Dashboard";
+import Stewardship from "./pages/Stewardship";
+import AdminRdm from "./pages/AdminRdm";
+import Vista360 from "./pages/Vista360";
 
-// Leyenda de colores del modelo (SPEC §12): se conserva desde F0 para toda la UI.
-const LAYERS = [
-  ["Sources", "bg-gray-400"],
-  ["Core", "bg-blue-500"],
-  ["Identity", "bg-yellow-400"],
-  ["Roles y Relaciones", "bg-green-500"],
-  ["Contactability", "bg-purple-500"],
-  ["Governance", "bg-orange-500"],
-  ["Golden Record", "bg-pink-500"],
-  ["Consents", "bg-red-500"],
-] as const;
-
-const MODULES = [
-  ["Consola de Stewardship", "F4", "Cola PROBABLE, evidencia lado a lado, tareas por owner, unmerge."],
-  ["Admin RDM", "F1/F4", "Dominios, catálogos, valores, homologaciones, probador."],
-  ["Vista 360", "F4", "Golden record por las 8 capas con fuente ganadora por campo."],
+const NAV = [
+  ["#/", "Tablero"],
+  ["#/stewardship", "Consola de Stewardship"],
+  ["#/rdm", "Admin RDM"],
+  ["#/party", "Vista 360"],
 ] as const;
 
 export default function App() {
   const [health, setHealth] = useState<Health | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [session, setSess] = useState<SessionUser>(getSession());
+  const hash = useHash();
 
   useEffect(() => {
     getHealth().then(setHealth).catch((e) => setError(String(e)));
   }, []);
 
+  const changeActor = (actor: string) => {
+    const a = ACTORS.find((x) => x.actor === actor) ?? ACTORS[0];
+    const s = { actor: a.actor, role: a.role };
+    setSession(s);
+    setSess(s);
+  };
+
+  const active = (href: string) => (href === "#/" ? hash === "#/" || hash === "" : hash.startsWith(href));
+  let page = <Dashboard />;
+  if (hash.startsWith("#/stewardship")) page = <Stewardship key={session.actor} />;
+  else if (hash.startsWith("#/rdm")) page = <AdminRdm />;
+  else if (hash.startsWith("#/party")) page = <Vista360 hash={hash} />;
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="bg-amber-400 text-amber-950 text-center text-sm font-semibold py-1">
-        Prototipo — datos sintéticos
-      </div>
-      <header className="border-b bg-white px-6 py-4">
-        <h1 className="text-xl font-bold">MDM/RDM in-house · Dominio Party</h1>
-        <p className="text-sm text-slate-600">Colsubsidio · Jefatura de Gobierno de Datos (ARC)</p>
-      </header>
-      <main className="mx-auto max-w-5xl p-6 space-y-8">
-        <section className="rounded-lg border bg-white p-4">
-          <h2 className="font-semibold mb-2">Estado del servicio</h2>
-          {error && <p className="text-red-700">No se pudo contactar la API: {error}</p>}
-          {health && (
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-4">
-              <dt className="text-slate-500">API</dt>
-              <dd className={health.status === "ok" ? "text-green-700" : "text-red-700"}>{health.status}</dd>
-              <dt className="text-slate-500">Base de datos</dt>
-              <dd className={health.db === "ok" ? "text-green-700" : "text-red-700"}>{health.db}</dd>
-              <dt className="text-slate-500">Versión</dt>
-              <dd>{health.version}</dd>
-              <dt className="text-slate-500">Esquemas faltantes</dt>
-              <dd>{health.schemas_missing.length ? health.schemas_missing.join(", ") : "ninguno"}</dd>
-            </dl>
-          )}
-          {!health && !error && <p className="text-slate-500 text-sm">Consultando…</p>}
-        </section>
-
-        <section>
-          <h2 className="font-semibold mb-2">Módulos (se habilitan por fase)</h2>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {MODULES.map(([name, phase, desc]) => (
-              <div key={name} className="rounded-lg border bg-white p-4 opacity-70">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium">{name}</h3>
-                  <span className="rounded bg-slate-200 px-2 text-xs">{phase}</span>
-                </div>
-                <p className="mt-1 text-sm text-slate-600">{desc}</p>
-              </div>
-            ))}
+      <div className="bg-amber-400 py-1 text-center text-sm font-semibold text-amber-950">Prototipo — datos sintéticos</div>
+      <header className="border-b bg-white px-6 py-3">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-4">
+          <div>
+            <h1 className="text-lg font-bold leading-tight">MDM/RDM in-house · Dominio Party</h1>
+            <p className="text-xs text-slate-600">Colsubsidio · Jefatura de Gobierno de Datos (ARC)</p>
           </div>
-        </section>
-
-        <section>
-          <h2 className="font-semibold mb-2">Leyenda de capas del modelo</h2>
-          <ul className="flex flex-wrap gap-3 text-sm">
-            {LAYERS.map(([name, color]) => (
-              <li key={name} className="flex items-center gap-2">
-                <span className={`inline-block h-3 w-3 rounded ${color}`} />
-                {name}
-              </li>
+          <nav className="flex flex-wrap gap-1">
+            {NAV.map(([href, label]) => (
+              <a key={href} href={href} className={`rounded px-3 py-1.5 text-sm ${active(href) ? "bg-blue-700 text-white" : "text-slate-700 hover:bg-slate-100"}`}>{label}</a>
             ))}
-          </ul>
-        </section>
+          </nav>
+          <div className="ml-auto flex items-center gap-2 text-sm">
+            <label htmlFor="actor" className="text-slate-500">Actúa como</label>
+            <select id="actor" value={session.actor} onChange={(e) => changeActor(e.target.value)} className="rounded border px-2 py-1">
+              {ACTORS.map((a) => <option key={a.actor} value={a.actor}>{a.label}</option>)}
+            </select>
+            <span className={`rounded px-2 py-0.5 text-xs font-semibold ${session.role === "JEFATURA" ? "bg-purple-100 text-purple-800" : "bg-slate-100 text-slate-700"}`}>{session.role}</span>
+            <span className={`h-2.5 w-2.5 rounded-full ${health?.status === "ok" ? "bg-green-500" : error ? "bg-red-500" : "bg-slate-300"}`} title={health ? `API ${health.status} · BD ${health.db} · v${health.version}` : error ?? "consultando"} />
+          </div>
+        </div>
+      </header>
+      <main className="mx-auto max-w-7xl p-6">
+        {error && <p className="mb-4 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">No se pudo contactar la API: {error}</p>}
+        {page}
       </main>
+      <footer className="mx-auto max-w-7xl px-6 pb-6 text-xs text-slate-500">
+        <ul className="flex flex-wrap gap-3">
+          {LAYERS.map((l) => (
+            <li key={l.key} className="flex items-center gap-1"><span className={`inline-block h-2.5 w-2.5 rounded ${l.dot}`} />{l.name}</li>
+          ))}
+        </ul>
+      </footer>
     </div>
   );
 }

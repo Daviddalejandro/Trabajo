@@ -13,7 +13,7 @@ Opera **exclusivamente con datos sintéticos**.
 | F1 | RDM: 43 catálogos (263 valores), 6 sistemas fuente, 24 homologaciones, 6 vistas, trigger de inmutabilidad, auditoría por trigger, endpoints RDM | ✅ 25 tests en verde |
 | F2 | Staging (5 RAW + `LOAD_BATCH`) + `mdm` (29 tablas, triggers de auditoría y de unicidad golden), generador sintético (1.580 registros, 21 casos plantados), pipeline de 7 etapas con carga de candidatos, `rehomologate`, API de parties y stats | ✅ 42 tests en verde |
 | F3 | Matching (blocking + scoring con evidencia + umbrales), merge automático con snapshot, survivorship por atributo, cola de stewardship con tareas por owner, unmerge, match-preview | ✅ 56 tests en verde |
-| F4 | Consola de Stewardship, Admin RDM, Vista 360 | pendiente |
+| F4 | UI: Consola de Stewardship (cola con evidencia lado a lado, tareas por owner, historial de merges con snapshot y unmerge), Admin RDM (valores, homologaciones, probador, rehomologar con conteo previo), Vista 360 (8 capas), tablero; endpoints de apoyo; e2e con Playwright | ✅ 63 tests backend + 6 e2e en verde |
 | F5 | Cumplimiento, audiencias, ARCO, RNE, `make demo`, export a Drive | pendiente |
 
 ## Arranque
@@ -67,7 +67,9 @@ mdm-rdm-prototype/
 │   ├── app/synth          generador sintético (§13)
 │   ├── cli.py             comandos operativos (nombres de los DAGs)
 │   └── tests/             pytest por fase
-└── frontend/src/          Stewardship, Admin RDM, Vista 360 (React + Vite + Tailwind)
+├── frontend/src/          pages/ (Dashboard, Stewardship, AdminRdm, Vista360), components/ui (React + Vite + Tailwind)
+├── frontend/e2e/          Playwright: casos B, K, L, Admin RDM y Vista 360 desde la UI
+└── scripts/e2e.sh         rebuild → API :8001 + UI :5174 → playwright
 ```
 
 ## RDM (Fase 1)
@@ -175,6 +177,38 @@ Decisiones de implementación de la Fase 3:
   en merges humanos el actor es el steward u owner que decidió (Ley 1581/2012 art. 17; ISO/IEC 27001:2022 A.8.15).
 - **Corrida sobre los sintéticos** (5 fuentes, 1.580 registros): 684 merges automáticos, 894 goldens,
   2 pares `PROBABLE` (casos B y K) y 1 `POSSIBLE` (caso C); ninguna persona se compara con una organización.
+
+## Interfaz (Fase 4)
+
+```bash
+make rebuild                                   # base desde cero con B y K pendientes en la consola
+make api                                       # FastAPI :8000
+cd frontend && npm install && npm run dev      # UI en :5173 (VITE_API_BASE opcional)
+make test-e2e                                  # Playwright: rebuild → API :8001 + UI :5174 → 6 pruebas
+```
+
+| Módulo | Ruta | Qué hace |
+|---|---|---|
+| Tablero | `#/` | Goldens, candidatos, fusionados, pares en cola; última carga por fuente; matching por decisión; hallazgos DQ; tareas abiertas por owner. |
+| Consola de Stewardship | `#/stewardship` | **Cola** (PROBABLE/POSSIBLE): score total, desglose por atributo con barra de puntos y valores A/B resaltando diferencias, fuentes y owners, roles/segmentos/servicios/relaciones/contactos de cada party; acciones **Fusionar** / **No es la misma persona** / **Escalar** con justificación obligatoria (botones deshabilitados sin ella). **Tareas por owner**: las `MATCH_REVIEW_TASK` del actor con `due_at`, decisión y resultado de la regla de cierre. **Historial de merges**: `pre_merge_snapshot` (filas por tabla y JSON), auditoría por `merge_sk` y **unmerge** con razón. |
+| Admin RDM | `#/rdm` | Dominio → catálogo → valores con jerarquía (DIVIPOLA, segmentos, servicios), alta de valor (la SK la asigna la base), deprecación con confirmación, homologaciones por sistema fuente con alta, probador sistema/campo/valor → canónico y **Rehomologar** con conteo previo de UNKNOWN corregibles. |
+| Vista 360 | `#/party` y `#/party/:sk` | Búsqueda y perfil por las 8 capas en orden con la leyenda de colores: XREF y linaje, core con fuente ganadora por campo, identificadores golden, roles por UES, vínculos de servicio por UES, segmentos por tipo, relaciones con el otro extremo, contactos agrupados (propios, cobranza no confirmados, compartidos/acudiente, referencias) con finalidades por contacto vs. canal, hallazgos, retención, auditoría, survivorship, merges, consentimientos y ARCO. |
+
+Sin SSO en el prototipo (SPEC §2): el selector **Actúa como** fija las cabeceras `X-Actor` y `X-Role`
+(`STEWARD` o `JEFATURA`); los owners de fuente son los `data_steward` registrados en `SOURCE_SYSTEM`.
+
+Decisiones de implementación de la Fase 4:
+
+- **Herramienta de evidencia, no flujo de aprobación** (regla dura §3.12): la consola muestra el
+  `score_detail` completo y las capas de ambos parties; toda decisión exige justificación y queda en
+  `PARTY_AUDIT_LOG` como `REVIEW_DECISION` con el actor.
+- **Regla de cierre entre owners** (§8.5) verificada desde la UI: el steward pide la fusión de un par con
+  dos fuentes → una tarea por owner; el primer owner deja el par "faltan otros owners (1/2)"; el
+  segundo cierra con `OWNER_CONSENSUS`. Un `NO_MATCH` de cualquier owner resuelve el par.
+- **Endpoints de apoyo** añadidos a §11: `GET /merges`, `GET /merges/{sk}` (snapshot, conteos y
+  auditoría), `GET /rdm/rehomologate/preview`, `GET /parties/{sk}/relationships` y `/services`.
+- **Pruebas e2e reproducibles**: `scripts/e2e.sh` reconstruye la base (`cli.py rebuild --yes`) para que
+  B y K estén pendientes, levanta API y UI en puertos propios y corre Playwright (Chromium).
 
 ## Convenciones (reglas duras de la especificación, §3)
 

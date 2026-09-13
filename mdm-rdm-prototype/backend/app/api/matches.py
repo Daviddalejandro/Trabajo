@@ -130,6 +130,35 @@ def post_task_decision(task_sk: int, body: TaskDecisionIn, actor: str = Depends(
         session.rollback(); raise HTTPException(409, str(e))
 
 
+@router.get("/merges", summary="Historial de merges (pestaña de la consola, §12)")
+def list_merges(unmerged: bool | None = None, party_sk: int | None = None, limit: int = Query(50, ge=1, le=500), cursor: int = Query(0, ge=0),
+                session: Session = Depends(get_session)):
+    rows = session.execute(text("""
+        SELECT h.merge_sk, h.surviving_party_sk, h.merged_party_sk, mt.value_code AS merge_type, h.match_sk, h.justification, h.decided_by, h.merged_at,
+               h.unmerged, h.unmerged_by, h.unmerged_at, h.unmerge_reason, m.total_score
+        FROM mdm.party_merge_history h JOIN rdm.reference_value mt ON mt.value_sk=h.merge_type_cd LEFT JOIN mdm.party_match m ON m.match_sk=h.match_sk
+        WHERE h.merge_sk > :cursor AND (CAST(:u AS BOOLEAN) IS NULL OR h.unmerged = :u) AND (CAST(:p AS BIGINT) IS NULL OR :p IN (h.surviving_party_sk, h.merged_party_sk))
+        ORDER BY h.merge_sk DESC LIMIT :lim"""), {"cursor": cursor, "u": unmerged, "p": party_sk, "lim": limit + 1}).mappings().all()
+    items = [dict(r) | {"surviving": party_summary(session, r["surviving_party_sk"]), "merged": party_summary(session, r["merged_party_sk"])} for r in rows[:limit]]
+    return {"items": items, "next_cursor": items[-1]["merge_sk"] if len(rows) > limit else None}
+
+
+@router.get("/merges/{merge_sk}", summary="Detalle de un merge con su pre_merge_snapshot")
+def get_merge(merge_sk: int, session: Session = Depends(get_session)):
+    r = session.execute(text("""
+        SELECT h.merge_sk, h.surviving_party_sk, h.merged_party_sk, mt.value_code AS merge_type, h.match_sk, h.justification, h.decided_by, h.merged_at,
+               h.unmerged, h.unmerged_by, h.unmerged_at, h.unmerge_reason, h.pre_merge_snapshot
+        FROM mdm.party_merge_history h JOIN rdm.reference_value mt ON mt.value_sk=h.merge_type_cd WHERE h.merge_sk=:k"""), {"k": merge_sk}).mappings().first()
+    if r is None:
+        raise HTTPException(404, "Merge inexistente")
+    snap = r["pre_merge_snapshot"] or {}
+    counts = {side: {t: len(rows_) for t, rows_ in (snap.get(side) or {}).get("tables", {}).items() if rows_} for side in snap}
+    audit = session.execute(text("""SELECT a.entity, ac.value_code AS action, count(*) AS n FROM mdm.party_audit_log a JOIN rdm.reference_value ac ON ac.value_sk=a.action_cd
+        WHERE a.merge_sk=:k GROUP BY 1,2 ORDER BY 1,2"""), {"k": merge_sk}).mappings().all()
+    return dict(r) | {"surviving": party_summary(session, r["surviving_party_sk"]), "merged": party_summary(session, r["merged_party_sk"]),
+                      "snapshot_counts": counts, "audit": [dict(a) for a in audit]}
+
+
 @router.post("/parties/{party_sk}/unmerge", summary="Deshace un merge desde el snapshot previo")
 def post_unmerge(party_sk: int, body: UnmergeIn, actor: str = Depends(actor_header), session: Session = Depends(get_session)):
     owner = session.execute(text("SELECT 1 FROM mdm.party_merge_history WHERE merge_sk=:k AND :p IN (surviving_party_sk, merged_party_sk)"), {"k": body.merge_sk, "p": party_sk}).scalar()

@@ -4,7 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.db import get_session
-from app.pipeline.rehomologate import rehomologate
+from app.pipeline.rehomologate import rehomologate, rehomologate_preview
 from app.pipeline.run import run_ingest
 from app.pipeline.sources import SOURCES
 
@@ -21,6 +21,11 @@ def run(source: str, mode: str = Query("full", pattern="^(full|delta)$"), file: 
     if source not in SOURCES:
         raise HTTPException(404, f"Fuente {source} no existe; válidas: {', '.join(SOURCES)}")
     return run_ingest(session, source, mode, file, actor)
+
+
+@router.get("/rdm/rehomologate/preview", summary="Cuántos UNKNOWN hay y cuántos se corregirían con los mapeos vigentes (§7.2)")
+def rehomologate_preview_endpoint(catalog: str | None = None, session: Session = Depends(get_session)):
+    return rehomologate_preview(session, catalog)
 
 
 @router.post("/rdm/rehomologate", summary="Reprocesa los UNKNOWN de un catálogo (§7.2)")
