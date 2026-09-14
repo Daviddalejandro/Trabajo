@@ -136,7 +136,7 @@ La API sirve la consola compilada en el mismo puerto. El enlace de abajo funcion
 code('''
 import subprocess, time, urllib.request, os
 API_LOG = open("/content/api.log", "w")
-api = subprocess.Popen([sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000", "--log-level", "warning"],
+API_PROC = subprocess.Popen([sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8000", "--log-level", "warning"],
                        env=ENV, stdout=API_LOG, stderr=subprocess.STDOUT, cwd=str(BACKEND))
 for _ in range(60):
     try:
@@ -239,13 +239,13 @@ cola()
 
 md("## 7 · Guardar resultados en Drive (opcional)")
 code('''
-import datetime, shutil, pathlib
+import datetime, shutil, pathlib, json, urllib.request
 sh(sys.executable, "cli.py", "export-drive", "--out", "/content/export")
 sello = datetime.datetime.now().strftime("%Y%m%d_%H%M")
 destino = pathlib.Path("/content/drive/MyDrive") / CARPETA_RESULTADOS / sello
 destino.mkdir(parents=True, exist_ok=True)
 shutil.copytree("/content/export", destino / "entregables", dirs_exist_ok=True)
-resumen = api("/stats")
+resumen = json.loads(urllib.request.urlopen("http://127.0.0.1:8000/api/v1/stats").read())
 (destino / "stats.json").write_text(json.dumps(resumen, ensure_ascii=False, indent=2))
 shutil.copy("/content/api.log", destino / "api.log")
 print("Resultados guardados en Drive:", destino)
@@ -253,7 +253,7 @@ print("Resultados guardados en Drive:", destino)
 
 md("## 8 · Apagar (opcional; Colab lo hace solo al cerrar)")
 code('''
-api.terminate()
+API_PROC.terminate()
 sh("bash", str(PROTO / "scripts" / "db_local.sh"), "stop", check=False)
 print("API y base de datos detenidas.")
 ''')
