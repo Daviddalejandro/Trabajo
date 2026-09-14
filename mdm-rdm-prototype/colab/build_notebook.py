@@ -57,6 +57,7 @@ import os, subprocess, shutil, sys, time, pathlib
 from google.colab import drive
 drive.mount("/content/drive", force_remount=False)
 
+os.chdir("/content")                     # nunca borrar la carpeta en la que estamos parados (reejecución de la celda)
 RAIZ = pathlib.Path("/content/mdm")
 if RAIZ.exists():
     shutil.rmtree(RAIZ)
@@ -70,7 +71,10 @@ else:
     url = GITHUB_REPO
     if GITHUB_TOKEN:
         url = url.replace("https://", f"https://{GITHUB_TOKEN}@")
-    subprocess.run(["git", "clone", "--quiet", "--depth", "1", "--branch", GITHUB_RAMA, url, str(RAIZ / "repo")], check=True)
+    r = subprocess.run(["git", "clone", "--quiet", "--depth", "1", "--branch", GITHUB_RAMA, url, str(RAIZ / "repo")],
+                       capture_output=True, text=True)
+    if r.returncode:
+        raise SystemExit("git clone falló: " + r.stderr.strip()[-1500:])
     shutil.move(str(RAIZ / "repo" / "mdm-rdm-prototype"), str(RAIZ / "mdm-rdm-prototype"))
 
 PROTO = next(RAIZ.rglob("mdm-rdm-prototype"))
