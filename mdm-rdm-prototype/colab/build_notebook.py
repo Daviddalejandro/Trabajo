@@ -36,9 +36,9 @@ por código y guardado de resultados en Drive).
 md("## 1 · Parámetros")
 code('''
 #@title Origen del código y conjunto de datos { display-mode: "form" }
-#@markdown **Origen del código.** `drive`: usa el zip que está en su Drive (recomendado, no requiere credenciales).
-#@markdown `github`: clona el repositorio (si es privado, pegue un token de acceso personal).
-ORIGEN = "drive"  #@param ["drive", "github"]
+#@markdown **Origen del código.** `github`: clona el repositorio público (recomendado: siempre trae la última versión de la rama).
+#@markdown `drive`: usa un zip guardado en su Drive (`make zip-colab`), útil si el repositorio pasa a ser privado o no hay acceso a GitHub.
+ORIGEN = "github"  #@param ["github", "drive"]
 ZIP_EN_DRIVE = "MDM_RDM_Prototipo/08_Colab/mdm-rdm-prototype.zip"  #@param {type:"string"}
 GITHUB_REPO = "https://github.com/Daviddalejandro/Trabajo.git"  #@param {type:"string"}
 GITHUB_RAMA = "claude/pensive-ptolemy-bg3ikj"  #@param {type:"string"}

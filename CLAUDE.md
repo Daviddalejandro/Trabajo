@@ -54,7 +54,7 @@ make migrate && make seed                                  # o directamente: mak
 ```
 Con Docker (máquina del autor): `cp .env.example .env && make up` → UI `:5173`, API `:8000/docs`.
 En Google Colab (sin instalar nada): cuaderno `colab/MDM_Prototipo_Colab.ipynb`, también en Drive `MDM_RDM_Prototipo/08_Colab/`;
-tras cambiar código, `make ui-colab && make zip-colab` y volver a subir el zip a esa carpeta.
+tras cambiar la UI, `make ui-colab` y subir el cambio: el cuaderno clona la rama pública de GitHub (o un zip de Drive con `make zip-colab`).
 `DATABASE_URL` por defecto: `postgresql+psycopg://mdm@127.0.0.1:5433/mdm_prototype`.
 
 ## Comandos que importan
