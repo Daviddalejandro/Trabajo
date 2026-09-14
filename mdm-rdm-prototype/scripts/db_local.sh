@@ -25,9 +25,23 @@ case "${1:-start}" in
       mkdir -p "$DATA"
       run_as "$PGBIN/initdb" -D "$DATA" -U "$PGUSER_LOCAL" --auth=trust -E UTF8 --locale=C.UTF-8 >/dev/null
     fi
-    run_as "$PGBIN/pg_ctl" -D "$DATA" -l "$DATA/pg.log" \
-      -o "-p $PORT -c listen_addresses=127.0.0.1 -c unix_socket_directories=/tmp" start >/dev/null
-    for i in $(seq 1 20); do "$PGBIN/pg_isready" -h 127.0.0.1 -p "$PORT" -q && break; sleep 0.5; done
+    # Idempotente: si el clúster ya responde, no se vuelve a arrancar (segunda ejecución de la celda o del make);
+    # si quedó un postmaster.pid huérfano de un intento fallido, se retira antes de arrancar.
+    if "$PGBIN/pg_isready" -h 127.0.0.1 -p "$PORT" -q 2>/dev/null; then
+      echo "PostgreSQL local ya estaba en ejecución."
+    else
+      if [ -f "$DATA/postmaster.pid" ]; then
+        run_as "$PGBIN/pg_ctl" -D "$DATA" stop -m fast >/dev/null 2>&1 || true
+        rm -f "$DATA/postmaster.pid"
+      fi
+      if ! run_as "$PGBIN/pg_ctl" -D "$DATA" -l "$DATA/pg.log" \
+          -o "-p $PORT -c listen_addresses=127.0.0.1 -c unix_socket_directories=/tmp" start >/dev/null; then
+        echo "No arrancó PostgreSQL. Últimas líneas de $DATA/pg.log:" >&2
+        tail -n 40 "$DATA/pg.log" >&2 2>/dev/null || true
+        exit 1
+      fi
+      for i in $(seq 1 20); do "$PGBIN/pg_isready" -h 127.0.0.1 -p "$PORT" -q && break; sleep 0.5; done
+    fi
     psql -h 127.0.0.1 -p "$PORT" -U "$PGUSER_LOCAL" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$DB'" | grep -q 1 \
       || psql -h 127.0.0.1 -p "$PORT" -U "$PGUSER_LOCAL" -d postgres -qc "CREATE DATABASE $DB"
     echo "PostgreSQL local listo: postgresql+psycopg://$PGUSER_LOCAL@127.0.0.1:$PORT/$DB"
