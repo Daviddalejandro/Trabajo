@@ -119,6 +119,9 @@ def merge_parties(session: Session, surviving: int, merged: int, match_sk: int |
                 session.execute(text(f"""UPDATE mdm.{table} m SET {close_col} = {now_expr} WHERE m.party_sk = :m AND m.{close_col} IS NULL
                     AND EXISTS (SELECT 1 FROM mdm.{table} s WHERE s.party_sk = :s AND s.{type_col} = m.{type_col} AND s.{close_col} IS NULL)"""),
                                 {"m": merged, "s": surviving})
+            if table == "party_address":   # una sola dirección principal por party: la conserva el sobreviviente
+                session.execute(text("""UPDATE mdm.party_address m SET is_primary = FALSE WHERE m.party_sk = :m AND m.is_primary
+                    AND EXISTS (SELECT 1 FROM mdm.party_address s WHERE s.party_sk = :s AND s.is_primary)"""), {"m": merged, "s": surviving})
             if table == "party_contact_pref":   # preferencias de canal duplicadas: el sobreviviente conserva las suyas
                 session.execute(text("""UPDATE mdm.party_contact_pref m SET valid_to = now() WHERE m.party_sk = :m AND m.valid_to IS NULL AND m.party_contact_sk IS NULL
                     AND EXISTS (SELECT 1 FROM mdm.party_contact_pref s WHERE s.party_sk = :s AND s.valid_to IS NULL AND s.party_contact_sk IS NULL

@@ -77,6 +77,9 @@ ejecutar `python backend/cli.py match` permite ver cómo se mueven los pares ent
 ## 5. Verificaciones rápidas de cierre
 
 - `GET /api/v1/stats` (o el tablero): pares por decisión, goldens y candidatos.
+- En **Vista 360** de un golden con varias fuentes, cada correo, teléfono y dirección aparece una sola vez
+  (`CONTACT_POINT` único por canal y hash; `PARTY_ADDRESS` único por party y `address_hash`) y hay una sola
+  dirección principal (★). La columna *Fuente* muestra la primera fuente que aportó el dato.
 - `GET /api/v1/matches?decision=PROBABLE&status=PENDING` debe quedar vacío al terminar la sesión
   de stewardship; los resueltos aparecen con `match_status=RESOLVED`.
 - `make test-validation` y `make demo` devuelven todo en verde: dejan la base en un estado conocido

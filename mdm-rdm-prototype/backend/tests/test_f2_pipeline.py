@@ -96,6 +96,24 @@ def test_lineage_on_every_fact_row():
             conn.execute(text("INSERT INTO mdm.party_name (party_sk, name_type_cd, name_value) VALUES (1, 0, 'x')"))
 
 
+def test_address_unique_per_party_and_single_primary():
+    """Una misma dirección aportada por varias fuentes es una sola fila del party (address_hash) y hay una
+    única dirección principal por party; el linaje conserva la primera fuente que la cargó."""
+    assert q("SELECT count(*) FROM (SELECT party_sk, address_hash FROM mdm.party_address GROUP BY 1, 2 HAVING count(*) > 1) d").scalar_one() == 0
+    assert q("SELECT count(*) FROM (SELECT party_sk FROM mdm.party_address WHERE is_primary GROUP BY 1 HAVING count(*) > 1) d").scalar_one() == 0
+    # todo party vigente con dirección tiene una principal; los absorbidos (MERGED) ceden la suya al sobreviviente
+    assert q("""SELECT count(*) FROM (SELECT a.party_sk FROM mdm.party_address a JOIN mdm.party p ON p.party_sk = a.party_sk
+                JOIN rdm.reference_value g ON g.value_sk = p.golden_status_cd WHERE g.value_code <> 'MERGED'
+                GROUP BY a.party_sk HAVING NOT bool_or(a.is_primary)) d""").scalar_one() == 0
+    multi = q("""SELECT count(*) FROM mdm.party p WHERE (SELECT count(DISTINCT x.source_system_cd) FROM mdm.xref_party_source x WHERE x.party_sk = p.party_sk) >= 2
+                 AND EXISTS (SELECT 1 FROM mdm.party_address a WHERE a.party_sk = p.party_sk)""").scalar_one()
+    assert multi > 0   # hay goldens con varias fuentes y dirección: la unicidad se probó de verdad
+    with pytest.raises(IntegrityError):
+        with engine.begin() as conn:
+            conn.execute(text("INSERT INTO mdm.party_address (party_sk, address_line, country_cd, divipola_cd, geocoding_status_cd, is_primary, address_hash, source_system_cd) "
+                              "SELECT party_sk, address_line, country_cd, divipola_cd, geocoding_status_cd, FALSE, address_hash, source_system_cd FROM mdm.party_address LIMIT 1"))
+
+
 # ------------------------------------------------------------------ contactos (caso J) y auditoría
 def test_shared_contact_point_not_duplicated_case_J():
     phone = "+57" + CASES["J"]["shared_phone"]

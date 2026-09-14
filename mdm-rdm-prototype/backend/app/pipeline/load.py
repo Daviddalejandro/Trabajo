@@ -11,7 +11,7 @@ from datetime import date, timedelta
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.pipeline.common import contact_hash
+from app.pipeline.common import address_hash, contact_hash
 from app.pipeline.homologate import Homologator
 
 RETENTION_BY_UES = {"CREDITO": "FINANCIAL_10Y", "SALUD": "HEALTH_20Y", "SUBSIDIO": "AFFILIATE_5Y"}
@@ -20,6 +20,11 @@ SOURCE_SLICE_TABLES = ["party_role", "party_segment", "party_identifier", "party
 
 def _sk(entry: dict | None, default: int = 0) -> int:
     return entry["sk"] if entry else default
+
+
+def _code(entry: dict | None) -> str | None:
+    """Código canónico de una entrada homologada (o el valor crudo si quedó UNKNOWN)."""
+    return (entry.get("code") or entry.get("raw")) if entry else None
 
 
 class Loader:
@@ -246,14 +251,24 @@ class Loader:
                           on_conflict="ON CONFLICT (party_sk, channel_cd, party_contact_sk, purpose_cd) WHERE valid_to IS NULL DO UPDATE SET allowed=EXCLUDED.allowed")
 
     def _addresses(self, party_sk: int, std: dict) -> None:
+        # Una dirección es única dentro del party por (línea normalizada, país, municipio): si otra fuente ya la
+        # aportó se reutiliza la fila (conserva el linaje de la primera fuente) y solo se refresca captured_at.
+        # Hay una sola dirección principal por party: la conserva la primera fuente que la cargó.
+        has_primary = self.q("SELECT 1 FROM mdm.party_address WHERE party_sk=:p AND is_primary", p=party_sk).first() is not None
         for i, a in enumerate(std["addresses"]):
             div = a.get("divipola")
             if div and div.get("unknown") and not div.get("raw"):
                 div = None
-            self._ins("party_address", "address_sk",
-                      {"party_sk": party_sk, "address_line": a.get("line"), "country_cd": _sk(a.get("country")),
-                       "divipola_cd": _sk(div), "geocoding_status_cd": self.K["GEO_PENDING"], "is_primary": i == 0, "source_system_cd": self.src},
-                      {"country_cd": a.get("country"), "divipola_cd": div})
+            h = address_hash(a.get("line"), _code(a.get("country")), _code(div))
+            sk = self._ins("party_address", "address_sk",
+                           {"party_sk": party_sk, "address_line": a.get("line"), "country_cd": _sk(a.get("country")),
+                            "divipola_cd": _sk(div), "geocoding_status_cd": self.K["GEO_PENDING"], "is_primary": i == 0 and not has_primary,
+                            "address_hash": h, "source_system_cd": self.src},
+                           {"country_cd": a.get("country"), "divipola_cd": div},
+                           "ON CONFLICT (party_sk, address_hash) DO UPDATE SET captured_at=now(), "
+                           "is_primary = mdm.party_address.is_primary OR EXCLUDED.is_primary")
+            if sk is not None and i == 0:
+                has_primary = True
 
     def _consents_prefs(self, party_sk: int, std: dict) -> None:
         for c in std["consents"]:

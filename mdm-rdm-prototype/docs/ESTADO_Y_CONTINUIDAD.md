@@ -3,7 +3,7 @@
 Documento de traspaso: qué está hecho, qué se decidió y por qué, qué falta, y cómo retomar el trabajo en
 una sesión nueva de Claude Code sin perder el contexto. Se actualiza al cierre de cada jornada de trabajo.
 
-Última actualización: 2026-09-14 · rama `claude/pensive-ptolemy-bg3ikj` · PR #1 de `Daviddalejandro/Trabajo`.
+Última actualización: 2026-09-14 (direcciones únicas) · rama `claude/pensive-ptolemy-bg3ikj` · PR #1 de `Daviddalejandro/Trabajo`.
 
 ## 1. Estado por fase (SPEC Anexo A)
 
@@ -19,7 +19,7 @@ una sesión nueva de Claude Code sin perder el contexto. Se actualiza al cierre 
 | Pruebas manuales | `make validation-load`, guía y actor `steward.credito` | Completa | `docs/GUIA_PRUEBAS_MANUALES.md` |
 | Colab | Cuaderno autocontenido, UI servida desde la API (`UI_DIST_DIR`), zip en Drive `08_Colab` | Completa (celdas de API verificadas aquí; la instalación de PostgreSQL en Colab queda por confirmar en la primera corrida) | `colab/` |
 
-Totales verificados: backend 109 pruebas, e2e 7, `make demo` 20/20 casos, `npm run build` correcto.
+Totales verificados: backend 111 pruebas, e2e 7, `make demo` 20/20 casos, `npm run build` correcto.
 
 ## 2. Decisiones tomadas (y dónde viven)
 
@@ -36,6 +36,7 @@ Totales verificados: backend 109 pruebas, e2e 7, `make demo` 20/20 casos, `npm r
 | Obligación con producto sin homologar se conserva con servicio UNKNOWN y se corrige con rehomologar | SPEC §7.2 (hallazgo de la validación) | `backend/app/pipeline/dq.py`, `rehomologate.py` |
 | Banderas S/N del core de crédito con helper propio `sn()` | Hallazgo de la validación | `backend/app/pipeline/sources/credito_core.py` |
 | Escrituras internas (ARCO, consentimientos, preferencias) con sistema fuente `MDM_CONSOLE` | Trazabilidad de origen | `backend/app/rdm/seed_data.py` |
+| Dirección única por party (`address_hash` = línea normalizada + país + DIVIPOLA) y una sola principal; la misma dirección desde dos fuentes es una fila con el linaje de la primera. Los contactos ya eran únicos por `CONTACT_POINT` | Hallazgo de las pruebas manuales (Vista 360 mostraba la dirección repetida por fuente); Ley 1581/2012 art. 4 lit. e); DAMA-DMBOK2 Cap. 10 | Migración `f5_0005`, `backend/app/pipeline/load.py` (`_addresses`), `merge.py` |
 
 ## 3. Pendientes
 

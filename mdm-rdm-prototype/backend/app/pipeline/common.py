@@ -125,6 +125,12 @@ def contact_hash(channel: str, value: str) -> str:
     return hashlib.sha256(f"{channel}|{value}".encode()).hexdigest()
 
 
+def address_hash(line: str | None, country: str | None, divipola: str | None) -> str:
+    """Identidad de una dirección dentro de un party: línea normalizada (mayúsculas, sin acentos ni
+    puntuación) + país + municipio DIVIPOLA. Dos fuentes con la misma dirección producen una sola fila."""
+    return hashlib.sha256(f"ADDR|{normalized_key(line) or ''}|{country or ''}|{divipola or ''}".encode()).hexdigest()
+
+
 def nit_check_digit(nit: str) -> int:
     weights = [3, 7, 13, 17, 19, 23, 29, 37, 41, 43, 47, 53, 59, 67, 71]
     total = sum(int(d) * w for d, w in zip(reversed(nit), weights))

@@ -181,6 +181,12 @@ def test_V1_auto_merge_same_document_typo(C):
     assert q("SELECT count(*) FROM mdm.party_identifier WHERE party_sk=:p AND is_golden", p=a).scalar_one() == 1
 
 
+def test_V1_same_address_from_both_sources_kept_once(C):
+    p = pof(K, C["V1"]["ecc"])
+    rows = q("SELECT address_line, is_primary FROM mdm.party_address WHERE party_sk=:p", p=p).all()
+    assert rows and len(rows) == len({r[0] for r in rows}) and sum(1 for r in rows if r[1]) == 1
+
+
 def test_V4_duplicates_inside_credit_source_collapse(C):
     assert pof(E, C["V4"]["credit_1"]) == pof(E, C["V4"]["credit_2"]) == pof(K, C["V4"]["ecc"])
     p = pof(K, C["V4"]["ecc"])
@@ -225,8 +231,11 @@ def test_V2_owner_consensus_then_unmerge_and_binding_no_match(client, C):
     assert out["result"] == "MERGED" and out["merge_type"] == "OWNER_CONSENSUS"
     assert pof(K, C["V2"]["ecc"]) == pof(E, C["V2"]["credit"])
     surv = pof(K, C["V2"]["ecc"])
+    assert q("SELECT count(*) FROM mdm.party_address WHERE party_sk=:p AND is_primary", p=surv).scalar_one() == 1
     u = client.post(f"/api/v1/parties/{surv}/unmerge", json={"merge_sk": out["merge_sk"], "reason": "El owner de cartera corrige: eran dos personas"}, headers={"X-Actor": "steward.mdm"}).json()
     assert u["restored_rows"] > 0 and pof(K, C["V2"]["ecc"]) != pof(E, C["V2"]["credit"])
+    for party in (pof(K, C["V2"]["ecc"]), pof(E, C["V2"]["credit"])):   # cada uno recupera su dirección principal
+        assert q("SELECT count(*) FROM mdm.party_address WHERE party_sk=:p AND is_primary", p=party).scalar_one() == 1
     again = client.post("/api/v1/matching/run", headers={"X-Actor": "validation"}).json()
     assert pof(K, C["V2"]["ecc"]) != pof(E, C["V2"]["credit"]) and again["auto_merged"] == 0
 
