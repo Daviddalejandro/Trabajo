@@ -122,8 +122,8 @@ def sh(*args, check=True):
     return r
 
 sh("bash", str(PROTO / "scripts" / "db_local.sh"), "start")
-sh(sys.executable, "cli.py", "db-check")
-sh(sys.executable, "-m", "alembic", "upgrade", "head")
+sh(sys.executable, "-m", "alembic", "upgrade", "head")   # crea los esquemas rdm, mdm y staging
+sh(sys.executable, "cli.py", "db-check")                 # verifica conexión y esquemas (después de migrar)
 sh(sys.executable, "cli.py", "rdm-seed")
 if CONJUNTO == "demo":
     sh(sys.executable, "cli.py", "demo")
