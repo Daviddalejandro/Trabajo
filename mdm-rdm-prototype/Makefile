@@ -3,7 +3,7 @@ SHELL := /bin/bash
 LOCAL_DB_URL ?= postgresql+psycopg://mdm@127.0.0.1:5433/mdm_prototype
 export DATABASE_URL ?= $(LOCAL_DB_URL)
 
-.PHONY: up down logs db-local db-local-stop migrate seed ingest match rebuild rne-sync purge demo test test-backend test-frontend test-e2e test-validation api ui export-drive
+.PHONY: up down logs db-local db-local-stop migrate seed ingest match rebuild rne-sync purge demo test test-backend test-frontend test-e2e test-validation validation-load api ui export-drive
 
 up:            ## Levanta db + api + ui con Docker
 	docker compose up -d --build
@@ -42,6 +42,8 @@ test-e2e:      ## F4: Playwright contra API :8001 y UI :5174 sobre una base reco
 	scripts/e2e.sh
 test-validation: ## Conjunto de validación: SAP ECC + sistema de crédito, todas las funcionalidades
 	cd backend && python -m pytest -q tests/test_validation_suite.py
+validation-load: ## Deja el conjunto de validación (ECC + crédito) en la consola para pruebas manuales de la zona gris
+	cd backend && python cli.py validation-load
 
 api:           ## API local (sin Docker)
 	cd backend && uvicorn app.main:app --reload --port 8000

@@ -8,6 +8,7 @@ make test-validation                      # genera, vacía staging/mdm, ingiere 
 python backend/cli.py validation-generate # solo los datasets: backend/data/validation/
 python backend/cli.py ingest --source ecc_sd --file data/validation/ecc_kna1_validacion.csv
 python backend/cli.py ingest --source credito_core --file data/validation/credito_core.csv
+make validation-load                      # lo mismo, en un paso, para trabajar la zona gris en la consola (#/stewardship)
 ```
 
 ## Fuentes

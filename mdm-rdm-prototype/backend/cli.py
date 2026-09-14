@@ -69,6 +69,31 @@ def validation_generate(seed: int = typer.Option(20260914, help="Seed fija del c
     typer.echo(f"Casos plantados: {', '.join(sorted(m['cases']))}")
 
 
+@cli.command("validation-load")
+def validation_load(actor: str = typer.Option("validation", help="Actor de los lotes")) -> None:
+    """Validación · Deja en la consola el conjunto SAP ECC + sistema de crédito: validation-generate → reset-mdm (el RDM se
+    conserva) → ingest ecc_sd y credito_core (con matching) → rne-sync con el RNE de validación → resumen de la zona gris."""
+    steps = (["validation-generate"], ["reset-mdm", "--yes"],
+             ["ingest", "--source", "ecc_sd", "--file", "data/validation/ecc_kna1_validacion.csv", "--actor", actor],
+             ["ingest", "--source", "credito_core", "--file", "data/validation/credito_core.csv", "--actor", actor],
+             ["rne-sync", "--file", "data/validation/rne_validacion.csv", "--actor", actor])
+    for args in steps:
+        rc = subprocess.call([sys.executable, "cli.py", *args])
+        if rc:
+            raise typer.Exit(code=rc)
+    from sqlalchemy import text
+    from app.core.db import engine
+
+    with engine.connect() as conn:
+        rows = conn.execute(text("SELECT d.value_code, m.match_status, count(*) FROM mdm.party_match m "
+                                 "JOIN rdm.reference_value d ON d.value_sk=m.decision_cd GROUP BY 1,2 ORDER BY 1,2")).all()
+    typer.echo("")
+    typer.echo(f"{'Decisión':12s}{'Estado':10s}Pares")
+    for dec, st, n in rows:
+        typer.echo(f"{dec:12s}{st:10s}{n}")
+    typer.echo("\nConjunto de validación cargado: zona gris (PROBABLE/POSSIBLE pendientes) en http://localhost:5173/#/stewardship")
+
+
 @cli.command("ingest")
 def ingest(source: str = typer.Option(..., help="sf_ec | ecc_sd | ecc_mm | crm_bp | web_portal | all"),
            mode: str = typer.Option("full", help="full | delta"),

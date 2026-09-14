@@ -21,6 +21,7 @@ export const ACTORS: { actor: string; label: string; role: SessionUser["role"] }
   { actor: "steward.sd", label: "steward.sd · Owner SAP_ECC_SD (Comercial)", role: "STEWARD" },
   { actor: "steward.mm", label: "steward.mm · Owner SAP_ECC_MM (Abastecimiento)", role: "STEWARD" },
   { actor: "steward.portal", label: "steward.portal · Owner WEB_PORTAL (Canales Digitales)", role: "STEWARD" },
+  { actor: "steward.credito", label: "steward.credito · Owner CREDITO_CORE (Crédito Social)", role: "STEWARD" },
 ];
 
 const KEY = "mdm.session";

@@ -249,6 +249,7 @@ Decisiones de implementación de la Fase 5:
 ```bash
 make test-validation                          # 32 pruebas: genera, ingiere y verifica los casos V1–V25
 python backend/cli.py validation-generate     # backend/data/validation/*.csv + manifest_validacion.json
+make validation-load                          # deja ECC + crédito en la consola (zona gris: V2, V18 PROBABLE; V3 POSSIBLE)
 ```
 
 Dos fuentes distintas de las del escenario demo: un extracto SAP ECC (KNA1, adaptador `ecc_sd`) y un
@@ -256,6 +257,9 @@ sistema de crédito / core de cartera (`CREDITO_CORE`, adaptador nuevo con oblig
 gestión, calificación, autorizaciones y codeudor). Recorre RDM, pipeline, matching, survivorship,
 stewardship, cumplimiento, feed, Vista 360, match-preview y export. Detalle y desenlaces esperados en
 [`docs/validation/README.md`](docs/validation/README.md).
+
+Para probar a mano desde la interfaz (arranque, elección del conjunto de datos, decisión de la zona gris
+y construcción de casos propios): [`docs/GUIA_PRUEBAS_MANUALES.md`](docs/GUIA_PRUEBAS_MANUALES.md).
 
 ## Convenciones (reglas duras de la especificación, §3)
 
