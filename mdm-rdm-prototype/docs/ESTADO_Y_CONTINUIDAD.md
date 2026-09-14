@@ -17,6 +17,7 @@ una sesión nueva de Claude Code sin perder el contexto. Se actualiza al cierre 
 | F5 | Cumplimiento: elegibilidad (12 precedencias), consentimientos, ARCO, RNE, audiencias, purga simulada, feed; `make demo`; export a Drive | Aprobada | `tests/test_f5_compliance.py` (14), `e2e/f5.spec.ts` (1), `docs/evidence/f5/` |
 | Validación | Fuentes SAP ECC KNA1 + sistema de crédito (`CREDITO_CORE`), casos V1–V25 | Completa | `tests/test_validation_suite.py` (32), `docs/validation/README.md`, `docs/evidence/validation/` |
 | Pruebas manuales | `make validation-load`, guía y actor `steward.credito` | Completa | `docs/GUIA_PRUEBAS_MANUALES.md` |
+| Colab | Cuaderno autocontenido, UI servida desde la API (`UI_DIST_DIR`), zip en Drive `08_Colab` | Completa (celdas de API verificadas aquí; la instalación de PostgreSQL en Colab queda por confirmar en la primera corrida) | `colab/` |
 
 Totales verificados: backend 109 pruebas, e2e 7, `make demo` 20/20 casos, `npm run build` correcto.
 
@@ -66,7 +67,11 @@ descripción del PR #1). Conserva la conversación completa (resumida cuando es 
 sesión con el repositorio `Daviddalejandro/Trabajo` y pegar el prompt de arranque de la sección 5.
 Claude lee `CLAUDE.md`, este documento y el README, y continúa con las mismas convenciones.
 
-**C. Claude Code en la máquina del autor.** Clonar el repositorio, abrir una terminal en la carpeta raíz
+**C. Google Colab.** Abrir `MDM_RDM_Prototipo/08_Colab/MDM_Prototipo_Colab.ipynb` desde Drive y *Ejecutar todo*:
+levanta el prototipo en una máquina temporal de Google y entrega el enlace a la consola. Para pruebas manuales sin
+instalar nada; los ajustes de código siguen haciéndose en Claude Code (A o B) y luego `make ui-colab && make zip-colab`.
+
+**D. Claude Code en la máquina del autor.** Clonar el repositorio, abrir una terminal en la carpeta raíz
 y ejecutar `claude`. `CLAUDE.md` se carga igual; Docker permite `make up` y las pruebas e2e locales.
 
 ## 5. Prompt de arranque para una sesión nueva

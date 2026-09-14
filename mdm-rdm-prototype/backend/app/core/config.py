@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     app_name: str = "MDM/RDM Prototipo · Party"
     app_env: str = "prototype"
     api_prefix: str = "/api/v1"
+    ui_dist_dir: str | None = None   # carpeta con la UI compilada para servirla desde la API (Colab / un solo puerto)
     database_url: str = "postgresql+psycopg://mdm@127.0.0.1:5433/mdm_prototype"
     synth_seed: int = 20260913
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"

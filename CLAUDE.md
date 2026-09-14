@@ -33,6 +33,7 @@ mdm-rdm-prototype/
   docs/validation/README.md       conjunto de validación SAP ECC + sistema de crédito (casos V1–V25)
   docs/evidence/{f4,f5,validation}/  capturas de la UI
   docs/drive/                     entregables generados por `make export-drive` (espejo de la carpeta de Drive)
+  colab/                          cuaderno de Google Colab (build_notebook.py → MDM_Prototipo_Colab.ipynb) y UI compilada con base relativa
 ```
 
 ## Estado (2026-09-14)
@@ -52,6 +53,8 @@ pip install -r backend/requirements.txt && (cd frontend && npm install)
 make migrate && make seed                                  # o directamente: make demo / make validation-load
 ```
 Con Docker (máquina del autor): `cp .env.example .env && make up` → UI `:5173`, API `:8000/docs`.
+En Google Colab (sin instalar nada): cuaderno `colab/MDM_Prototipo_Colab.ipynb`, también en Drive `MDM_RDM_Prototipo/08_Colab/`;
+tras cambiar código, `make ui-colab && make zip-colab` y volver a subir el zip a esa carpeta.
 `DATABASE_URL` por defecto: `postgresql+psycopg://mdm@127.0.0.1:5433/mdm_prototype`.
 
 ## Comandos que importan

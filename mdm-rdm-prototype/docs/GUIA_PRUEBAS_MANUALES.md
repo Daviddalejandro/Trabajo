@@ -10,6 +10,7 @@ Todo con datos sintéticos.
 |---|---|---|
 | A · Docker | `cp .env.example .env` → `make up` | UI `http://localhost:5173` · API `http://localhost:8000/docs` |
 | B · Sin Docker | `make db-local` → `pip install -r backend/requirements.txt` → `make migrate` → `make api` (terminal 1) → `cd frontend && npm install && npm run dev` (terminal 2) | UI `http://localhost:5173` · API `http://localhost:8000/docs` |
+| C · Google Colab | Abrir `MDM_RDM_Prototipo/08_Colab/MDM_Prototipo_Colab.ipynb` en Drive → *Ejecutar todo* → enlace de la sección 5 | Consola y Swagger en el enlace que imprime el cuaderno |
 
 Verificación: `curl localhost:8000/health` responde `{"status":"ok","db":"ok","schemas_missing":[]}`
 y el tablero (`#/`) muestra el estado del servicio en verde.

@@ -3,7 +3,7 @@ SHELL := /bin/bash
 LOCAL_DB_URL ?= postgresql+psycopg://mdm@127.0.0.1:5433/mdm_prototype
 export DATABASE_URL ?= $(LOCAL_DB_URL)
 
-.PHONY: up down logs db-local db-local-stop migrate seed ingest match rebuild rne-sync purge demo test test-backend test-frontend test-e2e test-validation validation-load api ui export-drive
+.PHONY: up down logs db-local db-local-stop migrate seed ingest match rebuild rne-sync purge demo test test-backend test-frontend test-e2e test-validation validation-load api ui export-drive ui-colab zip-colab
 
 up:            ## Levanta db + api + ui con Docker
 	docker compose up -d --build
@@ -52,3 +52,10 @@ ui:            ## UI local (sin Docker)
 
 export-drive:  ## F5: genera en docs/drive/ los entregables por carpeta de Drive (SPEC §17)
 	cd backend && python cli.py export-drive --out ../docs/drive
+
+ui-colab:      ## Compila la UI con base relativa (/api/v1) para servirla desde la API (Colab, un solo puerto)
+	cd frontend && VITE_API_BASE=/api/v1 npx vite build --outDir ../colab/ui --emptyOutDir
+zip-colab:     ## Empaqueta el prototipo para subirlo a Drive (MDM_RDM_Prototipo/08_Colab/mdm-rdm-prototype.zip)
+	cd .. && rm -f mdm-rdm-prototype.zip && zip -qr mdm-rdm-prototype.zip mdm-rdm-prototype SPEC_PROTOTIPO_MDM_RDM_PARTY.md CLAUDE.md \
+	  -x "*/node_modules/*" "*/.pgdata/*" "*/__pycache__/*" "*.pyc" "*/frontend/dist/*" "*/docs/evidence/*" "*/docs/drive/*" \
+	  "*/frontend/e2e-report/*" "*/frontend/test-results/*" "*/.pytest_cache/*" "*/frontend/tsconfig.tsbuildinfo" && ls -la mdm-rdm-prototype.zip

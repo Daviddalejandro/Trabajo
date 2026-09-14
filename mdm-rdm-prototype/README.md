@@ -178,6 +178,12 @@ Decisiones de implementación de la Fase 3:
 - **Corrida sobre los sintéticos** (5 fuentes, 1.580 registros): 684 merges automáticos, 894 goldens,
   2 pares `PROBABLE` (casos B y K) y 1 `POSSIBLE` (caso C); ninguna persona se compara con una organización.
 
+### Opción C · Google Colab (sin instalar nada)
+
+Cuaderno `colab/MDM_Prototipo_Colab.ipynb` (copia en Drive `MDM_RDM_Prototipo/08_Colab/`): instala PostgreSQL 16 en una
+máquina temporal de Google, carga los datos y sirve la consola desde la API en un solo puerto (`UI_DIST_DIR=colab/ui`),
+con enlace para abrirla en el navegador. Detalle en [`colab/README.md`](colab/README.md).
+
 ## Interfaz (Fase 4)
 
 ```bash
