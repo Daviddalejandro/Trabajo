@@ -260,6 +260,8 @@ stewardship, cumplimiento, feed, Vista 360, match-preview y export. Detalle y de
 
 Para probar a mano desde la interfaz (arranque, elección del conjunto de datos, decisión de la zona gris
 y construcción de casos propios): [`docs/GUIA_PRUEBAS_MANUALES.md`](docs/GUIA_PRUEBAS_MANUALES.md).
+Estado del proyecto, decisiones, pendientes y cómo retomar el trabajo en una sesión nueva de Claude Code:
+[`docs/ESTADO_Y_CONTINUIDAD.md`](docs/ESTADO_Y_CONTINUIDAD.md) y `CLAUDE.md` en la raíz del repositorio.
 
 ## Convenciones (reglas duras de la especificación, §3)
 
