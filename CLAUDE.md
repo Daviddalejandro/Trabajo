@@ -63,7 +63,7 @@ tras cambiar la UI, `make ui-colab` y subir el cambio: el cuaderno clona la rama
 |---|---|
 | Escenario demo (20 casos A–T) en la consola | `make demo` |
 | Conjunto SAP ECC + crédito (V1–V25) en la consola | `make validation-load` |
-| Suite backend completa (111 pruebas, reconstruye la base) | `make test-backend` |
+| Suite backend completa (113 pruebas, reconstruye la base) | `make test-backend` |
 | Solo validación (32) | `make test-validation` |
 | UI compilada + e2e Playwright (7) | `make test-frontend` · `make test-e2e` |
 | Entregables para Drive | `make export-drive` |

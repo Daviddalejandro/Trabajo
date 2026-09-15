@@ -86,6 +86,38 @@ def test_golden_relationships_carry_other_display_name(client):
     assert rel and rel[0]["other_display_name"] and rel[0]["other_party_type"] == "PERSON"
 
 
+def test_golden_summary_answers_contactability_and_pending_matches(client):
+    """Resumen ejecutivo de la Vista 360: elegibilidad por finalidad, servicios por UES, hallazgos abiertos,
+    pares pendientes y condiciones derivadas (Ley 2300/2023 arts. 3 y 5)."""
+    p = party_of("SAP_CRM", CASES["C"]["crm_bp"])            # caso C: par POSSIBLE que queda pendiente (nadie lo decide en F3)
+    g = client.get(f"/api/v1/parties/{p}/golden").json()
+    sm = g["summary"]
+    assert {"eligibility", "services", "open_dq_issues", "pending_matches", "sources", "is_minor", "is_deceased"} <= set(sm)
+    assert {e["purpose"] for e in sm["eligibility"]} >= {"COMMERCIAL", "COLLECTIONS", "BENEFITS"}
+    assert all({"is_eligible", "eligible_contacts", "contacts", "reasons"} <= set(e) for e in sm["eligibility"])
+    pend = g["golden_record"]["pending_matches"]
+    assert sm["pending_matches"] == len(pend) >= 1
+    other = party_of("WEB_PORTAL", CASES["C"]["web_portal"])
+    k = next(m for m in pend if m["other_party_sk"] == other)
+    assert k["decision"] == "POSSIBLE" and k["match_status"] in ("PENDING", "IN_REVIEW") and k["other_display_name"] and k["rule_version"] >= 1
+    assert 50 <= float(k["total_score"]) < 70
+
+
+def test_golden_minor_flag_and_group_members_case_J(client):
+    child = party_of("SAP_CRM", CASES["J"]["child"]); mother = party_of("SAP_CRM", CASES["J"]["mother"])
+    g = client.get(f"/api/v1/parties/{child}/golden").json()
+    assert g["summary"]["is_minor"] is True and g["summary"]["is_deceased"] is False
+    groups = g["roles_relationships"]["groups"]
+    assert groups and any(m["party_sk"] == mother for grp in groups for m in (grp["members"] or []))
+    m = next(m for grp in groups for m in (grp["members"] or []) if m["party_sk"] == mother)
+    assert m["display_name"] and m["member_role"] and "is_anchor" in m
+    # columnas nuevas por capa (validez técnica del contacto, rol del vínculo, geocodificación, vigencias)
+    assert all({"is_verified", "valid_from", "valid_to"} <= set(c) for c in g["contactability"]["contacts"])
+    assert all({"geocoding_status", "captured_at"} <= set(a) for a in g["contactability"]["addresses"])
+    assert all("role" in s for s in g["roles_relationships"]["services"])
+    assert all({"valid_from", "valid_to"} <= set(n) for n in g["identity"]["names"])
+
+
 def test_frontend_build_exists_or_skipped():
     dist = Path(__file__).resolve().parents[2] / "frontend" / "dist" / "index.html"
     if not dist.exists():

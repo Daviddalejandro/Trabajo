@@ -868,7 +868,9 @@ unmerge restaura desde `pre_merge_snapshot` y re-ejecuta survivorship en ambos.
    códigos publicados), gestión de homologaciones por sistema fuente, **probador de
    homologación** (inputs sistema/campo/valor → canónico) y botón **Rehomologar**
    que muestra cuántos registros `UNKNOWN` se corregirán.
-3. **Vista 360 del golden record**: perfil de un party recorriendo las 8 capas en
+3. **Vista 360 del golden record**: cabecera con resumen ejecutivo (elegibilidad por finalidad
+   con su razón, servicios activos por UES, hallazgos DQ abiertos, pares de matching pendientes,
+   fuentes, merges y autorizaciones; marcas de menor de edad y fallecido) y perfil recorriendo las 8 capas en
    orden (Sources → Core → Identity → Roles y Relaciones → Contactability →
    Governance → Golden Record → Consents), con la fuente ganadora por campo
    (survivorship) visible, el linaje de cada fila, los segmentos por tipo, los

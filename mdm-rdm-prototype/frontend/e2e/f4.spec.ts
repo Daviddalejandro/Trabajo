@@ -144,4 +144,9 @@ test("Vista 360 · las 8 capas en orden con fuente ganadora por campo", async ({
   expect(titles.map((t) => t.slice(0, 1))).toEqual(["1", "2", "3", "4", "5", "6", "7", "8"]);
   await expect(page.getByText("7 · Golden Record (survivorship y merges)")).toBeVisible();
   await expect(page.locator("[data-layer='golden'] tbody tr").first()).toBeVisible();   // survivorship aplicado
+  const resumen = page.getByTestId("resumen-360");                                      // resumen ejecutivo en la cabecera
+  await expect(resumen.getByText("¿Se puede contactar?", { exact: false })).toBeVisible();
+  await expect(resumen.getByText(/pares de matching pendientes/)).toBeVisible();
+  await expect(page.getByText("Pares de matching pendientes de decisión", { exact: false })).toBeVisible();
+  await expect(page.getByText("Nombres por tipo", { exact: false })).toBeVisible();
 });

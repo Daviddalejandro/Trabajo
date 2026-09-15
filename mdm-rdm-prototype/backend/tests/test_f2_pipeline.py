@@ -252,7 +252,7 @@ def test_api_search_golden_sources_stats(client):
     assert len(s["items"]) == 1 and s["items"][0]["golden_status"] == "GOLDEN"
     sk = s["items"][0]["party_sk"]
     g = client.get(f"/api/v1/parties/{sk}/golden").json()
-    assert set(g) == {"core", "sources", "identity", "roles_relationships", "contactability", "governance", "golden_record", "consents"}
+    assert set(g) == {"core", "sources", "identity", "roles_relationships", "contactability", "governance", "golden_record", "consents", "summary"}
     assert len(g["roles_relationships"]["services"]) == 4 and {x["source_system_cd"] for x in g["sources"]} == {"SAP_ECC_SD", "SAP_CRM"}
     src = client.get(f"/api/v1/parties/{sk}/sources").json()
     assert {x["source_system_cd"]: x["rows"] for x in src["lineage"]["party_service_enrollment"]} == {"SAP_ECC_SD": 3, "SAP_CRM": 1}

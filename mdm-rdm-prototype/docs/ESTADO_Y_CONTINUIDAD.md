@@ -3,7 +3,7 @@
 Documento de traspaso: qué está hecho, qué se decidió y por qué, qué falta, y cómo retomar el trabajo en
 una sesión nueva de Claude Code sin perder el contexto. Se actualiza al cierre de cada jornada de trabajo.
 
-Última actualización: 2026-09-14 (direcciones únicas) · rama `claude/pensive-ptolemy-bg3ikj` · PR #1 de `Daviddalejandro/Trabajo`.
+Última actualización: 2026-09-15 (direcciones únicas, Vista 360 completa) · rama `claude/pensive-ptolemy-bg3ikj` · PR #1 de `Daviddalejandro/Trabajo`.
 
 ## 1. Estado por fase (SPEC Anexo A)
 
@@ -13,13 +13,13 @@ una sesión nueva de Claude Code sin perder el contexto. Se actualiza al cierre 
 | F1 | RDM: 43 catálogos, inmutabilidad, homologaciones, crosswalk, vistas | Aprobada | `tests/test_f1_rdm.py` (19) |
 | F2 | Staging, MDM (29 tablas), pipeline de 7 etapas, DQ, XREF, delta, rehomologación | Aprobada | `tests/test_f2_pipeline.py` (17) |
 | F3 | Matching, merge/unmerge con snapshot, survivorship, stewardship con owners | Aprobada | `tests/test_f3_matching.py` (14) |
-| F4 | UI: Tablero, Consola de Stewardship, Admin RDM, Vista 360; e2e Playwright | Aprobada | `tests/test_f4_ui_api.py` (7), `e2e/f4.spec.ts` (6), `docs/evidence/f4/` |
+| F4 | UI: Tablero, Consola de Stewardship, Admin RDM, Vista 360; e2e Playwright | Aprobada | `tests/test_f4_ui_api.py` (9), `e2e/f4.spec.ts` (6), `docs/evidence/f4/` |
 | F5 | Cumplimiento: elegibilidad (12 precedencias), consentimientos, ARCO, RNE, audiencias, purga simulada, feed; `make demo`; export a Drive | Aprobada | `tests/test_f5_compliance.py` (14), `e2e/f5.spec.ts` (1), `docs/evidence/f5/` |
 | Validación | Fuentes SAP ECC KNA1 + sistema de crédito (`CREDITO_CORE`), casos V1–V25 | Completa | `tests/test_validation_suite.py` (32), `docs/validation/README.md`, `docs/evidence/validation/` |
 | Pruebas manuales | `make validation-load`, guía y actor `steward.credito` | Completa | `docs/GUIA_PRUEBAS_MANUALES.md` |
 | Colab | Cuaderno autocontenido, UI servida desde la API (`UI_DIST_DIR`), zip en Drive `08_Colab` | Completa (celdas de API verificadas aquí; la instalación de PostgreSQL en Colab queda por confirmar en la primera corrida) | `colab/` |
 
-Totales verificados: backend 111 pruebas, e2e 7, `make demo` 20/20 casos, `npm run build` correcto.
+Totales verificados: backend 113 pruebas, e2e 7, `make demo` 20/20 casos, `npm run build` correcto.
 
 ## 2. Decisiones tomadas (y dónde viven)
 
@@ -36,6 +36,7 @@ Totales verificados: backend 111 pruebas, e2e 7, `make demo` 20/20 casos, `npm r
 | Obligación con producto sin homologar se conserva con servicio UNKNOWN y se corrige con rehomologar | SPEC §7.2 (hallazgo de la validación) | `backend/app/pipeline/dq.py`, `rehomologate.py` |
 | Banderas S/N del core de crédito con helper propio `sn()` | Hallazgo de la validación | `backend/app/pipeline/sources/credito_core.py` |
 | Escrituras internas (ARCO, consentimientos, preferencias) con sistema fuente `MDM_CONSOLE` | Trazabilidad de origen | `backend/app/rdm/seed_data.py` |
+| Vista 360 con resumen ejecutivo (elegibilidad por finalidad y razón, servicios activos por UES, DQ abiertos, pares pendientes, fuentes/merges/autorizaciones, menor/fallecido) y completitud de capas: nombres por tipo, verificación de identificadores, rol del vínculo, miembros del grupo, validez técnica del contacto, geocodificación, línea de tiempo filtrable, otorgante del consentimiento, pares pendientes enlazados a la consola | Revisión del autor contra SPEC §5.2 y §12 (2026-09-15); Ley 2300/2023 arts. 3 y 5; DAMA-DMBOK2 Cap. 10 | `backend/app/api/parties.py` (`/golden`: `summary`, `pending_matches`, `groups.members`), `frontend/src/pages/Vista360.tsx` |
 | Dirección única por party (`address_hash` = línea normalizada + país + DIVIPOLA) y una sola principal; la misma dirección desde dos fuentes es una fila con el linaje de la primera. Los contactos ya eran únicos por `CONTACT_POINT` | Hallazgo de las pruebas manuales (Vista 360 mostraba la dirección repetida por fuente); Ley 1581/2012 art. 4 lit. e); DAMA-DMBOK2 Cap. 10 | Migración `f5_0005`, `backend/app/pipeline/load.py` (`_addresses`), `merge.py` |
 
 ## 3. Pendientes

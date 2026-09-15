@@ -46,7 +46,11 @@ imprimen el resumen de pares por decisión. Se pueden alternar tantas veces como
      decisiones divididas escalan a `jefatura.gd` (rol JEFATURA, `MANUAL_OVERRIDE`).
    - **No es la misma persona**: `NO_MATCH` vinculante, el par no vuelve a proponerse.
    - **Escalar**: deja el par en manos de Jefatura.
-4. Revisar el resultado en **Historial de merges** (`pre_merge_snapshot` por tabla, auditoría por
+4. En la **Vista 360** de cualquiera de los dos parties, la cabecera resume el estado antes de decidir:
+   elegibilidad por finalidad con la razón de exclusión, servicios activos por UES, hallazgos DQ abiertos y
+   los **pares de matching pendientes** del party (capa 7, con enlace al detalle en la consola). Tras el merge,
+   el sobreviviente muestra el par resuelto y el absorbido queda `MERGED`.
+5. Revisar el resultado en **Historial de merges** (`pre_merge_snapshot` por tabla, auditoría por
    `merge_sk`) y, si hace falta, **Deshacer merge** con razón. En **Vista 360** del golden
    sobreviviente se ve la fuente ganadora por campo (survivorship §9).
 
