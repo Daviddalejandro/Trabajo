@@ -30,7 +30,7 @@ mdm-rdm-prototype/
   frontend/ (React 18 + Vite + Tailwind v4 + Playwright)  src/pages/{Dashboard,Stewardship,AdminRdm,Vista360,Compliance}.tsx
   docs/GUIA_PRUEBAS_MANUALES.md   cómo probar desde la interfaz y trabajar la zona gris de matching
   docs/ESTADO_Y_CONTINUIDAD.md    estado actual, decisiones tomadas, pendientes, prompt de arranque
-  docs/validation/README.md       conjunto de validación SAP ECC + sistema de crédito (casos V1–V25)
+  docs/validation/README.md       conjunto de validación SAP ECC + sistema de crédito (casos V1–V28)
   docs/evidence/{f4,f5,validation}/  capturas de la UI
   docs/drive/                     entregables generados por `make export-drive` (espejo de la carpeta de Drive)
   colab/                          cuaderno de Google Colab (build_notebook.py → MDM_Prototipo_Colab.ipynb) y UI compilada con base relativa
@@ -62,9 +62,9 @@ tras cambiar la UI, `make ui-colab` y subir el cambio: el cuaderno clona la rama
 | Objetivo | Comando |
 |---|---|
 | Escenario demo (20 casos A–T) en la consola | `make demo` |
-| Conjunto SAP ECC + crédito (V1–V25) en la consola | `make validation-load` |
-| Suite backend completa (113 pruebas, reconstruye la base) | `make test-backend` |
-| Solo validación (32) | `make test-validation` |
+| Conjunto SAP ECC + crédito (V1–V28) en la consola | `make validation-load` |
+| Suite backend completa (117 pruebas, reconstruye la base) | `make test-backend` |
+| Solo validación (37) | `make test-validation` |
 | UI compilada + e2e Playwright (7) | `make test-frontend` · `make test-e2e` |
 | Entregables para Drive | `make export-drive` |
 | API / UI locales | `make api` · `cd frontend && npm run dev` |
@@ -81,6 +81,9 @@ Antes de subir cambios: `make test-backend` (o las suites afectadas) y `cd front
 - Reglas duras de la SPEC §3 que el código respeta (no romperlas): RDM inmutable (deprecar y crear, §3.7),
   el RDM existe antes del MDM, unicidad de documento golden (§3.16), justificación obligatoria en toda
   decisión de stewardship (§3.12), auditoría por trigger con `app.actor` en la sesión, purga solo simulada (§10.5).
+- Roles: los declara el sistema fuente y se homologan por RDM (SAP ECC SD desde `BPROL`, SAP CRM desde `RLTYP`);
+  `CUSTOMER` es el cliente de crédito y solo lo aporta `CREDITO_CORE`. La UES del rol, si la fuente no la manda,
+  sale de `default_business_unit` en `CAT_PARTY_ROLE`. Nunca fijar un rol en el código del adaptador.
 - Matching: `MATCH_RULE` v1 en `backend/app/matching/rules.py`, umbrales 85/70/50 (SPEC §8.4).
   Survivorship: `SOURCE_PRIORITY` en `backend/app/survivorship/engine.py` (SF_EC, SAP_CRM, SAP_ECC_SD,
   SAP_ECC_MM, CREDITO_CORE, WEB_PORTAL) más MOST_RECENT / MOST_COMPLETE (SPEC §9).

@@ -13,9 +13,11 @@ class Homologator:
     def __init__(self, session: Session, source_system_cd: str):
         self.system = source_system_cd
         rows = session.execute(text(
-            "SELECT source_field, source_value, value_sk, value_code FROM rdm.vw_rdm_source_to_canonical WHERE source_system_cd=:s"),
+            "SELECT source_field, source_value, catalog_code, value_sk, value_code FROM rdm.vw_rdm_source_to_canonical WHERE source_system_cd=:s"),
             {"s": source_system_cd}).all()
-        self.mappings = {(r[0], r[1]): (r[2], r[3]) for r in rows}
+        # La clave incluye el catálogo destino: un mismo campo fuente puede alimentar varios catálogos
+        # (BPROL de SAP ECC SD resuelve a la vez el rol y el sub-rol del party).
+        self.mappings = {(r[0], r[1], r[2]): (r[3], r[4]) for r in rows}
         self.catalogs: dict[str, dict[str, dict]] = {}
         for r in session.execute(text(
                 "SELECT catalog_code, value_code, value_sk, parent_value_code FROM rdm.vw_rdm_lookup WHERE is_active")).all():
@@ -52,7 +54,7 @@ class Homologator:
         if entry.get("field") is None:
             info = self.info(entry["catalog"], entry["raw"])
         else:
-            hit = self.mappings.get((entry["field"], entry["raw"]))
+            hit = self.mappings.get((entry["field"], entry["raw"], entry["catalog"]))
             info = self.info(entry["catalog"], hit[1]) if hit else None
         if info:
             entry.update(sk=info["sk"], code=next(c for c, v in self.catalogs[entry["catalog"]].items() if v["sk"] == info["sk"]),

@@ -46,9 +46,9 @@
       "credit": "CL0100221",
       "phones": [
         "3253208721",
-        "3171034190",
-        "3258801384",
-        "3023754586"
+        "3140374311",
+        "3267966733",
+        "3023998961"
       ]
     },
     "V11": {
@@ -93,11 +93,24 @@
     "V22": {
       "ecc": "0000400260",
       "credit": "CL0100233"
+    },
+    "V26": {
+      "titular_ecc": "0000400261",
+      "beneficiario_ecc": "0000400262",
+      "credit": "CL0100234"
+    },
+    "V27": {
+      "ecc": "0000400263",
+      "credit": "CL0100235"
+    },
+    "V28": {
+      "ecc": "0000400264",
+      "source_value": "ZXXX"
     }
   },
   "counts": {
-    "ecc_kna1_validacion": 260,
-    "credito_core": 232,
+    "ecc_kna1_validacion": 264,
+    "credito_core": 234,
     "credito_core_delta": 1,
     "rne": 21
   }

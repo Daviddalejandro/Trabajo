@@ -1,6 +1,6 @@
 """Conjunto de validación (datos sintéticos, seed fija): un extracto SAP ECC (KNA1, mismo adaptador
 `ecc_sd`) y un sistema de crédito / core de cartera (`credito_core`) con solapamiento controlado y
-25 casos plantados V1–V25 cuyo desenlace verifica tests/test_validation_suite.py.
+28 casos plantados V1–V28 cuyo desenlace verifica tests/test_validation_suite.py.
 
 Escribe data/validation/ecc_kna1_validacion.csv, credito_core.csv, credito_core_delta.csv,
 rne_validacion.csv y manifest_validacion.json. Documentos en rangos ficticios (9xxxxxxxx / 8xxxxxxxx)."""
@@ -104,7 +104,8 @@ class ValidationSet:
 
     # ------------------------------------------------------------------ emisores
     def emit_ecc_person(self, p: VPerson, contracts: list[tuple[str, str, str]] | None = None, risk: str = "", name1: str | None = None,
-                        doc: str | None = "keep", phone: str | None = None, email: str | None = None) -> str:
+                        doc: str | None = "keep", phone: str | None = None, email: str | None = None,
+                        bprol: str = "ZAFI", categoria: str = "", beneficiario_de: str = "") -> str:
         kid = self._new_kunnr(); p.ids["ecc"] = kid
         contracts = contracts if contracts is not None else [(f"CT-{kid[-5:]}", self.rng.choice(["ZSAL", "ZCRE"]), "A")]
         self.ecc.append({"KUNNR": kid, "KTOKD": "ZPER", "STKZN": "X", "NAME1": name1 or f"{p.first} {p.middle}".strip(), "NAME2": f"{p.sur1} {p.sur2}",
@@ -112,6 +113,7 @@ class ValidationSet:
                          "REGIO": REGIO_BY_CITY[p.city], "ORT01": p.city, "STRAS": p.street, "TELF1": phone if phone is not None else p.phone,
                          "SMTP_ADDR": (email or p.email).upper(), "CTLPC": risk,
                          "ZZ_CONTRATOS": ";".join(f"{r}:{s}:{st}" for r, s, st in contracts), "ZZ_SERVICIOS": "", "LOEVM": "",
+                         "BPROL": bprol, "ZZ_CATEGORIA": categoria, "ZZ_BENEFICIARIO_DE": beneficiario_de,
                          "ERDAT": "2023-02-01", "AEDAT": "2026-09-01"})
         return kid
 
@@ -120,7 +122,8 @@ class ValidationSet:
         self.ecc.append({"KUNNR": kid, "KTOKD": "ZORG", "STKZN": "", "NAME1": legal or o.legal, "NAME2": o.legal.split(" S.A.S.")[0].upper(),
                          "STCD1": f"{o.nit}-{o.dv}", "STCD2": "", "GBDAT": "", "LAND1": "CO", "REGIO": REGIO_BY_CITY[o.city], "ORT01": o.city,
                          "STRAS": o.street, "TELF1": f"601{self.rng.randint(1_000_000, 9_999_999)}", "SMTP_ADDR": f"contacto@{o.legal.split()[0].lower()}.test",
-                         "CTLPC": "", "ZZ_CONTRATOS": f"CT-{kid[-5:]}:ZSAL:A", "ZZ_SERVICIOS": "", "LOEVM": "", "ERDAT": "2022-06-01", "AEDAT": "2026-09-01"})
+                         "CTLPC": "", "ZZ_CONTRATOS": f"CT-{kid[-5:]}:ZSAL:A", "ZZ_SERVICIOS": "", "LOEVM": "",
+                         "BPROL": "ZEMP", "ZZ_CATEGORIA": "", "ZZ_BENEFICIARIO_DE": "", "ERDAT": "2022-06-01", "AEDAT": "2026-09-01"})
         return kid
 
     def emit_credit(self, p: VPerson, obligations: list[tuple[str, str, str, str]] | None = None, calif: str = "A", alternos: list[str] | None = None,
@@ -153,12 +156,12 @@ class ValidationSet:
         P = self.common
         # población base común: ECC + crédito con variaciones leves de captura
         for p in P[30:]:
-            self.emit_ecc_person(p, risk=rng.choice(["", "001", "002"]))
+            self.emit_ecc_person(p, risk=rng.choice(["", "001", "002"]), categoria=rng.choice(["A", "A", "B", "C"]))
             self.emit_credit(p, calif=rng.choice("ABC"), aut_com=rng.choice(["S", "S", "N"]),
                              nombres=(f"{p.first} {p.middle}".strip()).upper() if rng.random() < 0.3 else None,
                              obligations=[(self._new_obl(), rng.choice(["CS", "TC"]), rng.choice(["VIG", "VIG", "MOR", "CAN"]), "2023-05-02", "2025-12-31")])
-        for p in self.ecc_only:
-            self.emit_ecc_person(p)
+        for p in self.ecc_only:   # solo en ECC: la mayoría afiliados, una parte proveedores de servicios
+            self.emit_ecc_person(p, bprol=rng.choice(["ZAFI", "ZAFI", "ZAFI", "ZPRO"]), categoria=rng.choice(["A", "B", "C", ""]))
         for p in self.credit_only:
             self.emit_credit(p, calif=rng.choice("ABCDE"))
         for o in self.orgs[2:]:
@@ -216,6 +219,15 @@ class ValidationSet:
         # V20–V25 · feed, export, vista 360, idempotencia, crosswalk y auditoría se verifican sobre V1/V9
         p = P[20]; C["V22"] = {"ecc": self.emit_ecc_person(p, contracts=[("CT-V22", "ZSAL", "A")], risk="001"),
                                "credit": self.emit_credit(p, obligations=[(self._new_obl(), "CS", "VIG", "2024-08-01", ""), (self._new_obl(), "TC", "CAN", "2021-01-01", "2023-01-01")], calif="D")}
+        # V26 · beneficiario: BPROL=ZBEN, sub-rol AFFILIATE_BENEFICIARY y relación BENEFICIARY_OF con el titular
+        tit, ben = P[21], P[22]
+        kid_tit = self.emit_ecc_person(tit, categoria="A")
+        C["V26"] = {"titular_ecc": kid_tit, "beneficiario_ecc": self.emit_ecc_person(ben, bprol="ZBEN", categoria="A", beneficiario_de=kid_tit),
+                    "credit": self.emit_credit(tit)}
+        # V27 · doble rol en la misma fuente (BUT100 multivalor): afiliado y proveedor de servicios
+        p = P[23]; C["V27"] = {"ecc": self.emit_ecc_person(p, bprol="ZAFI;ZPRO", categoria="B"), "credit": self.emit_credit(p)}
+        # V28 · BPROL sin homologar: el rol queda UNKNOWN y se corrige con rehomologar (§7.2)
+        p = P[24]; C["V28"] = {"ecc": self.emit_ecc_person(p, bprol="ZXXX"), "source_value": "ZXXX"}
         for i in range(20):   # ruido del RNE
             self.rne.append(f"+573{rng.randint(0, 4)}{rng.randint(10_000_000, 99_999_999)}")
         self.manifest["counts"] = {"ecc_kna1_validacion": len(self.ecc), "credito_core": len(self.credit), "credito_core_delta": len(self.credit_delta), "rne": len(self.rne)}

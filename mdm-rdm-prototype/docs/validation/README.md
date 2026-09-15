@@ -57,6 +57,9 @@ CALIFICACION (A–E → LOW/MEDIUM/HIGH), TIPO_TEL, ESTADO_TEL, FALLECIDO. Relac
 | V23 | Segunda corrida FULL de ambos archivos | Todo UNCHANGED por hash, 0 matching |
 | V24 | Crosswalk | `CREDITO_CORE/SEXO/H` ↔ `SAP_CRM/GESCHL/1` ↔ `SF_EC/gender/M` |
 | V25 | Auditoría de un party solo de crédito | Todas las inserciones con lote, fuente CREDITO_CORE y actor |
+| V26 | `BPROL=ZBEN` con `ZZ_BENEFICIARIO_DE` | Rol AFFILIATE, sub-rol AFFILIATE_BENEFICIARY, UES SUBSIDIO y relación `BENEFICIARY_OF` con el titular (con su inversa) |
+| V27 | `BPROL=ZAFI;ZPRO` en un solo KUNNR | Dos filas de rol: afiliado (SUBSIDIO) y proveedor de servicios (NOT_APPLICABLE) |
+| V28 | `BPROL=ZXXX` sin homologar | Rol y sub-rol en UNKNOWN con hallazgo VALIDITY; se corrige con rehomologar (§7.2) |
 
 ## Hallazgos de la validación
 

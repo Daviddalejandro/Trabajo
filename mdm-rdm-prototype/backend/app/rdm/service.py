@@ -106,13 +106,17 @@ def deprecate_value(session: Session, catalog_code: str, value_code: str, actor:
     return dict(row) | {"is_active": False}
 
 
-def homologate(session: Session, system: str, field: str, value: str) -> dict | None:
+def homologate(session: Session, system: str, field: str, value: str, catalog: str | None = None) -> dict | None:
+    """Un mismo campo fuente puede alimentar varios catálogos (BPROL → rol y sub-rol): sin `catalog`
+    devuelve la primera homologación por orden de catálogo; con `catalog` devuelve la de ese catálogo."""
     r = session.execute(text("""
         SELECT source_system_cd, source_field, source_value, domain_code, catalog_code,
                value_sk, value_code, value_name
         FROM rdm.vw_rdm_source_to_canonical
-        WHERE source_system_cd = :s AND source_field = :f AND source_value = :v"""),
-        {"s": system, "f": field, "v": value}).mappings().first()
+        WHERE source_system_cd = :s AND source_field = :f AND source_value = :v
+          AND (CAST(:c AS TEXT) IS NULL OR catalog_code = :c)
+        ORDER BY catalog_code"""),
+        {"s": system, "f": field, "v": value, "c": catalog}).mappings().first()
     return dict(r) if r else None
 
 

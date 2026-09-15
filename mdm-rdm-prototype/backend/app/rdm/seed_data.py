@@ -49,14 +49,20 @@ CATALOGS: dict[str, tuple[str, str, str | None, bool, list]] = {
         ("RNEC_API", "Registraduría Nacional (API)"), ("DIAN_API", "DIAN (API)"), ("MANUAL", "Verificación manual"),
         ("MIGR_COLOM", "Migración Colombia"), ("NOT_VERIFIED", "No verificado"),
     ]),
+    # `default_business_unit`: UES en la que se ejerce el rol cuando el sistema fuente no la envía
+    # (el afiliado y la empresa afiliadora viven en SUBSIDIO; proveedor, empleado, cliente y usuario
+    # digital la reciben de la fuente —SF_EC la división, CREDITO_CORE la UES CREDITO— o quedan NOT_APPLICABLE).
     "CAT_PARTY_ROLE": ("BUSINESS", "Rol del party", "Interno", False, [
-        ("AFFILIATE", "Afiliado"), ("EMPLOYEE", "Empleado"), ("VENDOR", "Proveedor"),
-        ("CUSTOMER", "Cliente"), ("DIGITAL_USER", "Usuario digital"), ("AFFILIATING_COMPANY", "Empresa afiliadora"),
+        ("AFFILIATE", "Afiliado", None, {"default_business_unit": "SUBSIDIO"}),
+        ("EMPLOYEE", "Empleado"), ("VENDOR", "Proveedor"),
+        ("CUSTOMER", "Cliente"), ("DIGITAL_USER", "Usuario digital"),
+        ("AFFILIATING_COMPANY", "Empresa afiliadora", None, {"default_business_unit": "SUBSIDIO"}),
     ]),
     # 12 sub-roles del diccionario maestro: 2 ilustrativos por rol principal
     "CAT_PARTY_SUB_ROLE": ("BUSINESS", "Sub-rol del party", "Interno", False, [
         ("AFFILIATE_WORKER", "Afiliado trabajador", None, {"parent_role": "AFFILIATE"}),
         ("AFFILIATE_PENSIONER", "Afiliado pensionado", None, {"parent_role": "AFFILIATE"}),
+        ("AFFILIATE_BENEFICIARY", "Afiliado beneficiario", None, {"parent_role": "AFFILIATE"}),
         ("EMPLOYEE_PERMANENT", "Empleado término indefinido", None, {"parent_role": "EMPLOYEE"}),
         ("EMPLOYEE_TEMPORARY", "Empleado temporal", None, {"parent_role": "EMPLOYEE"}),
         ("VENDOR_GOODS", "Proveedor de bienes", None, {"parent_role": "VENDOR"}),
@@ -285,6 +291,19 @@ MAPPINGS = [
     ("SAP_CRM", "RLTYP", "CAT_PARTY_ROLE", "ZAFI", "AFFILIATE"),
     ("SAP_CRM", "RLTYP", "CAT_PARTY_ROLE", "ZEMP", "AFFILIATING_COMPANY"),
     ("SAP_CRM", "RLTYP", "CAT_PARTY_ROLE", "ZBEN", "AFFILIATE"),   # beneficiario: afiliado por grupo familiar
+    # SD · BPROL: roles del interlocutor comercial. Un mismo KUNNR puede traer varios (separados por ";"),
+    # como BUT100 en SAP. El rol CUSTOMER no se homologa aquí: el cliente es de crédito y lo aporta CREDITO_CORE.
+    ("SAP_ECC_SD", "BPROL", "CAT_PARTY_ROLE", "ZAFI", "AFFILIATE"),
+    ("SAP_ECC_SD", "BPROL", "CAT_PARTY_ROLE", "ZBEN", "AFFILIATE"),
+    ("SAP_ECC_SD", "BPROL", "CAT_PARTY_ROLE", "ZPRO", "VENDOR"),
+    ("SAP_ECC_SD", "BPROL", "CAT_PARTY_ROLE", "ZEMP", "AFFILIATING_COMPANY"),
+    ("SAP_ECC_SD", "BPROL", "CAT_PARTY_SUB_ROLE", "ZAFI", "AFFILIATE_WORKER"),
+    ("SAP_ECC_SD", "BPROL", "CAT_PARTY_SUB_ROLE", "ZBEN", "AFFILIATE_BENEFICIARY"),
+    ("SAP_ECC_SD", "BPROL", "CAT_PARTY_SUB_ROLE", "ZPRO", "VENDOR_SERVICES"),
+    ("SAP_ECC_SD", "BPROL", "CAT_PARTY_SUB_ROLE", "ZEMP", "COMPANY_PRIVATE"),
+    ("SAP_ECC_SD", "ZZ_CATEGORIA", "CAT_SEGMENT_TYPE", "A", "A"),
+    ("SAP_ECC_SD", "ZZ_CATEGORIA", "CAT_SEGMENT_TYPE", "B", "B"),
+    ("SAP_ECC_SD", "ZZ_CATEGORIA", "CAT_SEGMENT_TYPE", "C", "C"),
     ("SAP_ECC_SD", "LAND1", "CAT_COUNTRY", "CO", "COL"),
     ("SAP_ECC_SD", "REGIO", "CAT_GEO_DIVIPOLA", "ANT", "05"),
     ("SAP_ECC_MM", "LAND1", "CAT_COUNTRY", "CO", "COL"),

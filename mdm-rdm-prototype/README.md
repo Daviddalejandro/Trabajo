@@ -253,7 +253,7 @@ Decisiones de implementación de la Fase 5:
 ## Conjunto de validación (SAP ECC + sistema de crédito)
 
 ```bash
-make test-validation                          # 32 pruebas: genera, ingiere y verifica los casos V1–V25
+make test-validation                          # 37 pruebas: genera, ingiere y verifica los casos V1–V28
 python backend/cli.py validation-generate     # backend/data/validation/*.csv + manifest_validacion.json
 make validation-load                          # deja ECC + crédito en la consola (zona gris: V2, V18 PROBABLE; V3 POSSIBLE)
 ```

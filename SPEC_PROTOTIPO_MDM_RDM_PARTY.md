@@ -314,7 +314,7 @@ Convención de linaje (regla dura §3.14): donde la tabla dice **[linaje]** llev
 | `PARTY` | Registro maestro (el golden record vive aquí). `party_sk`, `party_type_cd FK` (PERSON/ORGANIZATION), `golden_status_cd FK` (ciclo MDM `CANDIDATE → GOLDEN → MERGED`, §6), **`party_status_cd FK`** (ciclo de negocio `ACTIVE / INACTIVE / DECEASED`, independiente del ciclo MDM), **`golden_version`** (entero, +1 en cada cambio del golden), **`completeness_score`** (0–100, % de campos de identidad y contacto poblados; recalculado en survivorship), `created_at`, `updated_at` |
 | `PARTY_PERSON` | Extensión persona natural. `party_sk PK/FK`, `first_name`, `middle_name`, `first_surname`, `second_surname`, `birth_date`, `gender_cd FK`, `full_name_normalized`, **`death_date`** (NULL si vive; al poblarse, `party_status_cd = DECEASED`). La condición de **menor de edad** se deriva de `birth_date` (< 18 años a la fecha de consulta) y nunca se almacena. |
 | `PARTY_ORG` | Extensión persona jurídica. `party_sk PK/FK`, `legal_name`, `trade_name`, `legal_name_normalized`, `ciiu_cd FK`, `org_type_cd FK` |
-| `PARTY_ROLE` **[linaje]** | Roles del party en el negocio. `party_role_sk`, `party_sk FK`, `role_cd FK` (AFFILIATE/EMPLOYEE/VENDOR/CUSTOMER/DIGITAL_USER/AFFILIATING_COMPANY), `sub_role_cd FK`, `business_unit_cd FK` (UES en la que se ejerce el rol), `valid_from`, `valid_to`. Un party tiene N filas: una por combinación rol + UES + vigencia. El detalle de **qué servicio persistente** sostiene ese rol vive en `PARTY_SERVICE_ENROLLMENT` (capa 4) |
+| `PARTY_ROLE` **[linaje]** | Roles del party en el negocio. `party_role_sk`, `party_sk FK`, `role_cd FK` (AFFILIATE/EMPLOYEE/VENDOR/CUSTOMER/DIGITAL_USER/AFFILIATING_COMPANY), `sub_role_cd FK`, `business_unit_cd FK` (UES en la que se ejerce el rol), `valid_from`, `valid_to`. Un party tiene N filas: una por combinación rol + UES + vigencia. El detalle de **qué servicio persistente** sostiene ese rol vive en `PARTY_SERVICE_ENROLLMENT` (capa 4). **El rol lo declara el sistema fuente, nunca el adaptador**: SAP ECC SD lo homologa desde `BPROL` (multivalor como BUT100: afiliado, beneficiario, proveedor, empresa afiliadora), SAP CRM desde `RLTYP`, SF_EC desde su división y `CREDITO_CORE` aporta `CUSTOMER` (cliente de crédito) con la UES CREDITO. Cuando la fuente no envía UES se toma `default_business_unit` del valor en `CAT_PARTY_ROLE` (AFFILIATE y AFFILIATING_COMPANY → SUBSIDIO); en los demás roles queda `NOT_APPLICABLE` |
 | **`PARTY_SEGMENT`** **[linaje]** | Segmentación multi-tipo. `party_segment_sk`, `party_sk FK`, `segment_type_cd FK` (nivel 1 de `CAT_SEGMENT_TYPE`: AFFILIATION, FINANCIAL_RISK, COMMERCIAL...), `segment_cd FK` (nivel 2 del mismo catálogo; debe ser hijo de `segment_type_cd`, validado en carga), `valid_from`, `valid_to`. **UNIQUE(`party_sk`, `segment_type_cd`, `valid_from`)**: un party tiene a lo sumo un segmento vigente por tipo, y tantos tipos como necesite (afiliación = A, riesgo financiero = MEDIUM, comercial = PREMIUM) |
 | `XREF_PARTY_SOURCE` | Crosswalk fuente↔maestro y caché de matching. `xref_sk`, `party_sk FK`, `source_system_cd FK`, `external_id` (**el identificador original de la fuente, sin transformación**: PERNR, KUNNR, LIFNR, PARTNER, user_id), `source_hash`, `first_seen_at`, `last_seen_at`. UNIQUE(`source_system_cd`,`external_id`). Un party puede tener varias filas por fuente si la fuente le asignó más de un ID (p. ej. cliente re-creado) |
 
@@ -379,7 +379,7 @@ implementan en Governance con FKs desde Consents; no cambiar sin instrucción.*
 
 Una tabla RAW por fuente, misma estructura operativa:
 
-`STG_SF_EC_RAW` (Empleados · SuccessFactors), `STG_ECC_SD_RAW` (Clientes · KNA1),
+`STG_SF_EC_RAW` (Empleados · SuccessFactors), `STG_ECC_SD_RAW` (Interlocutores comerciales · KNA1),
 `STG_ECC_MM_RAW` (Proveedores · LFA1), `STG_CRM_BP_RAW` (Business Partner ·
 BUT000/BUT020/ADRC), `STG_WEB_PORTAL_RAW` (Usuarios Digitales).
 
@@ -614,7 +614,7 @@ producción):
 | Fuente | Entidad | ID nativo (`external_id`) | Carga masiva | Delta | Tiempo real |
 |---|---|---|---|---|---|
 | SuccessFactors EC | Empleados | `personIdExternal` | Compound Employee API (OAuth2, paginación) | OData v2/v4 por `lastModifiedDateTime` (`PerPerson`, `PerPersonal`, `PerNationalId`, `PerPhone`, `PerEmail`...) | Integration Center/BTP: eventos `NewHire`, `DataChange`, `Termination`, `Transfer`, `Rehire` |
-| SAP ECC 6.0 SD | Clientes (`KNA1`) | `KUNNR` | `BAPI_CUSTOMER_GETLIST/GET_DETAIL/GET_DETAIL2` + DataSource `0CUSTOMER_ATTR` | `KNA1.AEDAT` | IDoc `DEBMAS08` (ALE) |
+| SAP ECC 6.0 SD | Interlocutores comerciales (`KNA1`; roles en `BPROL`) | `KUNNR` | `BAPI_CUSTOMER_GETLIST/GET_DETAIL/GET_DETAIL2` + DataSource `0CUSTOMER_ATTR` | `KNA1.AEDAT` | IDoc `DEBMAS08` (ALE) |
 | SAP ECC 6.0 MM | Proveedores (`LFA1`) | `LIFNR` | BAPIs de vendor + DataSource `0VENDOR_ATTR` | — | IDoc `CREMAS08` (ALE) |
 | SAP CRM | Business Partner (`BUT000`/`BUT020`/`ADRC`) | `PARTNER` | `BAPI_BUPA_GET_DETAIL` + DataSource `0CRM_BUPA_MAIN_ATTR` | — | IDocs `CRMBUPA01`/`CRMBUPA02`; roles por `RLTYP` con códigos Z (`ZAFI`, `ZEMP`) |
 | Portal web | Usuarios digitales | `user_id` | Export CSV | por `updated_at` | Webhook |

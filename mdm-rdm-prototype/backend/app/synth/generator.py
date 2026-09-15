@@ -132,7 +132,7 @@ class Universe:
 
     def emit_sd_person(self, p: Person, contracts: list[tuple[str, str, str]] | None = None, risk: str = "",
                        extra_services: str = "", name_variant: str | None = None, doc: str | None = "keep",
-                       phone: str | None = None) -> str:
+                       phone: str | None = None, bprol: str = "ZAFI", categoria: str = "", beneficiario_de: str = "") -> str:
         kid = self.new_id("kunnr"); p.sources["ecc_sd"] = kid
         contracts = contracts or [(f"CR-{kid[-5:]}", "ZCRE", "A")]
         first = name_variant or f"{p.first} {p.middle}".strip()
@@ -142,6 +142,7 @@ class Universe:
             "LAND1": "CO", "REGIO": REGIO_BY_CITY[p.city], "ORT01": p.city, "STRAS": p.street,
             "TELF1": phone if phone is not None else p.phone, "SMTP_ADDR": p.email.upper(), "CTLPC": risk,
             "ZZ_CONTRATOS": ";".join(f"{r}:{s}:{st}" for r, s, st in contracts), "ZZ_SERVICIOS": extra_services,
+            "BPROL": bprol, "ZZ_CATEGORIA": categoria, "ZZ_BENEFICIARIO_DE": beneficiario_de,
             "LOEVM": "", "ERDAT": "2024-03-01", "AEDAT": "2026-09-01",
         })
         return kid
@@ -155,6 +156,7 @@ class Universe:
             "ORT01": o.city, "STRAS": o.street, "TELF1": f"601{self.rng.randint(1_000_000, 9_999_999)}",
             "SMTP_ADDR": f"contacto@{o.trade.split()[0].lower()}.test", "CTLPC": "",
             "ZZ_CONTRATOS": ";".join(f"{r}:{s}:{st}" for r, s, st in contracts), "ZZ_SERVICIOS": "",
+            "BPROL": "ZEMP", "ZZ_CATEGORIA": "", "ZZ_BENEFICIARIO_DE": "",
             "LOEVM": "", "ERDAT": "2023-05-01", "AEDAT": "2026-09-01",
         })
         return kid

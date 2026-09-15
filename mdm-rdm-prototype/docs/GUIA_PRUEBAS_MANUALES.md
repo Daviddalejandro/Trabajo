@@ -20,7 +20,7 @@ y el tablero (`#/`) muestra el estado del servicio en verde.
 | Conjunto | Comando | Qué deja en la cola de stewardship |
 |---|---|---|
 | Escenario demo (5 fuentes SAP/SF/portal, 20 casos A–T) | `make demo` | Caso **B** (portal sin documento vs. CRM, PROBABLE) y caso **K** (SF_EC vs. SAP_CRM, dos owners); caso **C** como POSSIBLE |
-| Validación SAP ECC + sistema de crédito (casos V1–V25) | `make validation-load` | **V2** (tarjeta de identidad antigua vs. cédula, PROBABLE 70), **V18** (dígito transpuesto, PROBABLE 70), **V3** (homónimos con la misma fecha, POSSIBLE 62) |
+| Validación SAP ECC + sistema de crédito (casos V1–V28) | `make validation-load` | **V2** (tarjeta de identidad antigua vs. cédula, PROBABLE 70), **V18** (dígito transpuesto, PROBABLE 70), **V3** (homónimos con la misma fecha, POSSIBLE 62) |
 
 Ambos comandos parten de cero (el segundo conserva el RDM) y aplican el matching; al terminar
 imprimen el resumen de pares por decisión. Se pueden alternar tantas veces como se quiera.
@@ -81,6 +81,12 @@ ejecutar `python backend/cli.py match` permite ver cómo se mueven los pares ent
 ## 5. Verificaciones rápidas de cierre
 
 - `GET /api/v1/stats` (o el tablero): pares por decisión, goldens y candidatos.
+- En **Vista 360**, capa 4: el rol que aporta SAP ECC SD sale de `BPROL` (AFFILIATE con sub-rol trabajador o
+  beneficiario, VENDOR, AFFILIATING_COMPANY) con la UES SUBSIDIO cuando aplica; `CUSTOMER` aparece solo desde
+  `CREDITO_CORE` con la UES CREDITO. Un registro con `BPROL` multivalor produce dos filas de rol.
+- En la misma capa se ven los **segmentos por tipo** (AFFILIATION desde la categoría de SD y FINANCIAL_RISK desde
+  el riesgo de SD y la calificación de crédito) y las **relaciones party a party** (beneficiario del titular en SD,
+  codeudor en crédito, con su inversa).
 - En **Vista 360** de un golden con varias fuentes, cada correo, teléfono y dirección aparece una sola vez
   (`CONTACT_POINT` único por canal y hash; `PARTY_ADDRESS` único por party y `address_hash`) y hay una sola
   dirección principal (★). La columna *Fuente* muestra la primera fuente que aportó el dato.

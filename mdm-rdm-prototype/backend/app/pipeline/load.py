@@ -176,6 +176,10 @@ class Loader:
         out = []
         for r in std["roles"]:
             bu = _sk(r.get("business_unit"), -1) if r.get("business_unit") else -1
+            if bu == -1:   # la fuente no envió UES: la toma del atributo del rol en el RDM (CAT_PARTY_ROLE)
+                default_bu = ((r["role"] or {}).get("attrs") or {}).get("default_business_unit")
+                if default_bu:
+                    bu = self.hom.sk("CAT_BUSINESS_UNIT", default_bu)
             sk = self._ins("party_role", "party_role_sk",
                            {"party_sk": party_sk, "role_cd": _sk(r["role"]), "sub_role_cd": _sk(r.get("sub_role")),
                             "business_unit_cd": bu, "valid_from": r.get("valid_from") or date.today(), "source_system_cd": self.src},

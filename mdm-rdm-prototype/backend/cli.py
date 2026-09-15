@@ -60,7 +60,7 @@ def synth_generate(seed: int = typer.Option(None, help="Seed fija (por defecto S
 
 @cli.command("validation-generate")
 def validation_generate(seed: int = typer.Option(20260914, help="Seed fija del conjunto de validación")) -> None:
-    """Validación · Genera data/validation/: extracto SAP ECC (KNA1) y sistema de crédito (CREDITO_CORE) con casos plantados V1–V25."""
+    """Validación · Genera data/validation/: extracto SAP ECC (KNA1) y sistema de crédito (CREDITO_CORE) con casos plantados V1–V28."""
     from app.synth.validation import generate
 
     m = generate(seed)

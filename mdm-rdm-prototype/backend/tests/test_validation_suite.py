@@ -1,6 +1,6 @@
 """Conjunto de validación completo (`make test-validation`): dos fuentes nuevas —un extracto SAP ECC
 (KNA1, adaptador `ecc_sd`) y un sistema de crédito / core de cartera (`credito_core`)— con 25 casos
-plantados V1–V25 que recorren todas las funcionalidades del prototipo: RDM y homologación, pipeline
+plantados V1–V28 que recorren todas las funcionalidades del prototipo: RDM y homologación, pipeline
 (landing, estandarización, DQ, 1NF, XREF, delta), matching y survivorship, stewardship (owners,
 unmerge, NO_MATCH vinculante), elegibilidad de contacto, consentimientos, ARCO, RNE, audiencias,
 retención y purga, feed de cambios, Vista 360, match-preview y export a Drive.
@@ -152,7 +152,9 @@ def test_1nf_obligations_roles_and_retention(client, C):
     assert ret[0] == "FINANCIAL_10Y" and ret[1].year in (2032, 2033)          # cierre 2023 + 10 años
     g = client.get(f"/api/v1/parties/{p}/golden").json()
     roles = {(r["role"], r["business_unit"], r["source_system_cd"]) for r in g["roles_relationships"]["roles"]}
-    assert ("CUSTOMER", "CREDITO", E) in roles and ("CUSTOMER", "NOT_APPLICABLE", K) in roles
+    # el cliente es de crédito (CREDITO_CORE); SAP ECC SD aporta el rol del interlocutor comercial (BPROL)
+    assert ("CUSTOMER", "CREDITO", E) in roles and ("AFFILIATE", "SUBSIDIO", K) in roles
+    assert not any(r["role"] == "CUSTOMER" and r["source_system_cd"] == K for r in g["roles_relationships"]["roles"])
 
 
 def test_V22_segment_authoritative_source_kept(C):
@@ -369,6 +371,42 @@ def test_V22_golden_360_of_merged_party(client, C):
     src = client.get(f"/api/v1/parties/{p}/sources").json()
     assert {r["source_system_cd"] for r in src["lineage"]["party_service_enrollment"]} == {K, E}
     assert all(e["purpose"] in ("COLLECTIONS", "BENEFITS", "COMMERCIAL") for e in g["contactability"]["eligibility"])
+
+
+def test_V26_beneficiary_role_and_party_to_party_relationship(client, C):
+    """BPROL=ZBEN: rol AFFILIATE con sub-rol AFFILIATE_BENEFICIARY y relación BENEFICIARY_OF con el titular."""
+    ben, tit = pof(K, C["V26"]["beneficiario_ecc"]), pof(K, C["V26"]["titular_ecc"])
+    g = client.get(f"/api/v1/parties/{ben}/golden").json()
+    rol = next(r for r in g["roles_relationships"]["roles"] if r["source_system_cd"] == K)
+    assert (rol["role"], rol["sub_role"], rol["business_unit"]) == ("AFFILIATE", "AFFILIATE_BENEFICIARY", "SUBSIDIO")
+    rels = {(r["direction"], r["relationship_type"], r["other_party_sk"]) for r in g["roles_relationships"]["relationships"]}
+    assert ("OUT", "BENEFICIARY_OF", tit) in rels
+    assert any(r["other_party_sk"] == ben for r in client.get(f"/api/v1/parties/{tit}/golden").json()["roles_relationships"]["relationships"])
+
+
+def test_V27_two_roles_from_one_source_record(client, C):
+    """BPROL multivalor (BUT100): un mismo KUNNR es afiliado y proveedor de servicios."""
+    p = pof(K, C["V27"]["ecc"])
+    roles = {(r["role"], r["sub_role"], r["business_unit"]) for r in client.get(f"/api/v1/parties/{p}/golden").json()["roles_relationships"]["roles"] if r["source_system_cd"] == K}
+    assert ("AFFILIATE", "AFFILIATE_WORKER", "SUBSIDIO") in roles
+    assert ("VENDOR", "VENDOR_SERVICES", "NOT_APPLICABLE") in roles   # el proveedor no se ejerce en una UES
+
+
+def test_V28_unmapped_bprol_leaves_unknown_role_and_dq_issue(C):
+    p = pof(K, C["V28"]["ecc"])
+    assert q("SELECT role_cd FROM mdm.party_role WHERE party_sk=:p", p=p).scalar_one() == 0
+    issue = q("""SELECT detail FROM mdm.party_dq_issue WHERE party_sk=:p AND detail->>'source_value'=:v
+                 AND detail->>'target_column'='role_cd' AND resolved_at IS NULL""", p=p, v=C["V28"]["source_value"]).scalar_one()
+    assert issue["target_table"] == "party_role"
+
+
+def test_affiliation_segment_comes_from_ecc_category(client, C):
+    """El extracto de SD trae la categoría de afiliación: la Vista 360 muestra dos tipos de segmento."""
+    p = pof(K, C["V26"]["titular_ecc"])
+    segs = {(s["segment_type"], s["segment"], s["source_system_cd"]) for s in client.get(f"/api/v1/parties/{p}/golden").json()["roles_relationships"]["segments"]}
+    assert ("AFFILIATION", "A", K) in segs
+    tipos = q("SELECT count(DISTINCT t.value_code) FROM mdm.party_segment g JOIN rdm.reference_value t ON t.value_sk=g.segment_type_cd").scalar_one()
+    assert tipos >= 2   # AFFILIATION (ECC) y FINANCIAL_RISK (ECC/crédito)
 
 
 def test_V17_match_preview_finds_existing_golden_without_persisting(client, C):

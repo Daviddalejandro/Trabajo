@@ -76,8 +76,8 @@ def deprecate(code: str, value_code: str, actor: str = Depends(actor_header),
 
 
 @router.get("/homologate", summary="Código fuente → canónico (prueba canónica del RDM)")
-def homologate(system: str, field: str, value: str, session: Session = Depends(get_session)):
-    out = service.homologate(session, system, field, value)
+def homologate(system: str, field: str, value: str, catalog: str | None = None, session: Session = Depends(get_session)):
+    out = service.homologate(session, system, field, value, catalog)
     if out is None:
         raise HTTPException(404, {"mensaje": "Sin homologación: el campo quedará en 0 = UNKNOWN y generará un "
                                               "hallazgo VALIDITY", "system": system, "field": field, "value": value})
