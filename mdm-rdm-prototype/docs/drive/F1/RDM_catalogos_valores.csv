@@ -1,0 +1,264 @@
+domain_code,catalog_code,catalog_name,official_source,is_hierarchical,value_code,value_name,parent_value_code,is_active,atributos_eav
+BUSINESS,CAT_BUSINESS_UNIT,Unidad estratégica de servicio (UES),Interno,f,SUBSIDIO,Subsidio familiar,,t,""
+BUSINESS,CAT_BUSINESS_UNIT,Unidad estratégica de servicio (UES),Interno,f,SALUD,Salud,,t,""
+BUSINESS,CAT_BUSINESS_UNIT,Unidad estratégica de servicio (UES),Interno,f,EDUCACION,Educación,,t,""
+BUSINESS,CAT_BUSINESS_UNIT,Unidad estratégica de servicio (UES),Interno,f,VIVIENDA,Vivienda,,t,""
+BUSINESS,CAT_BUSINESS_UNIT,Unidad estratégica de servicio (UES),Interno,f,CREDITO,Crédito social,,t,""
+BUSINESS,CAT_BUSINESS_UNIT,Unidad estratégica de servicio (UES),Interno,f,RECREACION,Recreación y deportes,,t,""
+BUSINESS,CAT_BUSINESS_UNIT,Unidad estratégica de servicio (UES),Interno,f,HOTELERIA_TURISMO,Hotelería y turismo,,t,""
+BUSINESS,CAT_BUSINESS_UNIT,Unidad estratégica de servicio (UES),Interno,f,MERCADEO,Mercadeo social,,t,""
+BUSINESS,CAT_CIIU,Actividad económica CIIU rev. 4 A.C. (ilustrativo),DIAN,f,4711,Comercio al por menor en establecimientos no especializados (alimentos),,t,""
+BUSINESS,CAT_CIIU,Actividad económica CIIU rev. 4 A.C. (ilustrativo),DIAN,f,8610,Actividades de hospitales y clínicas,,t,""
+BUSINESS,CAT_CIIU,Actividad económica CIIU rev. 4 A.C. (ilustrativo),DIAN,f,6492,Actividades financieras de fondos de empleados y sector solidario,,t,""
+BUSINESS,CAT_CIIU,Actividad económica CIIU rev. 4 A.C. (ilustrativo),DIAN,f,5511,Alojamiento en hoteles,,t,""
+BUSINESS,CAT_CIIU,Actividad económica CIIU rev. 4 A.C. (ilustrativo),DIAN,f,8521,Educación básica primaria,,t,""
+BUSINESS,CAT_ENROLLMENT_STATUS,Estado del vínculo de servicio,Interno,f,ACTIVE,Activo,,t,""
+BUSINESS,CAT_ENROLLMENT_STATUS,Estado del vínculo de servicio,Interno,f,SUSPENDED,Suspendido,,t,""
+BUSINESS,CAT_ENROLLMENT_STATUS,Estado del vínculo de servicio,Interno,f,CLOSED,Cerrado,,t,""
+BUSINESS,CAT_ORG_TYPE,Tipo de organización,Cámara de Comercio,f,SAS,Sociedad por acciones simplificada,,t,""
+BUSINESS,CAT_ORG_TYPE,Tipo de organización,Cámara de Comercio,f,LTDA,Sociedad limitada,,t,""
+BUSINESS,CAT_ORG_TYPE,Tipo de organización,Cámara de Comercio,f,SA,Sociedad anónima,,t,""
+BUSINESS,CAT_ORG_TYPE,Tipo de organización,Cámara de Comercio,f,ESAL,Entidad sin ánimo de lucro,,t,""
+BUSINESS,CAT_PARTY_ROLE,Rol del party,Interno,f,AFFILIATE,Afiliado,,t,""
+BUSINESS,CAT_PARTY_ROLE,Rol del party,Interno,f,EMPLOYEE,Empleado,,t,""
+BUSINESS,CAT_PARTY_ROLE,Rol del party,Interno,f,VENDOR,Proveedor,,t,""
+BUSINESS,CAT_PARTY_ROLE,Rol del party,Interno,f,CUSTOMER,Cliente,,t,""
+BUSINESS,CAT_PARTY_ROLE,Rol del party,Interno,f,DIGITAL_USER,Usuario digital,,t,""
+BUSINESS,CAT_PARTY_ROLE,Rol del party,Interno,f,AFFILIATING_COMPANY,Empresa afiliadora,,t,""
+BUSINESS,CAT_PARTY_STATUS,Estado de negocio del party,Interno,f,ACTIVE,Activo,,t,""
+BUSINESS,CAT_PARTY_STATUS,Estado de negocio del party,Interno,f,INACTIVE,Inactivo,,t,""
+BUSINESS,CAT_PARTY_STATUS,Estado de negocio del party,Interno,f,DECEASED,Fallecido,,t,""
+BUSINESS,CAT_PARTY_SUB_ROLE,Sub-rol del party,Interno,f,AFFILIATE_WORKER,Afiliado trabajador,,t,parent_role=AFFILIATE
+BUSINESS,CAT_PARTY_SUB_ROLE,Sub-rol del party,Interno,f,AFFILIATE_PENSIONER,Afiliado pensionado,,t,parent_role=AFFILIATE
+BUSINESS,CAT_PARTY_SUB_ROLE,Sub-rol del party,Interno,f,EMPLOYEE_PERMANENT,Empleado término indefinido,,t,parent_role=EMPLOYEE
+BUSINESS,CAT_PARTY_SUB_ROLE,Sub-rol del party,Interno,f,EMPLOYEE_TEMPORARY,Empleado temporal,,t,parent_role=EMPLOYEE
+BUSINESS,CAT_PARTY_SUB_ROLE,Sub-rol del party,Interno,f,VENDOR_GOODS,Proveedor de bienes,,t,parent_role=VENDOR
+BUSINESS,CAT_PARTY_SUB_ROLE,Sub-rol del party,Interno,f,VENDOR_SERVICES,Proveedor de servicios,,t,parent_role=VENDOR
+BUSINESS,CAT_PARTY_SUB_ROLE,Sub-rol del party,Interno,f,CUSTOMER_PERSON,Cliente persona natural,,t,parent_role=CUSTOMER
+BUSINESS,CAT_PARTY_SUB_ROLE,Sub-rol del party,Interno,f,CUSTOMER_COMPANY,Cliente persona jurídica,,t,parent_role=CUSTOMER
+BUSINESS,CAT_PARTY_SUB_ROLE,Sub-rol del party,Interno,f,DIGITAL_REGISTERED,Usuario registrado,,t,parent_role=DIGITAL_USER
+BUSINESS,CAT_PARTY_SUB_ROLE,Sub-rol del party,Interno,f,DIGITAL_VERIFIED,Usuario verificado,,t,parent_role=DIGITAL_USER
+BUSINESS,CAT_PARTY_SUB_ROLE,Sub-rol del party,Interno,f,COMPANY_PRIVATE,Empresa privada,,t,parent_role=AFFILIATING_COMPANY
+BUSINESS,CAT_PARTY_SUB_ROLE,Sub-rol del party,Interno,f,COMPANY_PUBLIC,Entidad pública,,t,parent_role=AFFILIATING_COMPANY
+BUSINESS,CAT_SEGMENT_TYPE,"Segmentación (nivel 1 tipo, nivel 2 valor)",Interno,t,AFFILIATION,Categoría de afiliación,,t,authoritative_source=SAP_CRM
+BUSINESS,CAT_SEGMENT_TYPE,"Segmentación (nivel 1 tipo, nivel 2 valor)",Interno,t,A,Categoría A,AFFILIATION,t,""
+BUSINESS,CAT_SEGMENT_TYPE,"Segmentación (nivel 1 tipo, nivel 2 valor)",Interno,t,B,Categoría B,AFFILIATION,t,""
+BUSINESS,CAT_SEGMENT_TYPE,"Segmentación (nivel 1 tipo, nivel 2 valor)",Interno,t,C,Categoría C,AFFILIATION,t,""
+BUSINESS,CAT_SEGMENT_TYPE,"Segmentación (nivel 1 tipo, nivel 2 valor)",Interno,t,FINANCIAL_RISK,Riesgo financiero,,t,authoritative_source=SAP_ECC_SD
+BUSINESS,CAT_SEGMENT_TYPE,"Segmentación (nivel 1 tipo, nivel 2 valor)",Interno,t,LOW,Bajo,FINANCIAL_RISK,t,""
+BUSINESS,CAT_SEGMENT_TYPE,"Segmentación (nivel 1 tipo, nivel 2 valor)",Interno,t,MEDIUM,Medio,FINANCIAL_RISK,t,""
+BUSINESS,CAT_SEGMENT_TYPE,"Segmentación (nivel 1 tipo, nivel 2 valor)",Interno,t,HIGH,Alto,FINANCIAL_RISK,t,""
+BUSINESS,CAT_SEGMENT_TYPE,"Segmentación (nivel 1 tipo, nivel 2 valor)",Interno,t,COMMERCIAL,Segmento comercial,,t,authoritative_source=WEB_PORTAL
+BUSINESS,CAT_SEGMENT_TYPE,"Segmentación (nivel 1 tipo, nivel 2 valor)",Interno,t,BASIC,Básico,COMMERCIAL,t,""
+BUSINESS,CAT_SEGMENT_TYPE,"Segmentación (nivel 1 tipo, nivel 2 valor)",Interno,t,PREMIUM,Premium,COMMERCIAL,t,""
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,SUBSIDIO,Subsidio familiar,,t,""
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,SALUD,Salud,,t,""
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,EDUCACION,Educación,,t,""
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,VIVIENDA,Vivienda,,t,""
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,CREDITO,Crédito social,,t,""
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,RECREACION,Recreación y deportes,,t,""
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,HOTELERIA_TURISMO,Hotelería y turismo,,t,""
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,MERCADEO,Mercadeo social,,t,""
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,CUOTA_MONETARIA,Cuota monetaria,SUBSIDIO,t,collections_applies=false; service_kind=PERSISTENT
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,SALUD_EPS,Plan de beneficios EPS,SALUD,t,collections_applies=false; service_kind=PERSISTENT
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,SALUD_PLAN_COMPLEMENTARIO,Plan complementario de salud,SALUD,t,collections_applies=true; service_kind=PERSISTENT
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,COLEGIO_MATRICULA,Matrícula en colegio,EDUCACION,t,collections_applies=true; service_kind=PERSISTENT
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,SUBSIDIO_VIVIENDA,Subsidio de vivienda,VIVIENDA,t,collections_applies=false; service_kind=PERSISTENT
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,CREDITO_SOCIAL,Crédito social,CREDITO,t,collections_applies=true; service_kind=PERSISTENT
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,TARJETA_CREDITO,Tarjeta de crédito,CREDITO,t,collections_applies=true; service_kind=PERSISTENT
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,CLUB_SOCIO,Socio de club,RECREACION,t,collections_applies=true; service_kind=PERSISTENT
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,PISCILAGO,Piscilago,RECREACION,t,collections_applies=false; service_kind=TRANSACTIONAL
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,HOTEL,Hotel,HOTELERIA_TURISMO,t,collections_applies=false; service_kind=TRANSACTIONAL
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,SUPERMERCADO,Supermercado,MERCADEO,t,collections_applies=false; service_kind=TRANSACTIONAL
+BUSINESS,CAT_SERVICE,"Servicio por UES (nivel 1 UES, nivel 2 servicio)",Interno,t,DROGUERIA,Droguería,MERCADEO,t,collections_applies=false; service_kind=TRANSACTIONAL
+BUSINESS,CAT_SERVICE_KIND,Tipo de relación del servicio,Interno,f,PERSISTENT,Relación sostenida en el tiempo (genera vínculo),,t,""
+BUSINESS,CAT_SERVICE_KIND,Tipo de relación del servicio,Interno,f,TRANSACTIONAL,Consumo puntual (solo referencia),,t,""
+CONTACT,CAT_CONTACT_CHANNEL,Canal de contacto,Ley 2300/2023 art. 3,f,EMAIL,Correo electrónico,,t,""
+CONTACT,CAT_CONTACT_CHANNEL,Canal de contacto,Ley 2300/2023 art. 3,f,PHONE,Llamada telefónica,,t,""
+CONTACT,CAT_CONTACT_CHANNEL,Canal de contacto,Ley 2300/2023 art. 3,f,SMS,Mensaje de texto,,t,""
+CONTACT,CAT_CONTACT_CHANNEL,Canal de contacto,Ley 2300/2023 art. 3,f,WHATSAPP,WhatsApp,,t,""
+CONTACT,CAT_CONTACT_CHANNEL,Canal de contacto,Ley 2300/2023 art. 3,f,PHYSICAL_MAIL,Correo físico,,t,""
+CONTACT,CAT_CONTACT_CONFIRMATION,Confirmación del vínculo de contacto,Interno,f,CONFIRMED_BY_TITULAR,Confirmado por el titular,,t,""
+CONTACT,CAT_CONTACT_CONFIRMATION,Confirmación del vínculo de contacto,Interno,f,CONFIRMED_BY_CONTACT,Confirmado por el contacto,,t,""
+CONTACT,CAT_CONTACT_CONFIRMATION,Confirmación del vínculo de contacto,Interno,f,UNCONFIRMED,No confirmado,,t,""
+CONTACT,CAT_CONTACT_CONFIRMATION,Confirmación del vínculo de contacto,Interno,f,WRONG_PERSON,Persona equivocada,,t,""
+CONTACT,CAT_CONTACT_CONFIRMATION,Confirmación del vínculo de contacto,Interno,f,INVALID,Inválido,,t,""
+CONTACT,CAT_CONTACT_FREQUENCY,Frecuencia de contacto,Ley 2300/2023 art. 3,f,ANY,Sin restricción,,t,""
+CONTACT,CAT_CONTACT_FREQUENCY,Frecuencia de contacto,Ley 2300/2023 art. 3,f,WEEKLY,Semanal,,t,""
+CONTACT,CAT_CONTACT_FREQUENCY,Frecuencia de contacto,Ley 2300/2023 art. 3,f,MONTHLY,Mensual,,t,""
+CONTACT,CAT_CONTACT_FREQUENCY,Frecuencia de contacto,Ley 2300/2023 art. 3,f,NEVER,Nunca,,t,""
+CONTACT,CAT_CONTACT_PURPOSE,Finalidad del contacto,Ley 2300/2023 arts. 3 y 5,f,COLLECTIONS,Cobranza,,t,required_consent_type=DATA_PROCESSING; rne_applies=false
+CONTACT,CAT_CONTACT_PURPOSE,Finalidad del contacto,Ley 2300/2023 arts. 3 y 5,f,BENEFITS,Beneficios y servicios,,t,required_consent_type=DATA_PROCESSING; rne_applies=false
+CONTACT,CAT_CONTACT_PURPOSE,Finalidad del contacto,Ley 2300/2023 arts. 3 y 5,f,COMMERCIAL,Comercial y publicitaria,,t,required_consent_type=COMMERCIAL; rne_applies=true
+CONTACT,CAT_CONTACT_USAGE_ROLE,Rol de uso del contacto,Interno,f,OWNER,Titular del medio,,t,""
+CONTACT,CAT_CONTACT_USAGE_ROLE,Rol de uso del contacto,Interno,f,SHARED,Compartido,,t,""
+CONTACT,CAT_CONTACT_USAGE_ROLE,Rol de uso del contacto,Interno,f,GUARDIAN,Acudiente,,t,""
+CONTACT,CAT_CONTACT_USAGE_ROLE,Rol de uso del contacto,Interno,f,REFERENCE,Referencia de tercero,,t,""
+CONTACT,CAT_ELIGIBILITY_REASON,Razón de elegibilidad de contacto,Ley 2300/2023; Ley 1581/2012,f,ELIGIBLE,Elegible,,t,""
+CONTACT,CAT_ELIGIBILITY_REASON,Razón de elegibilidad de contacto,Ley 2300/2023; Ley 1581/2012,f,DECEASED,Titular fallecido,,t,""
+CONTACT,CAT_ELIGIBILITY_REASON,Razón de elegibilidad de contacto,Ley 2300/2023; Ley 1581/2012,f,MINOR,Titular menor de edad,,t,""
+CONTACT,CAT_ELIGIBILITY_REASON,Razón de elegibilidad de contacto,Ley 2300/2023; Ley 1581/2012,f,RNE_EXCLUSION,Número en el Registro de Números Excluidos,,t,""
+CONTACT,CAT_ELIGIBILITY_REASON,Razón de elegibilidad de contacto,Ley 2300/2023; Ley 1581/2012,f,THIRD_PARTY_CONTACT,Medio de un tercero,,t,""
+CONTACT,CAT_ELIGIBILITY_REASON,Razón de elegibilidad de contacto,Ley 2300/2023; Ley 1581/2012,f,CONTACT_PURPOSE_DENIED,Finalidad denegada para el contacto,,t,""
+CONTACT,CAT_ELIGIBILITY_REASON,Razón de elegibilidad de contacto,Ley 2300/2023; Ley 1581/2012,f,UNCONFIRMED_CONTACT,Contacto no confirmado,,t,""
+CONTACT,CAT_ELIGIBILITY_REASON,Razón de elegibilidad de contacto,Ley 2300/2023; Ley 1581/2012,f,NO_ACTIVE_SERVICE,Sin obligación vigente,,t,""
+CONTACT,CAT_ELIGIBILITY_REASON,Razón de elegibilidad de contacto,Ley 2300/2023; Ley 1581/2012,f,NO_CONSENT,Sin autorización,,t,""
+CONTACT,CAT_ELIGIBILITY_REASON,Razón de elegibilidad de contacto,Ley 2300/2023; Ley 1581/2012,f,CONSENT_REVOKED,Autorización revocada o negada,,t,""
+CONTACT,CAT_ELIGIBILITY_REASON,Razón de elegibilidad de contacto,Ley 2300/2023; Ley 1581/2012,f,CHANNEL_DENIED,Canal denegado,,t,""
+CONTACT,CAT_ELIGIBILITY_REASON,Razón de elegibilidad de contacto,Ley 2300/2023; Ley 1581/2012,f,FREQUENCY_EXCEEDED,Frecuencia excedida,,t,""
+CONTACT,CAT_ELIGIBILITY_REASON,Razón de elegibilidad de contacto,Ley 2300/2023; Ley 1581/2012,f,SHARED_CONTACT_RESTRICTED,Contacto compartido restringido,,t,""
+CONTACT,CAT_ELIGIBILITY_REASON,Razón de elegibilidad de contacto,Ley 2300/2023; Ley 1581/2012,f,NO_CONTACT_POINT,Sin punto de contacto,,t,""
+CONTACT,CAT_PREF_ORIGIN,Origen de preferencia o vínculo de contacto,Interno,f,TITULAR,Declarado por el titular,,t,""
+CONTACT,CAT_PREF_ORIGIN,Origen de preferencia o vínculo de contacto,Interno,f,LEGAL_REP,Declarado por representante legal,,t,""
+CONTACT,CAT_PREF_ORIGIN,Origen de preferencia o vínculo de contacto,Interno,f,INTERNAL_POLICY,Política interna,,t,""
+CONTACT,CAT_PREF_ORIGIN,Origen de preferencia o vínculo de contacto,Interno,f,COLLECTIONS_MANAGEMENT,Gestión de cobranza,,t,""
+CONTACT,CAT_PREF_ORIGIN,Origen de preferencia o vínculo de contacto,Interno,f,THIRD_PARTY_REFERENCE,Referencia de tercero,,t,""
+DEMOGRAPHICS,CAT_GENDER,Género,Interno,f,M,Masculino,,t,""
+DEMOGRAPHICS,CAT_GENDER,Género,Interno,f,F,Femenino,,t,""
+DEMOGRAPHICS,CAT_GROUP_MEMBER_ROLE,Rol en el grupo,Interno,f,ANCHOR,Ancla,,t,""
+DEMOGRAPHICS,CAT_GROUP_MEMBER_ROLE,Rol en el grupo,Interno,f,MEMBER,Miembro,,t,""
+DEMOGRAPHICS,CAT_GROUP_MEMBER_ROLE,Rol en el grupo,Interno,f,BENEFICIARY,Beneficiario,,t,""
+DEMOGRAPHICS,CAT_GROUP_TYPE,Tipo de grupo,Interno,f,FAMILY,Grupo familiar,,t,""
+DEMOGRAPHICS,CAT_GROUP_TYPE,Tipo de grupo,Interno,f,CORPORATE_GROUP,Grupo empresarial,,t,""
+DEMOGRAPHICS,CAT_ID_TYPE,Tipo de documento de identidad,RNEC / DIAN / Migración Colombia,f,CC,Cédula de ciudadanía,,t,"applies_to=PERSON; has_check_digit=false; validation_regex=^\d{6,10}$"
+DEMOGRAPHICS,CAT_ID_TYPE,Tipo de documento de identidad,RNEC / DIAN / Migración Colombia,f,CE,Cédula de extranjería,,t,"applies_to=PERSON; has_check_digit=false; validation_regex=^\d{6,7}$"
+DEMOGRAPHICS,CAT_ID_TYPE,Tipo de documento de identidad,RNEC / DIAN / Migración Colombia,f,TI,Tarjeta de identidad,,t,"applies_to=PERSON; has_check_digit=false; validation_regex=^\d{10,11}$"
+DEMOGRAPHICS,CAT_ID_TYPE,Tipo de documento de identidad,RNEC / DIAN / Migración Colombia,f,NIT,Número de identificación tributaria,,t,applies_to=ORGANIZATION; has_check_digit=true; validation_regex=^\d{9}$
+DEMOGRAPHICS,CAT_ID_TYPE,Tipo de documento de identidad,RNEC / DIAN / Migración Colombia,f,PAS,Pasaporte,,t,"applies_to=PERSON; has_check_digit=false; validation_regex=^[A-Z0-9]{6,12}$"
+DEMOGRAPHICS,CAT_ID_TYPE,Tipo de documento de identidad,RNEC / DIAN / Migración Colombia,f,PPT,Permiso por protección temporal,,t,"applies_to=PERSON; has_check_digit=false; validation_regex=^\d{6,10}$"
+DEMOGRAPHICS,CAT_NAME_TYPE,Tipo de nombre,Interno,f,LEGAL,Nombre legal,,t,""
+DEMOGRAPHICS,CAT_NAME_TYPE,Tipo de nombre,Interno,f,SOCIAL,Nombre social,,t,""
+DEMOGRAPHICS,CAT_NAME_TYPE,Tipo de nombre,Interno,f,ALIAS,Alias,,t,""
+DEMOGRAPHICS,CAT_NAME_TYPE,Tipo de nombre,Interno,f,PREVIOUS,Nombre anterior,,t,""
+DEMOGRAPHICS,CAT_NAME_TYPE,Tipo de nombre,Interno,f,TRADE,Nombre comercial,,t,""
+DEMOGRAPHICS,CAT_RELATIONSHIP_TYPE,Tipo de relación entre parties (con dirección),Interno,f,SPOUSE_OF,Cónyuge de,,t,from_party_type=PERSON; inverse_code=SPOUSE_OF; to_party_type=PERSON
+DEMOGRAPHICS,CAT_RELATIONSHIP_TYPE,Tipo de relación entre parties (con dirección),Interno,f,PARENT_OF,Padre/madre de,,t,from_party_type=PERSON; inverse_code=CHILD_OF; to_party_type=PERSON
+DEMOGRAPHICS,CAT_RELATIONSHIP_TYPE,Tipo de relación entre parties (con dirección),Interno,f,CHILD_OF,Hijo/hija de,,t,from_party_type=PERSON; inverse_code=PARENT_OF; to_party_type=PERSON
+DEMOGRAPHICS,CAT_RELATIONSHIP_TYPE,Tipo de relación entre parties (con dirección),Interno,f,GUARDIAN_OF,Acudiente de,,t,from_party_type=PERSON; inverse_code=; to_party_type=PERSON
+DEMOGRAPHICS,CAT_RELATIONSHIP_TYPE,Tipo de relación entre parties (con dirección),Interno,f,BENEFICIARY_OF,Beneficiario de,,t,from_party_type=PERSON; inverse_code=; to_party_type=PERSON
+DEMOGRAPHICS,CAT_RELATIONSHIP_TYPE,Tipo de relación entre parties (con dirección),Interno,f,LEGAL_REP_OF,Representante legal de,,t,from_party_type=PERSON; inverse_code=; to_party_type=ORGANIZATION
+DEMOGRAPHICS,CAT_RELATIONSHIP_TYPE,Tipo de relación entre parties (con dirección),Interno,f,EMPLOYEE_OF,Empleado de,,t,from_party_type=PERSON; inverse_code=; to_party_type=ORGANIZATION
+DEMOGRAPHICS,CAT_RELATIONSHIP_TYPE,Tipo de relación entre parties (con dirección),Interno,f,SHAREHOLDER_OF,Accionista de,,t,from_party_type=ANY; inverse_code=; to_party_type=ORGANIZATION
+DEMOGRAPHICS,CAT_RELATIONSHIP_TYPE,Tipo de relación entre parties (con dirección),Interno,f,SUBSIDIARY_OF,Subsidiaria de,,t,from_party_type=ORGANIZATION; inverse_code=; to_party_type=ORGANIZATION
+DEMOGRAPHICS,CAT_RELATIONSHIP_TYPE,Tipo de relación entre parties (con dirección),Interno,f,BRANCH_OF,Sucursal de,,t,from_party_type=ORGANIZATION; inverse_code=; to_party_type=ORGANIZATION
+GEOGRAPHY,CAT_COUNTRY,País (ISO 3166-1 alfa-3),ISO 3166 / DANE,f,COL,Colombia,,t,""
+GEOGRAPHY,CAT_COUNTRY,País (ISO 3166-1 alfa-3),ISO 3166 / DANE,f,VEN,Venezuela,,t,""
+GEOGRAPHY,CAT_COUNTRY,País (ISO 3166-1 alfa-3),ISO 3166 / DANE,f,USA,Estados Unidos,,t,""
+GEOGRAPHY,CAT_COUNTRY,País (ISO 3166-1 alfa-3),ISO 3166 / DANE,f,ESP,España,,t,""
+GEOGRAPHY,CAT_GEOCODING_STATUS,Estado de geocodificación,Interno,f,PENDING,Pendiente,,t,""
+GEOGRAPHY,CAT_GEOCODING_STATUS,Estado de geocodificación,Interno,f,GEOCODED,Geocodificada,,t,""
+GEOGRAPHY,CAT_GEOCODING_STATUS,Estado de geocodificación,Interno,f,FAILED,Fallida,,t,""
+GEOGRAPHY,CAT_GEOCODING_STATUS,Estado de geocodificación,Interno,f,NOT_APPLICABLE,No aplica,,t,""
+GEOGRAPHY,CAT_GEO_DIVIPOLA,División político-administrativa (DIVIPOLA),DANE,t,11,Bogotá D.C.,,t,""
+GEOGRAPHY,CAT_GEO_DIVIPOLA,División político-administrativa (DIVIPOLA),DANE,t,11001,Bogotá D.C.,11,t,locality_type=CABECERA
+GEOGRAPHY,CAT_GEO_DIVIPOLA,División político-administrativa (DIVIPOLA),DANE,t,05,Antioquia,,t,""
+GEOGRAPHY,CAT_GEO_DIVIPOLA,División político-administrativa (DIVIPOLA),DANE,t,05001,Medellín,05,t,locality_type=CABECERA
+GEOGRAPHY,CAT_GEO_DIVIPOLA,División político-administrativa (DIVIPOLA),DANE,t,25,Cundinamarca,,t,""
+GEOGRAPHY,CAT_GEO_DIVIPOLA,División político-administrativa (DIVIPOLA),DANE,t,25286,Funza,25,t,locality_type=CABECERA
+GEOGRAPHY,CAT_GEO_DIVIPOLA,División político-administrativa (DIVIPOLA),DANE,t,25754,Soacha,25,t,locality_type=CABECERA
+GEOGRAPHY,CAT_GEO_DIVIPOLA,División político-administrativa (DIVIPOLA),DANE,t,76,Valle del Cauca,,t,""
+GEOGRAPHY,CAT_GEO_DIVIPOLA,División político-administrativa (DIVIPOLA),DANE,t,76001,Cali,76,t,locality_type=CABECERA
+GOVERNANCE,CAT_ARCO_REQUEST_TYPE,Tipo de solicitud ARCO,Ley 1581/2012 arts. 14-15,f,ACCESS,Acceso / consulta,,t,sla_business_days=10
+GOVERNANCE,CAT_ARCO_REQUEST_TYPE,Tipo de solicitud ARCO,Ley 1581/2012 arts. 14-15,f,RECTIFICATION,Rectificación,,t,sla_business_days=15
+GOVERNANCE,CAT_ARCO_REQUEST_TYPE,Tipo de solicitud ARCO,Ley 1581/2012 arts. 14-15,f,CANCELLATION,Cancelación / supresión,,t,sla_business_days=15
+GOVERNANCE,CAT_ARCO_REQUEST_TYPE,Tipo de solicitud ARCO,Ley 1581/2012 arts. 14-15,f,OPPOSITION,Oposición,,t,sla_business_days=15
+GOVERNANCE,CAT_AUDIT_ACTION,Acción de auditoría,Ley 1581/2012 art. 17,f,INSERT,Inserción,,t,""
+GOVERNANCE,CAT_AUDIT_ACTION,Acción de auditoría,Ley 1581/2012 art. 17,f,UPDATE,Actualización,,t,""
+GOVERNANCE,CAT_AUDIT_ACTION,Acción de auditoría,Ley 1581/2012 art. 17,f,MERGE,Merge,,t,""
+GOVERNANCE,CAT_AUDIT_ACTION,Acción de auditoría,Ley 1581/2012 art. 17,f,UNMERGE,Unmerge,,t,""
+GOVERNANCE,CAT_AUDIT_ACTION,Acción de auditoría,Ley 1581/2012 art. 17,f,REVIEW_DECISION,Decisión de revisión,,t,""
+GOVERNANCE,CAT_AUDIT_ACTION,Acción de auditoría,Ley 1581/2012 art. 17,f,ARCO_READ,Lectura por solicitud ARCO,,t,""
+GOVERNANCE,CAT_AUDIT_ACTION,Acción de auditoría,Ley 1581/2012 art. 17,f,ARCO_UPDATE,Cambio por solicitud ARCO,,t,""
+GOVERNANCE,CAT_AUDIT_ACTION,Acción de auditoría,Ley 1581/2012 art. 17,f,REHOMOLOGATE,Rehomologación,,t,""
+GOVERNANCE,CAT_AUDIT_ACTION,Acción de auditoría,Ley 1581/2012 art. 17,f,PURGE_MARK,Marca de purga,,t,""
+GOVERNANCE,CAT_AUDIT_ACTION,Acción de auditoría,Ley 1581/2012 art. 17,f,PURGE_SIMULATED,Purga simulada,,t,""
+GOVERNANCE,CAT_CONSENT_STATUS,Estado de la autorización,Ley 1581/2012,f,GRANTED,Otorgada,,t,""
+GOVERNANCE,CAT_CONSENT_STATUS,Estado de la autorización,Ley 1581/2012,f,DENIED,Negada,,t,""
+GOVERNANCE,CAT_CONSENT_STATUS,Estado de la autorización,Ley 1581/2012,f,REVOKED,Revocada,,t,""
+GOVERNANCE,CAT_CONSENT_STATUS,Estado de la autorización,Ley 1581/2012,f,EXPIRED,Vencida,,t,""
+GOVERNANCE,CAT_CONSENT_STATUS,Estado de la autorización,Ley 1581/2012,f,PENDING,Pendiente,,t,""
+GOVERNANCE,CAT_CONSENT_TYPE,Tipo de autorización (finalidad),Ley 1581/2012 art. 8; Ley 1266/2008 art. 6,f,DATA_PROCESSING,Tratamiento de datos personales (Ley 1581/2012 art. 8),,t,""
+GOVERNANCE,CAT_CONSENT_TYPE,Tipo de autorización (finalidad),Ley 1581/2012 art. 8; Ley 1266/2008 art. 6,f,COMMERCIAL,Finalidad comercial y publicitaria,,t,""
+GOVERNANCE,CAT_CONSENT_TYPE,Tipo de autorización (finalidad),Ley 1581/2012 art. 8; Ley 1266/2008 art. 6,f,FINANCIAL_HABEAS_DATA,Habeas Data financiero (Ley 1266/2008 art. 6),,t,""
+GOVERNANCE,CAT_CONSENT_TYPE,Tipo de autorización (finalidad),Ley 1581/2012 art. 8; Ley 1266/2008 art. 6,f,CLINICAL_RECORDS,"Historia clínica, dato sensible (Ley 1581/2012 art. 6; Ley 23/1981 art. 34)",,t,""
+GOVERNANCE,CAT_CONSENT_TYPE,Tipo de autorización (finalidad),Ley 1581/2012 art. 8; Ley 1266/2008 art. 6,f,CREDIT_BUREAU,Reporte a centrales de riesgo (Ley 1266/2008),,t,""
+GOVERNANCE,CAT_DQ_CATEGORY,Categoría de calidad de datos,DAMA-DMBOK2 Cap. 13,f,COMPLETENESS,Completitud,,t,""
+GOVERNANCE,CAT_DQ_CATEGORY,Categoría de calidad de datos,DAMA-DMBOK2 Cap. 13,f,VALIDITY,Validez,,t,""
+GOVERNANCE,CAT_DQ_CATEGORY,Categoría de calidad de datos,DAMA-DMBOK2 Cap. 13,f,CONSISTENCY,Consistencia,,t,""
+GOVERNANCE,CAT_DQ_CATEGORY,Categoría de calidad de datos,DAMA-DMBOK2 Cap. 13,f,UNIQUENESS,Unicidad,,t,""
+GOVERNANCE,CAT_DQ_CATEGORY,Categoría de calidad de datos,DAMA-DMBOK2 Cap. 13,f,TIMELINESS,Oportunidad,,t,""
+GOVERNANCE,CAT_REQUEST_STATUS,Estado de solicitud o tarea,Interno,f,RECEIVED,Recibida,,t,""
+GOVERNANCE,CAT_REQUEST_STATUS,Estado de solicitud o tarea,Interno,f,IN_PROGRESS,En trámite,,t,""
+GOVERNANCE,CAT_REQUEST_STATUS,Estado de solicitud o tarea,Interno,f,RESOLVED,Resuelta,,t,""
+GOVERNANCE,CAT_REQUEST_STATUS,Estado de solicitud o tarea,Interno,f,REJECTED,Rechazada,,t,""
+GOVERNANCE,CAT_RETENTION_RULE,Regla de retención,Política corporativa de retención,f,AFFILIATE_5Y,Afiliados: 5 años desde fin de afiliación,,t,trigger=AFFILIATION_END; years=5
+GOVERNANCE,CAT_RETENTION_RULE,Regla de retención,Política corporativa de retención,f,HR_5Y_POST_EXIT,RR. HH.: 5 años post-egreso,,t,trigger=EMPLOYMENT_END; years=5
+GOVERNANCE,CAT_RETENTION_RULE,Regla de retención,Política corporativa de retención,f,VENDOR_7Y,Proveedores: 7 años,,t,trigger=VENDOR_END; years=7
+GOVERNANCE,CAT_RETENTION_RULE,Regla de retención,Política corporativa de retención,f,FINANCIAL_10Y,Financiero: 10 años desde cierre del último vínculo de CREDITO,,t,trigger=ENROLLMENT_CLOSED:CREDITO; years=10
+GOVERNANCE,CAT_RETENTION_RULE,Regla de retención,Política corporativa de retención,f,HEALTH_20Y,Salud: 20 años desde cierre del último vínculo de SALUD (Res. 1995/1999 art. 15),,t,trigger=ENROLLMENT_CLOSED:SALUD; years=20
+GOVERNANCE,CAT_RETENTION_RULE,Regla de retención,Política corporativa de retención,f,LEGAL_HOLD,Retención legal,,t,trigger=HOLD; years=0
+GOVERNANCE,CAT_RETENTION_RULE,Regla de retención,Política corporativa de retención,f,PURGE_ELIGIBLE,Elegible para purga,,t,trigger=ARCO_CANCELLATION; years=0
+GOVERNANCE,CAT_SEVERITY,Severidad de hallazgo,Interno,f,BLOCKING,Bloqueante,,t,""
+GOVERNANCE,CAT_SEVERITY,Severidad de hallazgo,Interno,f,WARNING,Advertencia,,t,""
+GOVERNANCE,CAT_SEVERITY,Severidad de hallazgo,Interno,f,INFO,Informativo,,t,""
+GOVERNANCE,CAT_VERIFICATION_SOURCE,Fuente de verificación de identidad,Interno,f,RNEC_API,Registraduría Nacional (API),,t,""
+GOVERNANCE,CAT_VERIFICATION_SOURCE,Fuente de verificación de identidad,Interno,f,DIAN_API,DIAN (API),,t,""
+GOVERNANCE,CAT_VERIFICATION_SOURCE,Fuente de verificación de identidad,Interno,f,MANUAL,Verificación manual,,t,""
+GOVERNANCE,CAT_VERIFICATION_SOURCE,Fuente de verificación de identidad,Interno,f,MIGR_COLOM,Migración Colombia,,t,""
+GOVERNANCE,CAT_VERIFICATION_SOURCE,Fuente de verificación de identidad,Interno,f,NOT_VERIFIED,No verificado,,t,""
+MDM_OPS,CAT_BLOCKING_STRATEGY,Estrategia de blocking,Interno,f,DOC_HASH,Hash de documento,,t,""
+MDM_OPS,CAT_BLOCKING_STRATEGY,Estrategia de blocking,Interno,f,EMAIL_HASH,Hash de email,,t,""
+MDM_OPS,CAT_BLOCKING_STRATEGY,Estrategia de blocking,Interno,f,PHONE_HASH,Hash de teléfono,,t,""
+MDM_OPS,CAT_BLOCKING_STRATEGY,Estrategia de blocking,Interno,f,SURNAME_SOUNDEX,Soundex del primer apellido,,t,""
+MDM_OPS,CAT_BLOCKING_STRATEGY,Estrategia de blocking,Interno,f,NIT_HASH,Hash de NIT,,t,""
+MDM_OPS,CAT_BLOCKING_STRATEGY,Estrategia de blocking,Interno,f,LEGAL_NAME_TOKENS,Tokens de razón social,,t,""
+MDM_OPS,CAT_GOLDEN_STATUS,Estado MDM del party,Interno,f,CANDIDATE,Candidato,,t,""
+MDM_OPS,CAT_GOLDEN_STATUS,Estado MDM del party,Interno,f,GOLDEN,Golden record,,t,""
+MDM_OPS,CAT_GOLDEN_STATUS,Estado MDM del party,Interno,f,MERGED,Absorbido por merge,,t,""
+MDM_OPS,CAT_MATCH_DECISION,Decisión del motor de matching,Interno,f,AUTO_MERGE,Merge automático (≥ 85),,t,""
+MDM_OPS,CAT_MATCH_DECISION,Decisión del motor de matching,Interno,f,PROBABLE,Probable (70-84),,t,""
+MDM_OPS,CAT_MATCH_DECISION,Decisión del motor de matching,Interno,f,POSSIBLE,Posible (50-69),,t,""
+MDM_OPS,CAT_MATCH_DECISION,Decisión del motor de matching,Interno,f,NO_MATCH,Sin coincidencia (< 50),,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY,Party,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_PERSON,Party Person,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_ORG,Party Org,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_ROLE,Party Role,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_SEGMENT,Party Segment,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,XREF_PARTY_SOURCE,Xref Party Source,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_IDENTIFIER,Party Identifier,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_NAME,Party Name,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_RELATIONSHIP,Party Relationship,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_GROUP,Party Group,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_GROUP_MEMBER,Party Group Member,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_SERVICE_ENROLLMENT,Party Service Enrollment,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,CONTACT_POINT,Contact Point,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_CONTACT_POINT,Party Contact Point,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_ADDRESS,Party Address,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_CONTACT_PREF,Party Contact Pref,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_CONTACT_ELIGIBILITY_CACHE,Party Contact Eligibility Cache,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,MATCH_RULE,Match Rule,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_DQ_ISSUE,Party Dq Issue,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_AUDIT_LOG,Party Audit Log,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_DATA_RETENTION,Party Data Retention,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_BUCKET,Party Bucket,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,BUCKET_CANDIDATE,Bucket Candidate,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_MATCH,Party Match,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,MATCH_REVIEW_TASK,Match Review Task,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_MERGE_HISTORY,Party Merge History,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_SURVIVORSHIP,Party Survivorship,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,PARTY_CONSENT,Party Consent,,t,""
+MDM_OPS,CAT_MDM_ENTITY,Entidad del MDM (auditoría genérica),Interno,f,DATA_SUBJECT_REQUEST,Data Subject Request,,t,""
+MDM_OPS,CAT_MERGE_TYPE,Tipo de merge,Interno,f,AUTO,Automático (score ≥ 85),,t,""
+MDM_OPS,CAT_MERGE_TYPE,Tipo de merge,Interno,f,STEWARD,Decidido por steward,,t,""
+MDM_OPS,CAT_MERGE_TYPE,Tipo de merge,Interno,f,OWNER_CONSENSUS,Consenso de owners de fuente,,t,""
+MDM_OPS,CAT_MERGE_TYPE,Tipo de merge,Interno,f,MANUAL_OVERRIDE,Decisión de la Jefatura,,t,""
+MDM_OPS,CAT_PARTY_TYPE,Tipo de party,Interno,f,PERSON,Persona natural,,t,""
+MDM_OPS,CAT_PARTY_TYPE,Tipo de party,Interno,f,ORGANIZATION,Persona jurídica,,t,""
+MDM_OPS,CAT_STEWARD_DECISION,Decisión humana de stewardship,Interno,f,MERGE,Fusionar,,t,""
+MDM_OPS,CAT_STEWARD_DECISION,Decisión humana de stewardship,Interno,f,NO_MATCH,No es la misma persona,,t,""
+MDM_OPS,CAT_STEWARD_DECISION,Decisión humana de stewardship,Interno,f,ESCALATE,Escalar,,t,""
+MDM_OPS,CAT_SURVIVORSHIP_STRATEGY,Estrategia de survivorship,Interno,f,SOURCE_PRIORITY,Prioridad de fuente,,t,""
+MDM_OPS,CAT_SURVIVORSHIP_STRATEGY,Estrategia de survivorship,Interno,f,MOST_RECENT,Más reciente,,t,""
+MDM_OPS,CAT_SURVIVORSHIP_STRATEGY,Estrategia de survivorship,Interno,f,MOST_COMPLETE,Más completo,,t,""
+MDM_OPS,CAT_SURVIVORSHIP_STRATEGY,Estrategia de survivorship,Interno,f,MOST_FREQUENT,Más frecuente,,t,""
+MDM_OPS,CAT_SURVIVORSHIP_STRATEGY,Estrategia de survivorship,Interno,f,MANUAL_OVERRIDE,Decisión manual,,t,""

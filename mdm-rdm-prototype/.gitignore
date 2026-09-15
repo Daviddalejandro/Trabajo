@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+.pgdata/
+node_modules/
+frontend/dist/
+frontend/e2e-report/
+frontend/test-results/
+frontend/tsconfig.tsbuildinfo

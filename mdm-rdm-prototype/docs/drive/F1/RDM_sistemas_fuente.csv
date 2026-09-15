@@ -1,0 +1,7 @@
+source_system_cd,name,is_prototype_active,data_owner,data_steward
+SAP_CRM,SAP CRM · Business Partner (BUT000/BUT020/ADRC),t,Gerencia de Afiliaciones,steward.crm
+SAP_ECC_HCM,SAP ECC 6.0 · HCM (maestro de personal),f,Gerencia de Gestión Humana,steward.hcm
+SAP_ECC_MM,SAP ECC 6.0 · MM (proveedores LFA1),t,Gerencia de Abastecimiento,steward.mm
+SAP_ECC_SD,SAP ECC 6.0 · SD (clientes KNA1),t,Gerencia Comercial,steward.sd
+SF_EC,SuccessFactors Employee Central,t,Gerencia de Gestión Humana,steward.sfec
+WEB_PORTAL,Portal web · usuarios digitales,t,Gerencia de Canales Digitales,steward.portal
