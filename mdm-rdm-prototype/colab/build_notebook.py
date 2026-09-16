@@ -44,7 +44,7 @@ GITHUB_REPO = "https://github.com/Daviddalejandro/Trabajo.git"  #@param {type:"s
 GITHUB_RAMA = "claude/pensive-ptolemy-bg3ikj"  #@param {type:"string"}
 GITHUB_TOKEN = ""  #@param {type:"string"}
 #@markdown **Conjunto de datos inicial.** `validacion`: SAP ECC + sistema de crédito (zona gris V2, V18, V3).
-#@markdown `demo`: los 20 casos A–T de la especificación (deja B y K en la consola).
+#@markdown `demo`: los 21 casos A–U de la especificación (deja B, K y U en la consola).
 CONJUNTO = "validacion"  #@param ["validacion", "demo"]
 #@markdown **Carpeta de Drive** donde se guardan los resultados de la sección 7.
 CARPETA_RESULTADOS = "MDM_RDM_Prototipo/08_Colab/resultados"  #@param {type:"string"}

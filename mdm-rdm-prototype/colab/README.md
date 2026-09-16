@@ -1,7 +1,7 @@
 # Ejecución en Google Colab (sin instalar nada)
 
 `MDM_Prototipo_Colab.ipynb` levanta el prototipo completo en una máquina temporal de Google: instala PostgreSQL 16,
-crea la base, siembra el RDM, carga el conjunto de datos elegido (validación SAP ECC + crédito, o los 20 casos demo),
+crea la base, siembra el RDM, carga el conjunto de datos elegido (validación SAP ECC + crédito, o los 21 casos demo),
 arranca la API sirviendo la consola compilada (`colab/ui/`, un solo puerto) y muestra el enlace para abrirla en el
 navegador mientras el cuaderno esté en ejecución.
 

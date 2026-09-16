@@ -5,7 +5,7 @@
 > **Versión 2.0 consolidada.** Integra y depura las versiones 1.0 a 1.5 (historial en
 > el Anexo B). Cifras vigentes: **29 tablas núcleo** en 8 capas + **1 tabla de bitácora
 > de carga** en `staging`; **43 catálogos RDM** creados y poblados (universo de 44);
-> **20 casos demo** (A–T); **6 fases** de construcción. Cubre las 10 necesidades
+> **21 casos demo** (A–U); **6 fases** de construcción. Cubre las 10 necesidades
 > funcionales del autor y 12 capacidades MDM adicionales (matriz de cobertura en §15).
 >
 > **Pendiente de reconciliación con el diccionario maestro de la Jefatura (41 tablas):**
@@ -314,7 +314,7 @@ Convención de linaje (regla dura §3.14): donde la tabla dice **[linaje]** llev
 | `PARTY` | Registro maestro (el golden record vive aquí). `party_sk`, `party_type_cd FK` (PERSON/ORGANIZATION), `golden_status_cd FK` (ciclo MDM `CANDIDATE → GOLDEN → MERGED`, §6), **`party_status_cd FK`** (ciclo de negocio `ACTIVE / INACTIVE / DECEASED`, independiente del ciclo MDM), **`golden_version`** (entero, +1 en cada cambio del golden), **`completeness_score`** (0–100, % de campos de identidad y contacto poblados; recalculado en survivorship), `created_at`, `updated_at` |
 | `PARTY_PERSON` | Extensión persona natural. `party_sk PK/FK`, `first_name`, `middle_name`, `first_surname`, `second_surname`, `birth_date`, `gender_cd FK`, `full_name_normalized`, **`death_date`** (NULL si vive; al poblarse, `party_status_cd = DECEASED`). La condición de **menor de edad** se deriva de `birth_date` (< 18 años a la fecha de consulta) y nunca se almacena. |
 | `PARTY_ORG` | Extensión persona jurídica. `party_sk PK/FK`, `legal_name`, `trade_name`, `legal_name_normalized`, `ciiu_cd FK`, `org_type_cd FK` |
-| `PARTY_ROLE` **[linaje]** | Roles del party en el negocio. `party_role_sk`, `party_sk FK`, `role_cd FK` (AFFILIATE/EMPLOYEE/VENDOR/CUSTOMER/DIGITAL_USER/AFFILIATING_COMPANY), `sub_role_cd FK`, `business_unit_cd FK` (UES en la que se ejerce el rol), `valid_from`, `valid_to`. Un party tiene N filas: una por combinación rol + UES + vigencia. El detalle de **qué servicio persistente** sostiene ese rol vive en `PARTY_SERVICE_ENROLLMENT` (capa 4) |
+| `PARTY_ROLE` **[linaje]** | Roles del party en el negocio. `party_role_sk`, `party_sk FK`, `role_cd FK` (AFFILIATE/EMPLOYEE/VENDOR/CUSTOMER/DIGITAL_USER/AFFILIATING_COMPANY), `sub_role_cd FK`, `business_unit_cd FK` (UES en la que se ejerce el rol), `valid_from`, `valid_to`. Un party tiene N filas: una por combinación rol + UES + vigencia. El detalle de **qué servicio persistente** sostiene ese rol vive en `PARTY_SERVICE_ENROLLMENT` (capa 4). **El rol lo declara el sistema fuente, nunca el adaptador**: SAP ECC SD lo homologa desde `BPROL` (multivalor como BUT100: afiliado, beneficiario, proveedor, empresa afiliadora), SAP CRM desde `RLTYP`, SF_EC desde su división y `CREDITO_CORE` aporta `CUSTOMER` (cliente de crédito) con la UES CREDITO. Cuando la fuente no envía UES se toma `default_business_unit` del valor en `CAT_PARTY_ROLE` (AFFILIATE y AFFILIATING_COMPANY → SUBSIDIO); en los demás roles queda `NOT_APPLICABLE` |
 | **`PARTY_SEGMENT`** **[linaje]** | Segmentación multi-tipo. `party_segment_sk`, `party_sk FK`, `segment_type_cd FK` (nivel 1 de `CAT_SEGMENT_TYPE`: AFFILIATION, FINANCIAL_RISK, COMMERCIAL...), `segment_cd FK` (nivel 2 del mismo catálogo; debe ser hijo de `segment_type_cd`, validado en carga), `valid_from`, `valid_to`. **UNIQUE(`party_sk`, `segment_type_cd`, `valid_from`)**: un party tiene a lo sumo un segmento vigente por tipo, y tantos tipos como necesite (afiliación = A, riesgo financiero = MEDIUM, comercial = PREMIUM) |
 | `XREF_PARTY_SOURCE` | Crosswalk fuente↔maestro y caché de matching. `xref_sk`, `party_sk FK`, `source_system_cd FK`, `external_id` (**el identificador original de la fuente, sin transformación**: PERNR, KUNNR, LIFNR, PARTNER, user_id), `source_hash`, `first_seen_at`, `last_seen_at`. UNIQUE(`source_system_cd`,`external_id`). Un party puede tener varias filas por fuente si la fuente le asignó más de un ID (p. ej. cliente re-creado) |
 
@@ -340,7 +340,7 @@ Convención de linaje (regla dura §3.14): donde la tabla dice **[linaje]** llev
 |---|---|
 | **`CONTACT_POINT`** | **Identidad del punto de contacto, independiente del party** (regla dura §3.15). `contact_point_sk`, `channel_cd FK` (EMAIL/PHONE/SMS/WHATSAPP/PHYSICAL_MAIL), `contact_value` (E.164 para teléfono, lowercase para email, dirección normalizada para PHYSICAL_MAIL), **`address_sk FK NULL`** (solo cuando `channel_cd = PHYSICAL_MAIL`, apunta a `PARTY_ADDRESS`), `contact_hash`, **`rne_excluded`** bool, **`rne_synced_at`** (Ley 2300/2023 art. 5: la exclusión del RNE es del **número**, no de la persona), `is_verified` (validez **técnica** del medio: formato, existencia, entregabilidad; la confianza de la relación con la persona vive en el vínculo), `verified_at`, `created_at`. UNIQUE(`channel_cd`, `contact_hash`). Cualquier extensión futura (rebotes, verificación, historial de uso) cuelga de `contact_point_sk` |
 | `PARTY_CONTACT_POINT` **[linaje]** | **Relación N:M** party ↔ punto de contacto. `party_contact_sk`, `party_sk FK`, `contact_point_sk FK`, `usage_role_cd FK` (`CAT_CONTACT_USAGE_ROLE`: OWNER = titular del medio; SHARED = lo usa pero no es el titular; GUARDIAN = acudiente que recibe comunicaciones por un menor; REFERENCE = medio de un tercero dado como referencia), **`confirmation_status_cd FK`** (`CAT_CONTACT_CONFIRMATION`: grado de confianza de que el medio pertenece o llega a esta persona; se actualiza desde la gestión y se audita), **`origin_cd FK`** (reutiliza `CAT_PREF_ORIGIN`: TITULAR, LEGAL_REP, INTERNAL_POLICY, COLLECTIONS_MANAGEMENT, THIRD_PARTY_REFERENCE), `is_primary`, `valid_from`, `valid_to`. UNIQUE(`party_sk`, `contact_point_sk`, `valid_from`). El celular del hijo puede estar vinculado al hijo como OWNER y a la madre como GUARDIAN sin duplicar el número; un teléfono aportado por cobranza queda vinculado con `origin_cd = COLLECTIONS_MANAGEMENT` y `confirmation_status_cd = UNCONFIRMED` hasta que una gestión lo confirme. **Las finalidades para las que sirve cada vínculo no viven aquí**: se declaran como filas de `PARTY_CONTACT_PREF` con `party_contact_sk` (una por finalidad, §5.2 capa 5), de modo que un mismo email puede tener una o varias finalidades habilitadas y otras denegadas |
-| `PARTY_ADDRESS` **[linaje]** | Direcciones con geografía DIVIPOLA. `address_sk`, `party_sk FK`, `address_line`, `country_cd FK`, `divipola_cd FK` (municipio), `locality_type` vía RDM, `geocoding_status_cd FK` |
+| `PARTY_ADDRESS` **[linaje]** | Direcciones con geografía DIVIPOLA. `address_sk`, `party_sk FK`, `address_line`, `country_cd FK`, `divipola_cd FK` (municipio), `locality_type` vía RDM, `geocoding_status_cd FK`, **`address_hash`** (línea normalizada + país + DIVIPOLA). **UNIQUE(`party_sk`, `address_hash`)**: la misma dirección aportada por varias fuentes es una sola fila del party (conserva el linaje de la primera fuente); **una sola `is_primary` por party** (índice único parcial). Igual que `CONTACT_POINT`, nunca se duplica por fuente |
 | `PARTY_CONTACT_PREF` | Preferencias por finalidad, **a nivel de canal o de contacto concreto** (Ley 2300/2023 art. 3). `pref_sk`, `party_sk FK`, `channel_cd FK`, **`party_contact_sk FK NULL`** (NULL = la preferencia aplica a todo el canal; con valor = aplica solo a ese vínculo party↔contacto, y su `channel_cd` debe coincidir con el del contacto), `purpose_cd FK`, `allowed` bool, `frequency_cd FK`, `origin_cd FK` (`CAT_PREF_ORIGIN`), `declared_at`, `valid_from`, `valid_to`. **UNIQUE(`party_sk`, `channel_cd`, `party_contact_sk`, `purpose_cd`, `valid_from`)** (una fila por finalidad; 1NF). **Precedencia:** la fila de contacto prevalece sobre la de canal para la misma finalidad; si un contacto no tiene fila para una finalidad, hereda la del canal; si tampoco existe, se asume permitido salvo lo que dicten las precedencias de §10.3. Ejemplo: email `maria@…` con filas (BENEFITS, true), (COLLECTIONS, true), (COMMERCIAL, false) → sirve para dos finalidades y no para la tercera, aunque el canal EMAIL esté permitido para COMMERCIAL |
 | `PARTY_CONTACT_ELIGIBILITY_CACHE` | Caché materializada de elegibilidad. Clave compuesta **`(party_contact_sk, purpose_cd)`** (el vínculo party↔contacto ya fija party, contacto, canal, rol de uso y confirmación), campos `party_sk` (desnormalizado para consultas de audiencia), `is_eligible`, `reason_cd FK`, `computed_at`. Se recalcula al cambiar consents, prefs, vínculos de contacto, `rne_excluded`, `party_status_cd`, `birth_date`, el estado de un vínculo de servicio, la confirmación de un vínculo de contacto o una preferencia de canal o de contacto |
 
@@ -379,7 +379,7 @@ implementan en Governance con FKs desde Consents; no cambiar sin instrucción.*
 
 Una tabla RAW por fuente, misma estructura operativa:
 
-`STG_SF_EC_RAW` (Empleados · SuccessFactors), `STG_ECC_SD_RAW` (Clientes · KNA1),
+`STG_SF_EC_RAW` (Empleados · SuccessFactors), `STG_ECC_SD_RAW` (Interlocutores comerciales · KNA1),
 `STG_ECC_MM_RAW` (Proveedores · LFA1), `STG_CRM_BP_RAW` (Business Partner ·
 BUT000/BUT020/ADRC), `STG_WEB_PORTAL_RAW` (Usuarios Digitales).
 
@@ -614,7 +614,7 @@ producción):
 | Fuente | Entidad | ID nativo (`external_id`) | Carga masiva | Delta | Tiempo real |
 |---|---|---|---|---|---|
 | SuccessFactors EC | Empleados | `personIdExternal` | Compound Employee API (OAuth2, paginación) | OData v2/v4 por `lastModifiedDateTime` (`PerPerson`, `PerPersonal`, `PerNationalId`, `PerPhone`, `PerEmail`...) | Integration Center/BTP: eventos `NewHire`, `DataChange`, `Termination`, `Transfer`, `Rehire` |
-| SAP ECC 6.0 SD | Clientes (`KNA1`) | `KUNNR` | `BAPI_CUSTOMER_GETLIST/GET_DETAIL/GET_DETAIL2` + DataSource `0CUSTOMER_ATTR` | `KNA1.AEDAT` | IDoc `DEBMAS08` (ALE) |
+| SAP ECC 6.0 SD | Interlocutores comerciales (`KNA1`; roles en `BPROL`) | `KUNNR` | `BAPI_CUSTOMER_GETLIST/GET_DETAIL/GET_DETAIL2` + DataSource `0CUSTOMER_ATTR` | `KNA1.AEDAT` | IDoc `DEBMAS08` (ALE) |
 | SAP ECC 6.0 MM | Proveedores (`LFA1`) | `LIFNR` | BAPIs de vendor + DataSource `0VENDOR_ATTR` | — | IDoc `CREMAS08` (ALE) |
 | SAP CRM | Business Partner (`BUT000`/`BUT020`/`ADRC`) | `PARTNER` | `BAPI_BUPA_GET_DETAIL` + DataSource `0CRM_BUPA_MAIN_ATTR` | — | IDocs `CRMBUPA01`/`CRMBUPA02`; roles por `RLTYP` con códigos Z (`ZAFI`, `ZEMP`) |
 | Portal web | Usuarios digitales | `user_id` | Export CSV | por `updated_at` | Webhook |
@@ -868,7 +868,9 @@ unmerge restaura desde `pre_merge_snapshot` y re-ejecuta survivorship en ambos.
    códigos publicados), gestión de homologaciones por sistema fuente, **probador de
    homologación** (inputs sistema/campo/valor → canónico) y botón **Rehomologar**
    que muestra cuántos registros `UNKNOWN` se corregirán.
-3. **Vista 360 del golden record**: perfil de un party recorriendo las 8 capas en
+3. **Vista 360 del golden record**: cabecera con resumen ejecutivo (elegibilidad por finalidad
+   con su razón, servicios activos por UES, hallazgos DQ abiertos, pares de matching pendientes,
+   fuentes, merges y autorizaciones; marcas de menor de edad y fallecido) y perfil recorriendo las 8 capas en
    orden (Sources → Core → Identity → Roles y Relaciones → Contactability →
    Governance → Golden Record → Consents), con la fuente ganadora por campo
    (survivorship) visible, el linaje de cada fila, los segmentos por tipo, los
@@ -916,10 +918,11 @@ plantados (cada uno con test que verifica su desenlace):
 | R · Vínculos de servicio | Afiliado con CUOTA_MONETARIA (CRM), dos CREDITO_SOCIAL (SD, referencias distintas, uno CLOSED) y SALUD_EPS (SD); el mismo registro trae una estadía en HOTEL y una compra en SUPERMERCADO | Cuatro `PARTY_SERVICE_ENROLLMENT` (uno CLOSED con `PARTY_DATA_RETENTION` FINANCIAL_10Y desde `closed_at`); HOTEL y SUPERMERCADO rechazados con `VALIDITY` "servicio transaccional no vinculable"; Vista 360 muestra los roles a nivel de UES y los vínculos debajo |
 | S · Cobranza solo con obligación vigente | Titular con consent DATA_PROCESSING GRANTED y teléfono elegible, sin ningún vínculo de CREDITO activo | PHONE/COLLECTIONS → `NO_ACTIVE_SERVICE`; al cargar un CREDITO_SOCIAL ACTIVE en delta → `ELIGIBLE` (recálculo de caché por cambio de vínculo); PHONE/BENEFITS no cambia |
 | T · Finalidades por contacto y teléfonos de cobranza | Cliente de CREDITO_SOCIAL ACTIVE con: email declarado con preferencias de contacto (BENEFITS true, COLLECTIONS true, COMMERCIAL false) aunque el canal EMAIL esté permitido para COMMERCIAL; celular declarado (OWNER, CONFIRMED_BY_TITULAR, sin filas de contacto); y tres teléfonos aportados por la gestión: origen COLLECTIONS_MANAGEMENT (OWNER, UNCONFIRMED), tercero (REFERENCE, UNCONFIRMED) y uno WRONG_PERSON, cada uno con sus filas (COLLECTIONS true, BENEFITS false, COMMERCIAL false) | Email: BENEFITS y COLLECTIONS `ELIGIBLE`, COMMERCIAL `CONTACT_PURPOSE_DENIED` (la fila de contacto prevalece sobre el canal); PHONE/COLLECTIONS: declarado, cobranza y referencia `ELIGIBLE`, WRONG_PERSON no elegible; PHONE/COMMERCIAL: solo el declarado `ELIGIBLE`, los demás `CONTACT_PURPOSE_DENIED` o `THIRD_PARTY_CONTACT`; `GET /audiences?purpose=COMMERCIAL&channel=PHONE` devuelve un único número y `channel=EMAIL` ninguno; al confirmar el de cobranza como `CONFIRMED_BY_TITULAR` y escribir (COMMERCIAL, true) vía `PUT .../purposes`, pasa a elegible comercial con audit; ninguno de los tres teléfonos de gestión puntúa en matching |
+| U · Vitrina 360 (persona completa) | Una persona en las cinco fuentes (SF_EC, SAP_CRM, SAP_ECC_SD, SAP_ECC_MM, WEB_PORTAL) con el mismo documento, cuatro roles declarados por la fuente (EMPLOYEE, AFFILIATE, VENDOR, DIGITAL_USER), los tres tipos de segmento, vínculos de servicio en tres UES, relaciones persona↔organización (EMPLOYEE_OF con la empresa afiliadora, LEGAL_REP_OF y SHAREHOLDER_OF con su sociedad) y persona↔persona (SPOUSE_OF, PARENT_OF/CHILD_OF y BENEFICIARY_OF de su hija), grupo familiar, contactos por rol de uso y origen, autorizaciones y un segundo registro del portal sin documento | Un golden con cuatro merges AUTO y survivorship por campo; la Vista 360 muestra las ocho capas pobladas y la Consola de Stewardship el par `PROBABLE` con la evidencia A/B de roles, segmentos, servicios y relaciones |
 
 `make demo` = levantar → migrar → sembrar RDM → generar sintéticos → ingerir las 5
 fuentes → `rne-sync` → correr matching → dejar la consola con los casos B y K
-pendientes. `DEMO.md` narra el guion sobre estos 20 casos.
+pendientes. `DEMO.md` narra el guion sobre estos 21 casos.
 
 ---
 
@@ -1001,7 +1004,7 @@ MDM_RDM_Prototipo/
 ├── 03_Matching/            Pesos, umbrales, survivorship (Excel) y evidencia de los casos A–D, K, L, N
 ├── 04_Cumplimiento/        Matriz de elegibilidad (12 precedencias), consents, ARCO, RNE, retención; evidencia de E, F, H, J, M, Q, S, T
 ├── 05_Evidencia_Fases/     Por fase: resultado de `make test`, capturas de UI, `LOAD_BATCH` exportado
-├── 06_Demo/                DEMO.md (guion), video o capturas del recorrido de los 20 casos
+├── 06_Demo/                DEMO.md (guion), video o capturas del recorrido de los 21 casos
 └── 07_Comite/              Resumen ejecutivo por fase (una página) con trazabilidad al caso financiero
 ```
 

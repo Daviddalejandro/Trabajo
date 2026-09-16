@@ -5,7 +5,7 @@
 > **Versión 2.0 consolidada.** Integra y depura las versiones 1.0 a 1.5 (historial en
 > el Anexo B). Cifras vigentes: **29 tablas núcleo** en 8 capas + **1 tabla de bitácora
 > de carga** en `staging`; **43 catálogos RDM** creados y poblados (universo de 44);
-> **20 casos demo** (A–T); **6 fases** de construcción. Cubre las 10 necesidades
+> **21 casos demo** (A–U); **6 fases** de construcción. Cubre las 10 necesidades
 > funcionales del autor y 12 capacidades MDM adicionales (matriz de cobertura en §15).
 >
 > **Pendiente de reconciliación con el diccionario maestro de la Jefatura (41 tablas):**
@@ -918,10 +918,11 @@ plantados (cada uno con test que verifica su desenlace):
 | R · Vínculos de servicio | Afiliado con CUOTA_MONETARIA (CRM), dos CREDITO_SOCIAL (SD, referencias distintas, uno CLOSED) y SALUD_EPS (SD); el mismo registro trae una estadía en HOTEL y una compra en SUPERMERCADO | Cuatro `PARTY_SERVICE_ENROLLMENT` (uno CLOSED con `PARTY_DATA_RETENTION` FINANCIAL_10Y desde `closed_at`); HOTEL y SUPERMERCADO rechazados con `VALIDITY` "servicio transaccional no vinculable"; Vista 360 muestra los roles a nivel de UES y los vínculos debajo |
 | S · Cobranza solo con obligación vigente | Titular con consent DATA_PROCESSING GRANTED y teléfono elegible, sin ningún vínculo de CREDITO activo | PHONE/COLLECTIONS → `NO_ACTIVE_SERVICE`; al cargar un CREDITO_SOCIAL ACTIVE en delta → `ELIGIBLE` (recálculo de caché por cambio de vínculo); PHONE/BENEFITS no cambia |
 | T · Finalidades por contacto y teléfonos de cobranza | Cliente de CREDITO_SOCIAL ACTIVE con: email declarado con preferencias de contacto (BENEFITS true, COLLECTIONS true, COMMERCIAL false) aunque el canal EMAIL esté permitido para COMMERCIAL; celular declarado (OWNER, CONFIRMED_BY_TITULAR, sin filas de contacto); y tres teléfonos aportados por la gestión: origen COLLECTIONS_MANAGEMENT (OWNER, UNCONFIRMED), tercero (REFERENCE, UNCONFIRMED) y uno WRONG_PERSON, cada uno con sus filas (COLLECTIONS true, BENEFITS false, COMMERCIAL false) | Email: BENEFITS y COLLECTIONS `ELIGIBLE`, COMMERCIAL `CONTACT_PURPOSE_DENIED` (la fila de contacto prevalece sobre el canal); PHONE/COLLECTIONS: declarado, cobranza y referencia `ELIGIBLE`, WRONG_PERSON no elegible; PHONE/COMMERCIAL: solo el declarado `ELIGIBLE`, los demás `CONTACT_PURPOSE_DENIED` o `THIRD_PARTY_CONTACT`; `GET /audiences?purpose=COMMERCIAL&channel=PHONE` devuelve un único número y `channel=EMAIL` ninguno; al confirmar el de cobranza como `CONFIRMED_BY_TITULAR` y escribir (COMMERCIAL, true) vía `PUT .../purposes`, pasa a elegible comercial con audit; ninguno de los tres teléfonos de gestión puntúa en matching |
+| U · Vitrina 360 (persona completa) | Una persona en las cinco fuentes (SF_EC, SAP_CRM, SAP_ECC_SD, SAP_ECC_MM, WEB_PORTAL) con el mismo documento, cuatro roles declarados por la fuente (EMPLOYEE, AFFILIATE, VENDOR, DIGITAL_USER), los tres tipos de segmento, vínculos de servicio en tres UES, relaciones persona↔organización (EMPLOYEE_OF con la empresa afiliadora, LEGAL_REP_OF y SHAREHOLDER_OF con su sociedad) y persona↔persona (SPOUSE_OF, PARENT_OF/CHILD_OF y BENEFICIARY_OF de su hija), grupo familiar, contactos por rol de uso y origen, autorizaciones y un segundo registro del portal sin documento | Un golden con cuatro merges AUTO y survivorship por campo; la Vista 360 muestra las ocho capas pobladas y la Consola de Stewardship el par `PROBABLE` con la evidencia A/B de roles, segmentos, servicios y relaciones |
 
 `make demo` = levantar → migrar → sembrar RDM → generar sintéticos → ingerir las 5
 fuentes → `rne-sync` → correr matching → dejar la consola con los casos B y K
-pendientes. `DEMO.md` narra el guion sobre estos 20 casos.
+pendientes. `DEMO.md` narra el guion sobre estos 21 casos.
 
 ---
 
@@ -1003,7 +1004,7 @@ MDM_RDM_Prototipo/
 ├── 03_Matching/            Pesos, umbrales, survivorship (Excel) y evidencia de los casos A–D, K, L, N
 ├── 04_Cumplimiento/        Matriz de elegibilidad (12 precedencias), consents, ARCO, RNE, retención; evidencia de E, F, H, J, M, Q, S, T
 ├── 05_Evidencia_Fases/     Por fase: resultado de `make test`, capturas de UI, `LOAD_BATCH` exportado
-├── 06_Demo/                DEMO.md (guion), video o capturas del recorrido de los 20 casos
+├── 06_Demo/                DEMO.md (guion), video o capturas del recorrido de los 21 casos
 └── 07_Comite/              Resumen ejecutivo por fase (una página) con trazabilidad al caso financiero
 ```
 

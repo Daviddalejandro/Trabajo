@@ -6,6 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.db import get_session
+from app.pipeline.common import normalized_key
 
 router = APIRouter(prefix="/parties", tags=["parties"])
 
@@ -87,6 +88,9 @@ def _summary(g: dict) -> dict:
 def search(q: str | None = None, role: str | None = None, segment: str | None = None, service: str | None = None,
            status: str | None = None, external_id: str | None = None, limit: int = Query(50, ge=1, le=500), cursor: int = Query(0, ge=0),
            session: Session = Depends(get_session)):
+    # El nombre se guarda normalizado (mayúsculas, sin acentos ni puntuación): el texto buscado se
+    # normaliza igual para que "Mariana Lucía Restrepo" encuentre "MARIANA LUCIA RESTREPO VANEGAS".
+    name_q = normalized_key(q) if q else None
     data = rows(session, """
         SELECT p.party_sk, t.value_code AS party_type, g.value_code AS golden_status, st.value_code AS party_status, p.golden_version,
                p.completeness_score, COALESCE(pp.full_name_normalized, po.legal_name_normalized) AS display_name
@@ -95,7 +99,7 @@ def search(q: str | None = None, role: str | None = None, segment: str | None = 
         JOIN rdm.reference_value st ON st.value_sk=p.party_status_cd
         LEFT JOIN mdm.party_person pp ON pp.party_sk=p.party_sk LEFT JOIN mdm.party_org po ON po.party_sk=p.party_sk
         WHERE p.party_sk > :cursor
-          AND (CAST(:q AS TEXT) IS NULL OR pp.full_name_normalized ILIKE '%' || :q || '%' OR po.legal_name_normalized ILIKE '%' || :q || '%'
+          AND (CAST(:q AS TEXT) IS NULL OR pp.full_name_normalized ILIKE '%' || :name_q || '%' OR po.legal_name_normalized ILIKE '%' || :name_q || '%'
                OR EXISTS (SELECT 1 FROM mdm.party_identifier i WHERE i.party_sk=p.party_sk AND i.id_number=:q)
                OR EXISTS (SELECT 1 FROM mdm.party_contact_point l JOIN mdm.contact_point c ON c.contact_point_sk=l.contact_point_sk WHERE l.party_sk=p.party_sk AND c.contact_value=:q))
           AND (CAST(:external_id AS TEXT) IS NULL OR EXISTS (SELECT 1 FROM mdm.xref_party_source x WHERE x.party_sk=p.party_sk AND x.external_id=:external_id))
@@ -103,7 +107,7 @@ def search(q: str | None = None, role: str | None = None, segment: str | None = 
           AND (CAST(:segment AS TEXT) IS NULL OR EXISTS (SELECT 1 FROM mdm.party_segment sg JOIN rdm.reference_value v ON v.value_sk=sg.segment_cd WHERE sg.party_sk=p.party_sk AND sg.valid_to IS NULL AND v.value_code=:segment))
           AND (CAST(:service AS TEXT) IS NULL OR EXISTS (SELECT 1 FROM mdm.party_service_enrollment e JOIN rdm.reference_value v ON v.value_sk=e.service_cd WHERE e.party_sk=p.party_sk AND v.value_code=:service))
           AND (CAST(:status AS TEXT) IS NULL OR g.value_code=:status OR st.value_code=:status)
-        ORDER BY p.party_sk LIMIT :lim""", q=q, role=role, segment=segment, service=service, status=status, external_id=external_id,
+        ORDER BY p.party_sk LIMIT :lim""", q=q, name_q=name_q, role=role, segment=segment, service=service, status=status, external_id=external_id,
                 cursor=cursor, lim=limit + 1)
     return {"items": data[:limit], "next_cursor": data[limit - 1]["party_sk"] if len(data) > limit else None}
 

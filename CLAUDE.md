@@ -21,10 +21,10 @@ dominio Party (personas y organizaciones), construido por fases según `SPEC_PRO
 (v2.0, fuente de verdad funcional; sus secciones se citan como "SPEC §n").
 
 ```
-SPEC_PROTOTIPO_MDM_RDM_PARTY.md   especificación v2.0 (29 tablas mdm en 8 capas, 43 catálogos rdm, 20 casos demo A–T, fases F0–F5)
+SPEC_PROTOTIPO_MDM_RDM_PARTY.md   especificación v2.0 (29 tablas mdm en 8 capas, 43 catálogos rdm, 21 casos demo A–U, fases F0–F5)
 mdm-rdm-prototype/
   README.md                       arranque, arquitectura, comandos, módulos de la UI, convenciones
-  DEMO.md                         guion de demostración por fase (casos A–T)
+  DEMO.md                         guion de demostración por fase (casos A–U)
   Makefile                        todos los comandos operativos (make help no existe: leer el Makefile)
   backend/  (FastAPI + SQLAlchemy 2 + Alembic + typer)   app/, alembic/versions/, cli.py, tests/, data/synth, data/validation
   frontend/ (React 18 + Vite + Tailwind v4 + Playwright)  src/pages/{Dashboard,Stewardship,AdminRdm,Vista360,Compliance}.tsx
@@ -61,9 +61,9 @@ tras cambiar la UI, `make ui-colab` y subir el cambio: el cuaderno clona la rama
 
 | Objetivo | Comando |
 |---|---|
-| Escenario demo (20 casos A–T) en la consola | `make demo` |
+| Escenario demo (21 casos A–U) en la consola | `make demo` |
 | Conjunto SAP ECC + crédito (V1–V28) en la consola | `make validation-load` |
-| Suite backend completa (117 pruebas, reconstruye la base) | `make test-backend` |
+| Suite backend completa (119 pruebas, reconstruye la base) | `make test-backend` |
 | Solo validación (37) | `make test-validation` |
 | UI compilada + e2e Playwright (7) | `make test-frontend` · `make test-e2e` |
 | Entregables para Drive | `make export-drive` |

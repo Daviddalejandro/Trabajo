@@ -169,7 +169,9 @@ def test_case_O_relationships_person_org():
                                              JOIN rdm.reference_value rt ON rt.value_sk=r.relationship_type_cd""").all()}
     assert (rep, org1, "LEGAL_REP_OF") in rels and (org2, org1, "SUBSIDIARY_OF") in rels
     assert (mother, child, "PARENT_OF") in rels and (child, mother, "CHILD_OF") in rels    # inversa generada
-    assert not any(t == "SPOUSE_OF" for _, _, t in rels)
+    # el SPOUSE_OF persona→organización del caso O se rechaza: el representante no queda con ninguno
+    # (SPOUSE_OF entre dos personas sí es válido y lo usa el caso U)
+    assert not any(a == rep and t == "SPOUSE_OF" for a, _, t in rels)
     rej = q("SELECT detail FROM mdm.party_dq_issue WHERE field='relationship' AND party_sk=:p", p=rep).scalar_one()
     assert rej["relationship"] == "SPOUSE_OF" and rej["to_type"] == "ORGANIZATION"
 

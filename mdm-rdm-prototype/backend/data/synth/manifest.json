@@ -96,13 +96,28 @@
       "bad_phone": "0000300290",
       "bad_divipola": "0007000668",
       "bad_nit": "0000500102"
+    },
+    "U": {
+      "nombre": "Mariana Lucía Restrepo Vanegas",
+      "doc": "999578905",
+      "email": "mariana.restrepo.vitrina@ejemplo.test",
+      "sf_ec": "00010264",
+      "crm_bp": "0007000673",
+      "ecc_sd": "0000300292",
+      "ecc_mm": "0000500103",
+      "web_portal": "u000261",
+      "empleadora": "0007000669",
+      "sociedad": "0007000670",
+      "conyuge": "0007000671",
+      "hija": "0007000672",
+      "web_portal_dup": "u000262"
     }
   },
   "counts": {
-    "sf_ec": 263,
-    "ecc_sd": 289,
-    "ecc_mm": 102,
-    "crm_bp": 668,
-    "web_portal": 259
+    "sf_ec": 264,
+    "ecc_sd": 291,
+    "ecc_mm": 103,
+    "crm_bp": 673,
+    "web_portal": 261
   }
 }

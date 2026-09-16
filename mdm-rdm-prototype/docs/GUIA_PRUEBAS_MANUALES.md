@@ -19,7 +19,7 @@ y el tablero (`#/`) muestra el estado del servicio en verde.
 
 | Conjunto | Comando | Qué deja en la cola de stewardship |
 |---|---|---|
-| Escenario demo (5 fuentes SAP/SF/portal, 20 casos A–T) | `make demo` | Caso **B** (portal sin documento vs. CRM, PROBABLE) y caso **K** (SF_EC vs. SAP_CRM, dos owners); caso **C** como POSSIBLE |
+| Escenario demo (5 fuentes SAP/SF/portal, 21 casos A–U) | `make demo` | Caso **B** (portal sin documento vs. CRM, PROBABLE), caso **K** (SF_EC vs. SAP_CRM, dos owners) y caso **U** (vitrina 360, PROBABLE); caso **C** como POSSIBLE |
 | Validación SAP ECC + sistema de crédito (casos V1–V28) | `make validation-load` | **V2** (tarjeta de identidad antigua vs. cédula, PROBABLE 70), **V18** (dígito transpuesto, PROBABLE 70), **V3** (homónimos con la misma fecha, POSSIBLE 62) |
 
 Ambos comandos parten de cero (el segundo conserva el RDM) y aplican el matching; al terminar
@@ -56,6 +56,37 @@ imprimen el resumen de pares por decisión. Se pueden alternar tantas veces como
 
 Capturas de referencia: [`docs/evidence/validation/`](evidence/validation/README.md) y
 [`docs/evidence/f4/`](evidence/f4/README.md).
+
+## 3 bis. Caso U · vitrina 360: una persona con todas las capas pobladas
+
+Tras `make demo`, el caso **U** deja en la base una sola persona sintética con todo lo que el
+modelo Party sabe representar. Sirve para revisar de un vistazo que roles, segmentos y relaciones
+se ven donde deben verse.
+
+**Cómo encontrarla:** `#/party` → buscar **`Mariana Lucía Restrepo Vanegas`** (también funciona
+sin tildes, por documento o por el correo `mariana.restrepo.vitrina@ejemplo.test`). La fila
+`U` de la tabla que imprime `make demo` trae su `party_sk`.
+
+| Capa de la Vista 360 | Qué debe verse |
+|---|---|
+| 1 · Sources | Cinco sistemas: SF_EC, SAP_CRM, SAP_ECC_SD, SAP_ECC_MM y WEB_PORTAL, con su ID externo y linaje por tabla |
+| 2 · Core | Fuente ganadora por campo: SF_EC por `SOURCE_PRIORITY` en nombres, fecha y documento; correo y teléfono por `MOST_RECENT` |
+| 3 · Identity | Cédula verificada y el nombre legal aportado por cada una de las cinco fuentes |
+| 4 · Roles y Relaciones | **Roles por UES**: EMPLOYEE/EMPLOYEE_PERMANENT (SUBSIDIO, SF_EC), AFFILIATE/AFFILIATE_WORKER (SUBSIDIO, SD y CRM), VENDOR/VENDOR_SERVICES (SAP_ECC_MM), DIGITAL_USER/DIGITAL_REGISTERED (WEB_PORTAL). **Servicios** en tres UES: CREDITO_SOCIAL, SALUD_EPS y CUOTA_MONETARIA. **Segmentos** en los tres tipos: FINANCIAL_RISK=LOW, AFFILIATION=A y COMMERCIAL=PREMIUM. **Relaciones**: `EMPLOYEE_OF` → Textiles del Norte S.A.S., `LEGAL_REP_OF` y `SHAREHOLDER_OF` → Inversiones Vanegas Ltda., `SPOUSE_OF` ↔ Andrés Felipe Cardona Bermúdez, `PARENT_OF`/`CHILD_OF` y `BENEFICIARY_OF` ← Sofía Cardona Restrepo, más el grupo familiar con sus miembros |
+| 5 · Contactability | Correo propio confirmado y tres teléfonos por rol de uso y origen (declarado, aportado en cobranza, referencia de tercero) con sus finalidades por contacto y por canal |
+| 6 · Governance | Un hallazgo DQ abierto: la estadía de hotel del registro de SD no es vinculable como servicio (regla dura §3.18) |
+| 7 · Golden Record | Cuatro merges AUTO vigentes y el survivorship campo a campo; el par pendiente enlaza a la consola |
+| 8 · Consents | DATA_PROCESSING (SF_EC) y COMMERCIAL (SAP_CRM), ambos GRANTED |
+
+**En la Consola de Stewardship** el mismo caso deja un par `PROBABLE` (70/100): el segundo
+registro del portal no trae documento, así que `document` puntúa 0/30. Al abrirlo, la tarjeta
+**Evidencia A · roles, segmentos, relaciones y contactos** muestra los cuatro roles, los tres
+segmentos, los servicios y las relaciones de la persona consolidada, y la **Evidencia B**
+el registro pobre del portal: es la comparación que sustenta la decisión.
+
+Capturas: [`09_stewardship_vitrina_evidencia.png`](evidence/f4/README.md),
+[`10_vista360_vitrina_capa4.png`](evidence/f4/README.md) y
+[`11_vista360_vitrina_resumen.png`](evidence/f4/README.md).
 
 ## 4. Probar sus propios casos de zona gris
 

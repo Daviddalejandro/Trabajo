@@ -3,7 +3,7 @@
 Documento de traspaso: qué está hecho, qué se decidió y por qué, qué falta, y cómo retomar el trabajo en
 una sesión nueva de Claude Code sin perder el contexto. Se actualiza al cierre de cada jornada de trabajo.
 
-Última actualización: 2026-09-15 (direcciones únicas, Vista 360 completa, roles desde BPROL) · rama `claude/pensive-ptolemy-bg3ikj` · PR #1 de `Daviddalejandro/Trabajo`.
+Última actualización: 2026-09-16 (caso U · vitrina 360 y búsqueda normalizada) · rama `claude/pensive-ptolemy-bg3ikj` · PR #1 de `Daviddalejandro/Trabajo`.
 
 ## 1. Estado por fase (SPEC Anexo A)
 
@@ -13,13 +13,13 @@ una sesión nueva de Claude Code sin perder el contexto. Se actualiza al cierre 
 | F1 | RDM: 43 catálogos, inmutabilidad, homologaciones, crosswalk, vistas | Aprobada | `tests/test_f1_rdm.py` (19) |
 | F2 | Staging, MDM (29 tablas), pipeline de 7 etapas, DQ, XREF, delta, rehomologación | Aprobada | `tests/test_f2_pipeline.py` (17) |
 | F3 | Matching, merge/unmerge con snapshot, survivorship, stewardship con owners | Aprobada | `tests/test_f3_matching.py` (14) |
-| F4 | UI: Tablero, Consola de Stewardship, Admin RDM, Vista 360; e2e Playwright | Aprobada | `tests/test_f4_ui_api.py` (9), `e2e/f4.spec.ts` (6), `docs/evidence/f4/` |
+| F4 | UI: Tablero, Consola de Stewardship, Admin RDM, Vista 360; e2e Playwright | Aprobada | `tests/test_f4_ui_api.py` (11), `e2e/f4.spec.ts` (6), `docs/evidence/f4/` |
 | F5 | Cumplimiento: elegibilidad (12 precedencias), consentimientos, ARCO, RNE, audiencias, purga simulada, feed; `make demo`; export a Drive | Aprobada | `tests/test_f5_compliance.py` (14), `e2e/f5.spec.ts` (1), `docs/evidence/f5/` |
 | Validación | Fuentes SAP ECC KNA1 + sistema de crédito (`CREDITO_CORE`), casos V1–V28 | Completa | `tests/test_validation_suite.py` (37), `docs/validation/README.md`, `docs/evidence/validation/` |
 | Pruebas manuales | `make validation-load`, guía y actor `steward.credito` | Completa | `docs/GUIA_PRUEBAS_MANUALES.md` |
 | Colab | Cuaderno autocontenido, UI servida desde la API (`UI_DIST_DIR`), zip en Drive `08_Colab` | Completa (celdas de API verificadas aquí; la instalación de PostgreSQL en Colab queda por confirmar en la primera corrida) | `colab/` |
 
-Totales verificados: backend 117 pruebas, e2e 7, `make demo` 20/20 casos, `npm run build` correcto.
+Totales verificados: backend 119 pruebas, e2e 7, `make demo` 21/21 casos, `npm run build` correcto.
 
 ## 2. Decisiones tomadas (y dónde viven)
 
@@ -37,6 +37,8 @@ Totales verificados: backend 117 pruebas, e2e 7, `make demo` 20/20 casos, `npm r
 | Banderas S/N del core de crédito con helper propio `sn()` | Hallazgo de la validación | `backend/app/pipeline/sources/credito_core.py` |
 | Escrituras internas (ARCO, consentimientos, preferencias) con sistema fuente `MDM_CONSOLE` | Trazabilidad de origen | `backend/app/rdm/seed_data.py` |
 | El rol del party lo declara la fuente: SAP ECC SD lo homologa desde `BPROL` (afiliado, beneficiario, proveedor, empresa afiliadora; multivalor como BUT100) y `CUSTOMER` queda reservado al cliente de crédito (`CREDITO_CORE`, UES CREDITO). La UES del rol sale de `default_business_unit` en `CAT_PARTY_ROLE` cuando la fuente no la envía | Hallazgo del autor en la Vista 360 (todo aparecía como CUSTOMER sin UES); SPEC §5.2 y §7.1 (el RDM decide, no el adaptador) | `backend/app/rdm/seed_data.py`, `backend/app/pipeline/sources/ecc_sd.py`, `load.py` (`_roles`) |
+| El escenario demo incluye un caso vitrina (**U**) con las ocho capas pobladas en una sola persona: cinco fuentes, cuatro roles, los tres tipos de segmento, servicios en tres UES y relaciones persona↔organización y persona↔persona, más un par `PROBABLE` para verlo también en la Consola de Stewardship | Petición del autor: poder revisar de un vistazo que roles, segmentos y relaciones se ven donde deben verse | `backend/app/synth/generator.py` (caso U), `backend/app/demo.py`, `docs/GUIA_PRUEBAS_MANUALES.md` §3 bis |
+| La búsqueda de parties normaliza el texto buscado igual que el nombre almacenado (mayúsculas, sin acentos ni puntuación) | El nombre se guarda en `full_name_normalized`; buscar "Mariana Lucía Restrepo" no devolvía nada | `backend/app/api/parties.py` (`search`) |
 | La clave de homologación incluye el catálogo destino: un mismo campo fuente alimenta varios catálogos (`BPROL` → rol y sub-rol) | Defecto latente encontrado al homologar BPROL: el rol quedaba UNKNOWN porque el sub-rol pisaba la entrada | `backend/app/pipeline/homologate.py`, `app/rdm/service.py` (`homologate` admite `catalog`) |
 | Vista 360 con resumen ejecutivo (elegibilidad por finalidad y razón, servicios activos por UES, DQ abiertos, pares pendientes, fuentes/merges/autorizaciones, menor/fallecido) y completitud de capas: nombres por tipo, verificación de identificadores, rol del vínculo, miembros del grupo, validez técnica del contacto, geocodificación, línea de tiempo filtrable, otorgante del consentimiento, pares pendientes enlazados a la consola | Revisión del autor contra SPEC §5.2 y §12 (2026-09-15); Ley 2300/2023 arts. 3 y 5; DAMA-DMBOK2 Cap. 10 | `backend/app/api/parties.py` (`/golden`: `summary`, `pending_matches`, `groups.members`), `frontend/src/pages/Vista360.tsx` |
 | Dirección única por party (`address_hash` = línea normalizada + país + DIVIPOLA) y una sola principal; la misma dirección desde dos fuentes es una fila con el linaje de la primera. Los contactos ya eran únicos por `CONTACT_POINT` | Hallazgo de las pruebas manuales (Vista 360 mostraba la dirección repetida por fuente); Ley 1581/2012 art. 4 lit. e); DAMA-DMBOK2 Cap. 10 | Migración `f5_0005`, `backend/app/pipeline/load.py` (`_addresses`), `merge.py` |

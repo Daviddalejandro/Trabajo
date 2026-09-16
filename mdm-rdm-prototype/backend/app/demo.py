@@ -1,5 +1,5 @@
 """`make demo` (SPEC §13): tras rebuild + rne-sync, planta las acciones de F5 que no vienen de una fuente
-(caso Q: consulta ARCO radicada hace 12 días hábiles) y verifica el desenlace esperado de los 20 casos
+(caso Q: consulta ARCO radicada hace 12 días hábiles) y verifica el desenlace esperado de los 21 casos
 sobre la base cargada. Devuelve una tabla caso → OK/REVISAR con la evidencia."""
 from __future__ import annotations
 
@@ -104,4 +104,20 @@ def plant_and_report(session: Session, actor: str = "demo") -> list[dict]:
     t_ok = (tr.get((ph[0], "COMMERCIAL")) == "ELIGIBLE" and tr.get((ph[1], "COLLECTIONS")) == "ELIGIBLE" and tr.get((ph[1], "COMMERCIAL")) == "CONTACT_PURPOSE_DENIED"
             and tr.get((ph[2], "COMMERCIAL")) == "THIRD_PARTY_CONTACT" and tr.get((ph[3], "COLLECTIONS")) == "INVALID_CONTACT")
     add("T", t_ok, f"declarado COMMERCIAL {tr.get((ph[0], 'COMMERCIAL'))} · cobranza COLLECTIONS {tr.get((ph[1], 'COLLECTIONS'))} / COMMERCIAL {tr.get((ph[1], 'COMMERCIAL'))} · referencia COMMERCIAL {tr.get((ph[2], 'COMMERCIAL'))} · WRONG_PERSON {tr.get((ph[3], 'COLLECTIONS'))}")
+    # --- Caso U · vitrina 360: un solo golden con las 8 capas pobladas y visible en las dos consolas
+    u_ = party_of(session, "SAP_CRM", C["U"]["crm_bp"])
+    u_src = session.execute(text("SELECT count(*) FROM mdm.xref_party_source WHERE party_sk=:p"), {"p": u_}).scalar()
+    u_roles = session.execute(text("SELECT DISTINCT v.value_code FROM mdm.party_role r JOIN rdm.reference_value v ON v.value_sk=r.role_cd WHERE r.party_sk=:p"), {"p": u_}).scalars().all()
+    u_segs = session.execute(text("SELECT t.value_code||'='||v.value_code FROM mdm.party_segment s JOIN rdm.reference_value t ON t.value_sk=s.segment_type_cd "
+                                  "JOIN rdm.reference_value v ON v.value_sk=s.segment_cd WHERE s.party_sk=:p AND s.valid_to IS NULL"), {"p": u_}).scalars().all()
+    u_rels = session.execute(text("SELECT rt.value_code||':'||pt.value_code FROM mdm.party_relationship r JOIN rdm.reference_value rt ON rt.value_sk=r.relationship_type_cd "
+                                  "JOIN mdm.party o ON o.party_sk=r.to_party_sk JOIN rdm.reference_value pt ON pt.value_sk=o.party_type_cd WHERE r.from_party_sk=:p"), {"p": u_}).scalars().all()
+    u_ues = session.execute(text("SELECT count(DISTINCT business_unit_cd) FROM mdm.party_service_enrollment WHERE party_sk=:p"), {"p": u_}).scalar()
+    u_pend = session.execute(text("""SELECT count(*) FROM mdm.party_match m WHERE m.match_status='PENDING' AND (m.party_a_sk=:p OR m.party_b_sk=:p)"""), {"p": u_}).scalar()
+    u_ok = (u_src >= 5 and {"AFFILIATE", "EMPLOYEE", "VENDOR", "DIGITAL_USER"} <= set(u_roles)
+            and {"AFFILIATION=A", "FINANCIAL_RISK=LOW", "COMMERCIAL=PREMIUM"} <= set(u_segs)
+            and any(r.endswith(":ORGANIZATION") for r in u_rels) and any(r.endswith(":PERSON") for r in u_rels)
+            and u_ues >= 3 and u_pend >= 1)
+    add("U", u_ok, f"{C['U']['nombre']} (party {u_}) · {u_src} fuentes · roles {sorted(u_roles)} · segmentos {sorted(u_segs)} · "
+                   f"relaciones {sorted(u_rels)} · {u_ues} UES · {u_pend} par(es) en la cola de stewardship")
     return rep

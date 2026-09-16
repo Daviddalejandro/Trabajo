@@ -1,6 +1,6 @@
 # DEMO — Guion de demostración (se completa por fase)
 
-El guion final recorre los 20 casos plantados de la especificación (§13, A–T) sobre
+El guion final recorre los 21 casos plantados de la especificación (§13, A–U) sobre
 `make demo`. Cada fase agrega su tramo.
 
 ## Fase 0 · Plataforma
@@ -103,12 +103,19 @@ Requisito: `make rebuild` (deja B y K pendientes) y `make api` + `cd frontend &&
    la fuente ganadora por campo; Golden Record lista survivorship y el merge AUTO. Buscar el afiliado
    del caso R para ver roles por UES y vínculos de servicio debajo; el del caso T para ver los
    teléfonos de cobranza agrupados y marcados con sus finalidades por contacto.
-7. `make test-e2e` reproduce 2–6 con Playwright (6 pruebas).
+7. **Caso U · vitrina 360** (`#/party` → `Mariana Lucía Restrepo Vanegas`): una sola persona con las ocho
+   capas pobladas — cinco fuentes, cuatro roles declarados por la fuente (EMPLOYEE, AFFILIATE, VENDOR,
+   DIGITAL_USER) con sub-rol y UES, servicios en CREDITO, SALUD y SUBSIDIO, los tres tipos de segmento y
+   las relaciones persona↔organización (`EMPLOYEE_OF`, `LEGAL_REP_OF`, `SHAREHOLDER_OF`) y persona↔persona
+   (`SPOUSE_OF`, `PARENT_OF`/`CHILD_OF`, `BENEFICIARY_OF`) con su inversa. El mismo caso deja un par
+   `PROBABLE` en `#/stewardship`: la tarjeta **Evidencia A** muestra esos roles, segmentos, servicios y
+   relaciones frente al registro del portal sin documento.
+8. `make test-e2e` reproduce 2–6 con Playwright (6 pruebas).
 
 ## Fase 5 · Cumplimiento embebido
 
 `make demo` reconstruye todo, sincroniza el RNE, radica la consulta ARCO del caso Q e imprime la tabla de
-los 20 casos (todos OK). Luego, con `make api` y la UI:
+los 21 casos (todos OK). Luego, con `make api` y la UI:
 
 1. **Caso E** (`GET /parties/{sk}/contactability?purpose=COMMERCIAL`): todo contacto comercial → `CONSENT_REVOKED`.
 2. **Caso H** (Vista 360 del titular): el celular muestra la marca RNE; PHONE/COMMERCIAL `RNE_EXCLUSION`,

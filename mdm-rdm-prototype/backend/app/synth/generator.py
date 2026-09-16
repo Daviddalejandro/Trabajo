@@ -1,5 +1,5 @@
 """Genera los CSV sintéticos de las 5 fuentes con solapamiento controlado y los casos
-plantados A–T (SPEC §13). Escribe data/synth/<fuente>.csv y data/synth/manifest.json
+plantados A–U (SPEC §13). Escribe data/synth/<fuente>.csv y data/synth/manifest.json
 (ids externos de cada caso para los tests). Los documentos usan rangos no plausibles
 (cédulas 900xxxxxx / NIT 8xxxxxxxx ficticios) marcados como sintéticos.
 """
@@ -354,6 +354,51 @@ class Universe:
         cases["DQ"] = {"missing_doc": self.emit_sd_person(dq1, doc=None), "bad_phone": self.emit_sd_person(dq2, phone="123"),
                        "bad_divipola": self.emit_crm_person(dq3, categoria="A"), "bad_nit": self.emit_mm_org(O[3], bad_dv=True)}
         self.rows["crm_bp"][-1]["CITY1"] = "99999"
+        # --- Caso U · vitrina 360: una sola persona con todas las capas del modelo pobladas (SPEC §5.2).
+        #     Cinco fuentes → un golden con survivorship y merges; cuatro roles; los tres tipos de
+        #     segmento; servicios en varias UES; relaciones persona↔organización (EMPLOYEE_OF,
+        #     LEGAL_REP_OF, SHAREHOLDER_OF) y persona↔persona (SPOUSE_OF, PARENT_OF/CHILD_OF,
+        #     BENEFICIARY_OF); contactos por rol de uso y finalidad; y un par PROBABLE pendiente
+        #     para verla también en la Consola de Stewardship.
+        u, spouse = P[18], P[19]
+        u.first, u.middle, u.sur1, u.sur2 = "Mariana", "Lucía", "Restrepo", "Vanegas"
+        u.doc_type, u.city, u.email = "CC", "11001", "mariana.restrepo.vitrina@ejemplo.test"
+        u.phone = f"31{rng.randint(10_000_000, 99_999_999)}"
+        spouse.first, spouse.middle, spouse.sur1, spouse.sur2 = "Andrés", "Felipe", "Cardona", "Bermúdez"
+        spouse.doc_type, spouse.city = "CC", u.city
+        daughter = self._person(9018, minor=True)
+        daughter.first, daughter.middle, daughter.sur1, daughter.sur2 = "Sofía", "", "Cardona", "Restrepo"
+        daughter.city = u.city
+        self.persons.append(daughter)
+        empleadora, sociedad = O[4], O[5]
+        empleadora.legal, empleadora.trade, empleadora.org_type = "Textiles del Norte S.A.S.", "TEXTILES DEL NORTE", "SAS"
+        sociedad.legal, sociedad.trade, sociedad.org_type = "Inversiones Vanegas Ltda.", "INVERSIONES VANEGAS", "LTDA"
+        u_empleadora, u_sociedad = self.emit_crm_org(empleadora), self.emit_crm_org(sociedad)
+        self.emit_sd_org(empleadora)                     # la empleadora también es empresa afiliadora en SD
+        u_spouse = self.emit_crm_person(spouse, categoria="A", grupo="FAM-0018", consent_com="N")
+        u_daughter = self.emit_crm_person(daughter, roles="ZBEN", categoria="A", grupo="FAM-0018",
+                                          telefonos=[f"{u.phone}:TIT:GUA:TIT"], consent_com="N")
+        u_tels = [f"{u.phone}:TIT:OWN:TIT",                                        # propio declarado
+                  f"30{rng.randint(10_000_000, 99_999_999)}:COB:OWN:UNC",          # aportado en cobranza
+                  f"32{rng.randint(10_000_000, 99_999_999)}:REF:REF:UNC"]          # referencia (tercero)
+        u_sd = self.emit_sd_person(u, contracts=[("CR-U0018", "ZCRE", "A"), ("EPS-U0018", "ZSAL", "A")],
+                                   risk="001", categoria="A", extra_services="ZHOT",
+                                   name_variant=f"{u.first} {u.middle}".upper())
+        cases["U"] = {
+            "nombre": f"{u.first} {u.middle} {u.sur1} {u.sur2}", "doc": u.doc, "email": u.email,
+            "sf_ec": self.emit_sf_ec(u, division="SUB"),
+            "crm_bp": self.emit_crm_person(u, roles="ZAFI;ZSUB", categoria="A", afiliacion="AF-U00018", grupo="FAM-0018",
+                                           telefonos=u_tels, email_prefs="BEN:Y;COB:Y;COM:Y", consent_dp="Y", consent_com="Y",
+                                           relaciones=[f"{u_empleadora}:ZEMP", f"{u_sociedad}:ZREP", f"{u_sociedad}:ZSHA",
+                                                       f"{u_spouse}:ZSPO", f"{u_daughter}:ZPAR"]),
+            "ecc_sd": u_sd, "ecc_mm": self.emit_mm_person(u),
+            "web_portal": self.emit_portal(u, categoria="A", segmento="premium"),
+            "empleadora": u_empleadora, "sociedad": u_sociedad, "conyuge": u_spouse, "hija": u_daughter,
+        }
+        # la hija es además beneficiaria del titular: se anota en su propio registro de CRM, que ya existe
+        self.rows["crm_bp"][[r["PARTNER"] for r in self.rows["crm_bp"]].index(u_daughter)]["RELACIONES"] = f"{cases['U']['crm_bp']}:ZBEN"
+        # segundo registro en el portal sin documento: par PROBABLE pendiente en la consola
+        cases["U"]["web_portal_dup"] = self.emit_portal(u, doc=None, nombres=u.first, acepta_comercial="false")
         self.manifest["counts"] = {k: len(v) for k, v in self.rows.items()}
 
     def write(self, out_dir: Path = DATA_DIR) -> dict:

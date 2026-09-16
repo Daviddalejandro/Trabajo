@@ -11,10 +11,10 @@ Opera **exclusivamente con datos sintéticos**.
 |---|---|---|
 | F0 | Scaffolding: db + api + ui, Alembic, Makefile, healthchecks, PostgreSQL local sin Docker | ✅ tests en verde |
 | F1 | RDM: 43 catálogos (263 valores), 6 sistemas fuente, 24 homologaciones, 6 vistas, trigger de inmutabilidad, auditoría por trigger, endpoints RDM | ✅ 25 tests en verde |
-| F2 | Staging (5 RAW + `LOAD_BATCH`) + `mdm` (29 tablas, triggers de auditoría y de unicidad golden), generador sintético (1.580 registros, 21 casos plantados), pipeline de 7 etapas con carga de candidatos, `rehomologate`, API de parties y stats | ✅ 42 tests en verde |
+| F2 | Staging (5 RAW + `LOAD_BATCH`) + `mdm` (29 tablas, triggers de auditoría y de unicidad golden), generador sintético (1.592 registros, 22 casos plantados), pipeline de 7 etapas con carga de candidatos, `rehomologate`, API de parties y stats | ✅ 42 tests en verde |
 | F3 | Matching (blocking + scoring con evidencia + umbrales), merge automático con snapshot, survivorship por atributo, cola de stewardship con tareas por owner, unmerge, match-preview | ✅ 56 tests en verde |
-| F4 | UI: Consola de Stewardship (cola con evidencia lado a lado, tareas por owner, historial de merges con snapshot y unmerge), Admin RDM (valores, homologaciones, probador, rehomologar con conteo previo), Vista 360 (8 capas), tablero; endpoints de apoyo; e2e con Playwright | ✅ 63 tests backend + 6 e2e en verde |
-| F5 | Cumplimiento embebido: elegibilidad por contacto y finalidad (12 precedencias), consentimientos multi-tipo, ARCO con SLA en días hábiles, RNE, audiencias auditadas, purga simulada, feed de cambios, módulo Cumplimiento en la UI, `make demo` (20 casos verificados) y `make export-drive` | ✅ 77 tests backend + 7 e2e en verde |
+| F4 | UI: Consola de Stewardship (cola con evidencia lado a lado, tareas por owner, historial de merges con snapshot y unmerge), Admin RDM (valores, homologaciones, probador, rehomologar con conteo previo), Vista 360 (8 capas), tablero; endpoints de apoyo; e2e con Playwright | ✅ 65 tests backend + 6 e2e en verde |
+| F5 | Cumplimiento embebido: elegibilidad por contacto y finalidad (12 precedencias), consentimientos multi-tipo, ARCO con SLA en días hábiles, RNE, audiencias auditadas, purga simulada, feed de cambios, módulo Cumplimiento en la UI, `make demo` (21 casos verificados) y `make export-drive` | ✅ 79 tests backend + 7 e2e en verde |
 
 ## Arranque
 
@@ -219,7 +219,7 @@ Decisiones de implementación de la Fase 4:
 ## Cumplimiento embebido y demo (Fase 5)
 
 ```bash
-make demo                                        # rebuild → rne-sync → caso Q → tabla de los 20 casos (OK/REVISAR)
+make demo                                        # rebuild → rne-sync → caso Q → tabla de los 21 casos (OK/REVISAR)
 python backend/cli.py rne-sync                   # marca rne_excluded (solo COMMERCIAL) y recalcula elegibilidad
 python backend/cli.py purge --dry-run            # candidatos a purga; audita PURGE_SIMULATED; nunca borra
 python backend/cli.py eligibility-recompute      # recalcula la caché de las 12 precedencias
@@ -248,7 +248,8 @@ Decisiones de implementación de la Fase 5:
 - **`INVALID_CONTACT`** se añadió a `CAT_ELIGIBILITY_REASON` para los vínculos `WRONG_PERSON` / `INVALID`, que nunca son elegibles (precedencia 7).
 - **Frecuencia** (precedencia 11): sin historial de envíos en el prototipo, solo `NEVER` se considera excedida.
 - **Caso H** trae ahora un crédito activo en SD para que la cobranza sea legítima (precedencia 8) mientras el RNE bloquea solo lo comercial; **caso S** recibe su crédito en `data/synth/ecc_sd_delta.csv` (corrida delta) y pasa de `NO_ACTIVE_SERVICE` a `ELIGIBLE` sin tocar BENEFITS.
-- **`make demo`** verifica los 20 casos sobre la base reconstruida y falla si alguno no cumple; F, L, M y N se ejecutan desde la API o la consola según el guion.
+- **`make demo`** verifica los 21 casos sobre la base reconstruida y falla si alguno no cumple; F, L, M y N se ejecutan desde la API o la consola según el guion.
+- **Caso U · vitrina 360**: una persona sintética con las ocho capas pobladas (cinco fuentes, cuatro roles, los tres tipos de segmento, servicios en tres UES y relaciones persona↔organización y persona↔persona). Se busca en la Vista 360 como `Mariana Lucía Restrepo Vanegas` y deja un par `PROBABLE` en la Consola de Stewardship; detalle en `docs/GUIA_PRUEBAS_MANUALES.md` §3 bis.
 
 ## Conjunto de validación (SAP ECC + sistema de crédito)
 

@@ -118,6 +118,40 @@ def test_golden_minor_flag_and_group_members_case_J(client):
     assert all({"valid_from", "valid_to"} <= set(n) for n in g["identity"]["names"])
 
 
+def test_case_U_showcase_party_has_every_layer_populated(client):
+    """Caso U · vitrina 360: una sola persona con las ocho capas pobladas, incluidas las relaciones
+    persona↔organización y persona↔persona que la Consola de Stewardship muestra en Evidencia A/B."""
+    u = party_of("SAP_CRM", CASES["U"]["crm_bp"])
+    g = client.get(f"/api/v1/parties/{u}/golden").json()
+    assert {s["source_system_cd"] for s in g["sources"]} == {"SF_EC", "SAP_CRM", "SAP_ECC_SD", "SAP_ECC_MM", "WEB_PORTAL"}
+    rr = g["roles_relationships"]
+    assert {r["role"] for r in rr["roles"]} == {"EMPLOYEE", "AFFILIATE", "VENDOR", "DIGITAL_USER"}
+    assert all(r["sub_role"] for r in rr["roles"])
+    assert {(s["segment_type"], s["segment"]) for s in rr["segments"] if not s["valid_to"]} == \
+           {("AFFILIATION", "A"), ("FINANCIAL_RISK", "LOW"), ("COMMERCIAL", "PREMIUM")}
+    assert {s["business_unit"] for s in rr["services"]} == {"CREDITO", "SALUD", "SUBSIDIO"}
+    rels = {(r["relationship_type"], r["other_party_type"]) for r in rr["relationships"]}
+    assert {("EMPLOYEE_OF", "ORGANIZATION"), ("LEGAL_REP_OF", "ORGANIZATION"), ("SHAREHOLDER_OF", "ORGANIZATION")} <= rels
+    assert {("SPOUSE_OF", "PERSON"), ("PARENT_OF", "PERSON"), ("CHILD_OF", "PERSON"), ("BENEFICIARY_OF", "PERSON")} <= rels
+    assert all(r["other_display_name"] for r in rr["relationships"])        # el otro extremo siempre identificado
+    assert rr["groups"] and g["consents"]["consents"] and g["golden_record"]["survivorship"]
+    assert len([m for m in g["golden_record"]["merges"] if not m["unmerged"]]) >= 4
+    assert {c["usage_role"] for c in g["contactability"]["contacts"]} >= {"OWNER", "REFERENCE"}
+    assert g["summary"]["sources"] == 5 and g["summary"]["pending_matches"] >= 1   # visible en la cola de stewardship
+
+
+def test_search_normalizes_accents_and_punctuation(client):
+    """El nombre se guarda normalizado: el texto buscado se normaliza igual (SPEC §11)."""
+    u = party_of("SAP_CRM", CASES["U"]["crm_bp"])
+    for term in ["Mariana Lucía Restrepo", "mariana lucia restrepo", "Restrepo, Vanegas"]:
+        items = client.get("/api/v1/parties", params={"q": term, "status": "GOLDEN", "limit": 50}).json()["items"]
+        assert u in [i["party_sk"] for i in items], term
+    by_doc = client.get("/api/v1/parties", params={"q": CASES["U"]["doc"]}).json()["items"]
+    assert u in [i["party_sk"] for i in by_doc]                             # documento exacto sigue funcionando
+    by_mail = client.get("/api/v1/parties", params={"q": CASES["U"]["email"]}).json()["items"]
+    assert u in [i["party_sk"] for i in by_mail]                            # correo exacto sigue funcionando
+
+
 def test_frontend_build_exists_or_skipped():
     dist = Path(__file__).resolve().parents[2] / "frontend" / "dist" / "index.html"
     if not dist.exists():

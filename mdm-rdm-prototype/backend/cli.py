@@ -224,7 +224,7 @@ def eligibility_recompute(party: int = typer.Option(None, help="party_sk; vacío
 @cli.command("demo")
 def demo(actor: str = typer.Option("demo")) -> None:
     """F5 · make demo end-to-end: rebuild (migrar → sembrar → sintéticos → ingerir con matching) → rne-sync → caso Q (ARCO vencida)
-    → deja la consola con B y K pendientes e imprime el estado de los 20 casos."""
+    → deja la consola con B y K pendientes e imprime el estado de los 21 casos."""
     from app.demo import plant_and_report
 
     rc = subprocess.call([sys.executable, "cli.py", "rebuild", "--yes", "--actor", actor])
