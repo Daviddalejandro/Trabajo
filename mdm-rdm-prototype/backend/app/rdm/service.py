@@ -152,3 +152,13 @@ def audit_tail(session: Session, entity: str | None = None, limit: int = 50) -> 
         FROM rdm.rdm_audit_log WHERE (CAST(:e AS TEXT) IS NULL OR entity = :e)
         ORDER BY audit_sk DESC LIMIT :l"""), {"e": entity, "l": limit}).mappings().all()
     return [dict(r) for r in rows]
+
+
+def labels(session: Session) -> dict[str, dict[str, str]]:
+    """Diccionario código → nombre por catálogo (incluye valores deprecados: siguen apareciendo en filas históricas)
+    más `SOURCE_SYSTEM` con los sistemas fuente. Alimenta la consola para mostrar descripciones en español."""
+    out: dict[str, dict[str, str]] = {}
+    for cat, code, name in session.execute(text("SELECT catalog_code, value_code, value_name FROM rdm.vw_rdm_lookup ORDER BY 1, 2")):
+        out.setdefault(cat, {})[code] = name
+    out["SOURCE_SYSTEM"] = {cd: name for cd, name in session.execute(text("SELECT source_system_cd, name FROM rdm.source_system"))}
+    return out

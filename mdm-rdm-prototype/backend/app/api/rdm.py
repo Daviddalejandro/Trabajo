@@ -31,6 +31,11 @@ class MappingIn(BaseModel):
     value_code: str
 
 
+@router.get("/labels", summary="Nombres en español de todos los códigos canónicos (consola): {catálogo: {código: nombre}}")
+def labels(session: Session = Depends(get_session)):
+    return service.labels(session)
+
+
 @router.get("/domains", summary="Dominios de referencia")
 def domains(session: Session = Depends(get_session)):
     return service.list_domains(session)

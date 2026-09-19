@@ -149,4 +149,6 @@ test("Vista 360 · las 8 capas en orden con fuente ganadora por campo", async ({
   await expect(resumen.getByText(/pares de matching pendientes/)).toBeVisible();
   await expect(page.getByText("Pares de matching pendientes de decisión", { exact: false })).toBeVisible();
   await expect(page.getByText("Nombres por tipo", { exact: false })).toBeVisible();
+  await expect(page.locator("[data-layer='roles']").getByText("Empresa afiliadora").first()).toBeVisible();   // descripción del RDM, no el código AFFILIATING_COMPANY
+  await expect(page.getByText("Persona jurídica", { exact: true }).first()).toBeVisible();                 // CAT_PARTY_TYPE.ORGANIZATION
 });

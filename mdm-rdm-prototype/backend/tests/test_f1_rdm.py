@@ -173,6 +173,13 @@ def test_mapping_api_rejects_unknown_system_and_replaces_current(client):
 
 
 # ------------------------------------------------------------------ navegación y paginación
+def test_labels_endpoint_gives_spanish_names_per_catalog(client):
+    lab = client.get("/api/v1/rdm/labels").json()
+    assert lab["CAT_PARTY_ROLE"]["EMPLOYEE"] == "Empleado" and lab["CAT_RELATIONSHIP_TYPE"]["SPOUSE_OF"]
+    assert lab["CAT_SEGMENT_TYPE"]["FINANCIAL_RISK"] == "Riesgo financiero" and lab["CAT_SEGMENT_TYPE"]["LOW"] == "Bajo"
+    assert lab["SOURCE_SYSTEM"]["SAP_CRM"].startswith("SAP CRM") and len(lab) >= 44
+
+
 def test_navigation_endpoints(client):
     d = client.get("/api/v1/rdm/domains").json()
     assert {x["domain_code"] for x in d} == {"DEMOGRAPHICS", "GEOGRAPHY", "GOVERNANCE", "CONTACT", "MDM_OPS", "BUSINESS"}

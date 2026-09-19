@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, errorText, getSession } from "../api";
 import { Badge, Button, Card, JsonView, KV, Notice, Spinner, Table, Tabs, fmtDate, partyLink, statusTone, useHash } from "../components/ui";
+import { Cd, Src } from "../labels";
 
 // Consola de Stewardship (SPEC §12.1, regla dura §3.12): herramienta de evidencia para juicio
 // experto; toda acción exige justificación. No es un flujo de aprobación.
@@ -60,10 +61,10 @@ function Queue({ initialMatch, onChanged }: { initialMatch?: number; onChanged: 
       <Card title="Cola" actions={
         <div className="flex gap-1 text-xs">
           <select aria-label="Decisión" value={decision} onChange={(e) => setDecision(e.target.value)} className="rounded border px-1 py-0.5">
-            <option value="PROBABLE">PROBABLE</option><option value="POSSIBLE">POSSIBLE</option><option value="">Todas</option>
+            <option value="PROBABLE">Probable</option><option value="POSSIBLE">Posible</option><option value="">Todas</option>
           </select>
           <select aria-label="Estado" value={status} onChange={(e) => setStatus(e.target.value)} className="rounded border px-1 py-0.5">
-            <option value="PENDING">PENDING</option><option value="IN_REVIEW">IN_REVIEW</option><option value="RESOLVED">RESOLVED</option><option value="">Todos</option>
+            <option value="PENDING">Pendientes</option><option value="IN_REVIEW">En revisión</option><option value="RESOLVED">Resueltos</option><option value="">Todos</option>
           </select>
         </div>}>
         {err && <Notice kind="error">{err}</Notice>}
@@ -76,8 +77,8 @@ function Queue({ initialMatch, onChanged }: { initialMatch?: number; onChanged: 
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-500">#{m.match_sk}</span>
                   <span className="font-mono text-sm font-semibold">{Number(m.total_score).toFixed(1)}</span>
-                  <Badge tone={statusTone(m.decision)}>{m.decision}</Badge>
-                  <Badge tone={statusTone(m.match_status)}>{m.match_status}</Badge>
+                  <Badge tone={statusTone(m.decision)}><Cd cat="CAT_MATCH_DECISION" v={m.decision} /></Badge>
+                  <Badge tone={statusTone(m.match_status)}><Cd cat="UI" v={m.match_status} /></Badge>
                 </div>
                 <div className="truncate text-sm">{m.party_a.display_name} <span className="text-slate-400">vs</span> {m.party_b.display_name}</div>
                 <div className="text-xs text-slate-500">
@@ -140,7 +141,7 @@ export function MatchDetail({ matchSk, onChanged, taskMode }: { matchSk: number;
 
   return (
     <div className="space-y-4">
-      <Card title={<span>Par #{m.match_sk} · evidencia <span className="font-mono">{Number(m.total_score).toFixed(1)}</span> %{b ? <> sobre cobertura <span className="font-mono">{Number(b.coverage).toFixed(0)}</span> %</> : " / 100"} <Badge tone={statusTone(m.decision)}>{m.decision}</Badge> <Badge tone={statusTone(m.match_status)}>{m.match_status}</Badge></span>}
+      <Card title={<span>Par #{m.match_sk} · evidencia <span className="font-mono">{Number(m.total_score).toFixed(1)}</span> %{b ? <> sobre cobertura <span className="font-mono">{Number(b.coverage).toFixed(0)}</span> %</> : " / 100"} <Badge tone={statusTone(m.decision)}><Cd cat="CAT_MATCH_DECISION" v={m.decision} /></Badge> <Badge tone={statusTone(m.match_status)}><Cd cat="UI" v={m.match_status} /></Badge></span>}
         actions={<span className="text-xs text-slate-500">Reglas v{m.rule_version}{b?.policy_version ? ` · política v${b.policy_version}` : ""} · {fmtDate(m.matched_at)}</span>}>
         <div className="grid gap-4 md:grid-cols-2">
           <PartyHead p={m.party_a} side="A" />
@@ -181,12 +182,12 @@ export function MatchDetail({ matchSk, onChanged, taskMode }: { matchSk: number;
       </div>
 
       <Card title="Fuentes y owners involucrados">
-        <Table head={["Sistema fuente", "Data owner", "Data steward"]} rows={(m.sources ?? []).map((s: any) => [s.source_system_cd, s.data_owner, s.data_steward])} />
+        <Table head={["Sistema fuente", "Data owner", "Data steward"]} rows={(m.sources ?? []).map((s: any) => [<Src v={s.source_system_cd} />, s.data_owner, s.data_steward])} />
         {m.tasks?.length > 0 && (
           <>
             <h4 className="mt-3 mb-1 text-xs font-semibold uppercase text-slate-500">Tareas de revisión (regla de cierre §8.5)</h4>
             <Table head={["Tarea", "Fuente", "Asignada a", "Estado", "Decisión", "Vence", "Decidida"]} rows={m.tasks.map((t: any) => [
-              t.task_sk, t.source_system_cd, t.assignee, <Badge tone={statusTone(t.status)}>{t.status}</Badge>, t.decision ? <Badge tone={statusTone(t.decision)}>{t.decision}</Badge> : "—",
+              t.task_sk, <Src v={t.source_system_cd} />, t.assignee, <Badge tone={statusTone(t.status)}><Cd cat="UI" v={t.status} /></Badge>, t.decision ? <Badge tone={statusTone(t.decision)}><Cd cat="CAT_STEWARD_DECISION" v={t.decision} /></Badge> : "—",
               <span className={t.overdue ? "text-red-700" : ""}>{fmtDate(t.due_at)}</span>, t.decided_at ? `${fmtDate(t.decided_at)} · ${t.decided_by}` : "—"])} />
           </>
         )}
@@ -256,7 +257,7 @@ function DecisionBasis({ b }: { b: any }) {
           {(b.groups ?? []).map((g: any) => (
             <tr key={g.code} className={`border-t ${g.satisfied ? "bg-green-50" : ""} ${!g.active ? "text-slate-400" : ""}`}>
               <td className="px-2 py-1"><span className="font-mono text-xs">{g.code}</span> {g.name}</td>
-              <td className="px-2 py-1"><Badge tone={statusTone(g.decision)}>{g.decision}</Badge></td>
+              <td className="px-2 py-1"><Badge tone={statusTone(g.decision)}><Cd cat="CAT_MATCH_DECISION" v={g.decision} /></Badge></td>
               <td className="px-2 py-1 text-xs">
                 {!g.active ? "desactivado" : g.satisfied ? <span className="font-semibold text-green-800">satisfecho</span>
                   : g.applies ? <>aplica pero no coincide: <span className="font-mono">{g.failing.join(", ")}</span></>
@@ -282,8 +283,8 @@ function PartyHead({ p, side }: { p: any; side: string }) {
       <div className="mb-1 flex items-center gap-2">
         <span className="rounded bg-slate-800 px-1.5 text-xs font-bold text-white">{side}</span>
         {partyLink(p.party_sk, p.display_name)}
-        <Badge tone={statusTone(p.golden_status)}>{p.golden_status}</Badge>
-        <Badge>{p.party_type}</Badge>
+        <Badge tone={statusTone(p.golden_status)}><Cd cat="CAT_GOLDEN_STATUS" v={p.golden_status} /></Badge>
+        <Badge><Cd cat="CAT_PARTY_TYPE" v={p.party_type} /></Badge>
       </div>
       <KV items={[["Documentos", (p.identifiers ?? []).join(", ")], ["Fuentes", (p.sources ?? []).join(", ")], ["Nacimiento", p.birth_date ?? null]]} />
     </div>
@@ -296,15 +297,15 @@ function PartyEvidence({ g, side }: { g: any; side: string }) {
   return (
     <Card title={`Evidencia ${side} · roles, segmentos, relaciones y contactos`}>
       <div className="space-y-2 text-sm">
-        <p><span className="text-slate-500">Roles:</span> {rr.roles.map((r: any) => `${r.role}/${r.sub_role} (${r.business_unit}, ${r.source_system_cd})`).join("; ") || "—"}</p>
-        <p><span className="text-slate-500">Segmentos:</span> {rr.segments.filter((s: any) => !s.valid_to).map((s: any) => `${s.segment_type}=${s.segment} (${s.source_system_cd})`).join("; ") || "—"}</p>
-        <p><span className="text-slate-500">Servicios:</span> {rr.services.map((s: any) => `${s.business_unit}/${s.service} ${s.status}`).join("; ") || "—"}</p>
-        <p><span className="text-slate-500">Relaciones:</span> {rr.relationships.map((r: any) => `${r.relationship_type} ${r.direction === "OUT" ? "→" : "←"} ${r.other_display_name ?? r.other_party_sk}`).join("; ") || "—"}</p>
+        <p><span className="text-slate-500">Roles:</span> {rr.roles.length ? rr.roles.map((r: any, i: number) => <span key={i}>{i ? "; " : ""}<Cd cat="CAT_PARTY_ROLE" v={r.role} /> / <Cd cat="CAT_PARTY_SUB_ROLE" v={r.sub_role} /> (<Cd cat="CAT_BUSINESS_UNIT" v={r.business_unit} />, <Src v={r.source_system_cd} />)</span>) : "—"}</p>
+        <p><span className="text-slate-500">Segmentos:</span> {rr.segments.filter((s: any) => !s.valid_to).length ? rr.segments.filter((s: any) => !s.valid_to).map((s: any, i: number) => <span key={i}>{i ? "; " : ""}<Cd cat="CAT_SEGMENT_TYPE" v={s.segment_type} /> = <Cd cat="CAT_SEGMENT_TYPE" v={s.segment} /> (<Src v={s.source_system_cd} />)</span>) : "—"}</p>
+        <p><span className="text-slate-500">Servicios:</span> {rr.services.length ? rr.services.map((s: any, i: number) => <span key={i}>{i ? "; " : ""}<Cd cat="CAT_BUSINESS_UNIT" v={s.business_unit} /> / <Cd cat="CAT_SERVICE" v={s.service} /> <Cd cat="CAT_ENROLLMENT_STATUS" v={s.status} /></span>) : "—"}</p>
+        <p><span className="text-slate-500">Relaciones:</span> {rr.relationships.length ? rr.relationships.map((r: any, i: number) => <span key={i}>{i ? "; " : ""}<Cd cat="CAT_RELATIONSHIP_TYPE" v={r.relationship_type} /> {r.direction === "OUT" ? "→" : "←"} {r.other_display_name ?? r.other_party_sk}</span>) : "—"}</p>
         <div>
           <span className="text-slate-500">Contactos:</span>
           <ul className="ml-4 list-disc">
             {ct.contacts.map((c: any) => (
-              <li key={c.party_contact_sk}>{c.channel} {c.contact_value} <Badge tone={c.usage_role === "OWNER" ? "green" : "purple"}>{c.usage_role}</Badge> <Badge tone={c.confirmation?.startsWith("CONFIRMED") ? "green" : "yellow"}>{c.confirmation}</Badge> <span className="text-xs text-slate-500">{c.origin} · {c.source_system_cd}</span></li>
+              <li key={c.party_contact_sk}><Cd cat="CAT_CONTACT_CHANNEL" v={c.channel} /> {c.contact_value} <Badge tone={c.usage_role === "OWNER" ? "green" : "purple"}><Cd cat="CAT_CONTACT_USAGE_ROLE" v={c.usage_role} /></Badge> <Badge tone={c.confirmation?.startsWith("CONFIRMED") ? "green" : "yellow"}><Cd cat="CAT_CONTACT_CONFIRMATION" v={c.confirmation} /></Badge> <span className="text-xs text-slate-500"><Cd cat="CAT_PREF_ORIGIN" v={c.origin} /> · <Src v={c.source_system_cd} /></span></li>
             ))}
             {!ct.contacts.length && <li className="list-none text-slate-400">—</li>}
           </ul>
@@ -349,9 +350,9 @@ function OwnerTasks({ onChanged }: { onChanged: () => void }) {
                 <div className="flex items-center justify-between text-sm">
                   <span>Tarea {t.task_sk} · par #{t.match_sk}</span>
                   <span className="font-mono">{Number(t.total_score).toFixed(1)}</span>
-                  <Badge tone={statusTone(t.status)}>{t.status}</Badge>
+                  <Badge tone={statusTone(t.status)}><Cd cat="UI" v={t.status} /></Badge>
                 </div>
-                <div className="text-xs text-slate-500">{t.source_system_cd} · {t.data_owner} · {t.assignee} · vence <span className={t.overdue ? "text-red-700" : ""}>{fmtDate(t.due_at)}</span>{t.decision ? ` · ${t.decision}` : ""}</div>
+                <div className="text-xs text-slate-500"><Src v={t.source_system_cd} /> · {t.data_owner} · {t.assignee} · vence <span className={t.overdue ? "text-red-700" : ""}>{fmtDate(t.due_at)}</span>{t.decision ? ` · ${t.decision}` : ""}</div>
               </button>
             </li>
           ))}
@@ -401,7 +402,7 @@ function MergeHistory() {
           {items?.map((h) => (
             <li key={h.merge_sk}>
               <button onClick={() => open(h.merge_sk)} className={`w-full px-1 py-2 text-left hover:bg-slate-50 ${sel?.merge_sk === h.merge_sk ? "bg-blue-50" : ""}`}>
-                <div className="flex items-center gap-2 text-sm"><span className="text-xs text-slate-500">#{h.merge_sk}</span><Badge tone={h.merge_type === "AUTO" ? "pink" : "purple"}>{h.merge_type}</Badge>{h.unmerged && <Badge tone="red">REVERTIDO</Badge>}<span className="ml-auto font-mono text-xs">{h.total_score ? Number(h.total_score).toFixed(1) : ""}</span></div>
+                <div className="flex items-center gap-2 text-sm"><span className="text-xs text-slate-500">#{h.merge_sk}</span><Badge tone={h.merge_type === "AUTO" ? "pink" : "purple"}><Cd cat="CAT_MERGE_TYPE" v={h.merge_type} /></Badge>{h.unmerged && <Badge tone="red">REVERTIDO</Badge>}<span className="ml-auto font-mono text-xs">{h.total_score ? Number(h.total_score).toFixed(1) : ""}</span></div>
                 <div className="truncate text-sm">{h.surviving.display_name} <span className="text-slate-400">⇐</span> {h.merged.display_name}</div>
                 <div className="text-xs text-slate-500">{h.decided_by} · {fmtDate(h.merged_at)}</div>
               </button>
@@ -413,7 +414,7 @@ function MergeHistory() {
         {msg && <Notice kind={msg.kind}>{msg.text}</Notice>}
         {sel && (
           <>
-            <Card title={<span>Merge #{sel.merge_sk} <Badge tone={sel.merge_type === "AUTO" ? "pink" : "purple"}>{sel.merge_type}</Badge> {sel.unmerged && <Badge tone="red">REVERTIDO</Badge>}</span>}>
+            <Card title={<span>Merge #{sel.merge_sk} <Badge tone={sel.merge_type === "AUTO" ? "pink" : "purple"}><Cd cat="CAT_MERGE_TYPE" v={sel.merge_type} /></Badge> {sel.unmerged && <Badge tone="red">REVERTIDO</Badge>}</span>}>
               <div className="grid gap-4 md:grid-cols-2">
                 <div><p className="mb-1 text-xs uppercase text-slate-500">Sobreviviente</p><PartyHead p={sel.surviving} side="S" /></div>
                 <div><p className="mb-1 text-xs uppercase text-slate-500">Absorbido</p><PartyHead p={sel.merged} side="M" /></div>
@@ -424,7 +425,7 @@ function MergeHistory() {
               <Table head={["Tabla", "Sobreviviente", "Absorbido"]} rows={[...new Set([...Object.keys(sel.snapshot_counts.surviving ?? {}), ...Object.keys(sel.snapshot_counts.merged ?? {})])].map((t) => [t, sel.snapshot_counts.surviving?.[t] ?? 0, sel.snapshot_counts.merged?.[t] ?? 0])} />
               <div className="mt-2"><JsonView value={sel.pre_merge_snapshot} label="Ver snapshot completo" /></div>
               <h4 className="mt-3 mb-1 text-xs font-semibold uppercase text-slate-500">Auditoría por merge_sk</h4>
-              <Table head={["Entidad", "Acción", "Filas"]} rows={(sel.audit ?? []).map((a: any) => [a.entity, a.action, a.n])} />
+              <Table head={["Entidad", "Acción", "Filas"]} rows={(sel.audit ?? []).map((a: any) => [<Cd cat="CAT_MDM_ENTITY" v={a.entity} code="inline" />, <Cd cat="CAT_AUDIT_ACTION" v={a.action} />, a.n])} />
             </Card>
             {!sel.unmerged && (
               <Card title="Deshacer merge (unmerge)">
