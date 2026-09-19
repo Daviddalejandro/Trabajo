@@ -68,6 +68,12 @@ se ven donde deben verse.
 sin tildes, por documento o por el correo `mariana.restrepo.vitrina@ejemplo.test`). La fila
 `U` de la tabla que imprime `make demo` trae su `party_sk`.
 
+Al entrar, la barra **Nivel de detalle** está en *Estándar*: cada capa abierta con lo vigente y lo
+histórico detrás de «+ N históricos» (por ejemplo, el segmento Categoría A cerrado). *Resumen* pliega las
+8 capas a su tira de chips (cabe en una pantalla; el «+» de cada capa la abre sola); *Completo* muestra
+históricos, columnas técnicas, linaje, auditoría y JSON. El navegador de capas de la barra salta a la capa
+y la abre.
+
 | Capa de la Vista 360 | Qué debe verse |
 |---|---|
 | 1 · Sources | Cinco sistemas: SF_EC, SAP_CRM, SAP_ECC_SD, SAP_ECC_MM y WEB_PORTAL, con su ID externo y linaje por tabla |

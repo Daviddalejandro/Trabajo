@@ -30,16 +30,25 @@ export function Card({ title, children, className = "", actions }: { title?: Rea
   );
 }
 
-export function LayerSection({ k, title, children, count }: { k: LayerKey; title: string; children: ReactNode; count?: number }) {
+/** Capa del modelo. Con `open`/`onToggle` es plegable (+ / −): plegada muestra solo el título y `summary`
+ *  (chips con lo esencial), abierta muestra el cuerpo. Sin `onToggle` se comporta como antes (siempre abierta). */
+export function LayerSection({ k, title, children, count, summary, open = true, onToggle }: {
+  k: LayerKey; title: string; children: ReactNode; count?: number; summary?: ReactNode; open?: boolean; onToggle?: () => void;
+}) {
   const l = layer(k);
   return (
-    <section className={`rounded-lg border-l-4 ${l.border} border bg-white`} data-layer={k}>
-      <header className={`flex items-center gap-2 px-4 py-2 ${l.soft}`}>
+    <section id={`layer-${k}`} className={`rounded-lg border-l-4 ${l.border} border bg-white`} data-layer={k} data-open={open}>
+      <header className={`flex flex-wrap items-center gap-2 px-4 py-2 ${l.soft}`}>
+        {onToggle && (
+          <button type="button" onClick={onToggle} aria-expanded={open} aria-controls={`layer-${k}-body`} aria-label={`${open ? "Contraer" : "Expandir"} ${title}`}
+            className="flex h-6 w-6 items-center justify-center rounded border bg-white font-mono text-sm leading-none text-slate-700 hover:bg-slate-100">{open ? "−" : "+"}</button>
+        )}
         <span className={`inline-block h-3 w-3 rounded ${l.dot}`} />
-        <h3 className={`font-semibold ${l.text}`}>{title}</h3>
+        <h3 className={`font-semibold ${l.text} ${onToggle ? "cursor-pointer" : ""}`} onClick={onToggle}>{title}</h3>
+        {summary && <div className="flex flex-wrap items-center gap-1 text-xs">{summary}</div>}
         {count !== undefined && <span className="ml-auto rounded bg-white px-2 text-xs text-slate-600">{count}</span>}
       </header>
-      <div className="p-4 text-sm">{children}</div>
+      {open && <div id={`layer-${k}-body`} className="p-4 text-sm">{children}</div>}
     </section>
   );
 }
@@ -124,7 +133,7 @@ export function Tabs<T extends string>({ tabs, value, onChange }: { tabs: { key:
   );
 }
 
-export function Table({ head, rows, empty = "Sin registros" }: { head: ReactNode[]; rows: ReactNode[][]; empty?: string }) {
+export function Table({ head, rows, empty = "Sin registros", rowClass }: { head: ReactNode[]; rows: ReactNode[][]; empty?: string; rowClass?: (i: number) => string }) {
   if (!rows.length) return <p className="text-sm text-slate-500">{empty}</p>;
   return (
     <div className="overflow-x-auto">
@@ -134,7 +143,7 @@ export function Table({ head, rows, empty = "Sin registros" }: { head: ReactNode
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} className="border-t align-top">{r.map((c, j) => <td key={j} className="px-2 py-1">{c}</td>)}</tr>
+            <tr key={i} className={`border-t align-top ${rowClass?.(i) ?? ""}`}>{r.map((c, j) => <td key={j} className="px-2 py-1">{c}</td>)}</tr>
           ))}
         </tbody>
       </table>

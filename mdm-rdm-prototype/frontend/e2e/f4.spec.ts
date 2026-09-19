@@ -151,4 +151,12 @@ test("Vista 360 · las 8 capas en orden con fuente ganadora por campo", async ({
   await expect(page.getByText("Nombres por tipo", { exact: false })).toBeVisible();
   await expect(page.locator("[data-layer='roles']").getByText("Empresa afiliadora").first()).toBeVisible();   // descripción del RDM, no el código AFFILIATING_COMPANY
   await expect(page.getByText("Persona jurídica", { exact: true }).first()).toBeVisible();                 // CAT_PARTY_TYPE.ORGANIZATION
+  // Lectura por niveles: Resumen pliega las 8 capas a su tira de chips; Estándar las vuelve a abrir
+  await page.getByRole("button", { name: "Resumen", exact: true }).click();
+  await expect(page.locator("[data-layer][data-open='false']")).toHaveCount(8);
+  await expect(page.locator("[data-layer='golden'] tbody")).toHaveCount(0);
+  await page.locator("[data-layer='identity']").getByRole("button", { name: /Expandir/ }).click();
+  await expect(page.locator("[data-layer='identity'][data-open='true']")).toHaveCount(1);
+  await page.getByRole("button", { name: "Estándar", exact: true }).click();
+  await expect(page.locator("[data-layer][data-open='true']")).toHaveCount(8);
 });
