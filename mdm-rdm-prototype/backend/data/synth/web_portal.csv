@@ -1,0 +1,262 @@
+user_id,tipo_doc,num_doc,nombres,apellidos,fecha_nacimiento,genero,email,celular,categoria,segmento_comercial,acepta_datos,acepta_comercial,ciudad,updated_at
+u000002,cedula,927096605,Francy Patricia,Loaiza Vargas,1941-01-23,F,francy.ortiz41@ejemplo.test,+57 336 786 1817,,basico,true,true,11001,2026-09-05T10:00:00
+u000003,ppt,954881555,Julio Julio,Anaya Fajardo,1975-03-03,M,julio.garcía42@ejemplo.test,+57 323 268 2549,C,basico,true,true,11001,2026-09-05T10:00:00
+u000004,cedula,918449411,Alberto Alfredo,Saavedra Zambrano,1959-08-25,M,alberto.martínez43@ejemplo.test,+57 336 265 4382,B,,true,true,76001,2026-09-05T10:00:00
+u000005,cedula,920340237,Alejandro,Hernández Tovar,1961-02-27,M,alejandro.melo45@ejemplo.test,+57 346 774 2475,A,premium,true,true,76001,2026-09-05T10:00:00
+u000006,cedula,993455231,Alberto,Torres Gallego,1960-04-05,M,alberto.ocampo53@ejemplo.test,+57 308 173 3853,A,premium,true,true,05001,2026-09-05T10:00:00
+u000007,cedula,986492185,Luz Patricia,González Henao,2003-11-18,F,luz.vásquez54@ejemplo.test,+57 313 734 4596,A,premium,true,true,25754,2026-09-05T10:00:00
+u000008,cedula,998898216,Patricia Rosa,Bedoya Rojas,1996-05-24,F,patricia.toro55@ejemplo.test,+57 346 981 3661,B,,true,true,25286,2026-09-05T10:00:00
+u000009,cedula,944156626,Rafael,Sánchez Carrillo,1958-01-30,M,rafael.rodríguez56@ejemplo.test,+57 303 334 4311,C,basico,true,true,11001,2026-09-05T10:00:00
+u000010,cedula,932562108,Isaac Carlos,Amaya Agudelo,1993-03-22,M,isaac.flórez57@ejemplo.test,+57 322 796 7789,A,premium,true,true,76001,2026-09-05T10:00:00
+u000011,cedula,962229134,Luis,Sánchez Posada,1951-07-13,M,luis.garcía60@ejemplo.test,+57 339 594 1755,A,basico,true,true,25286,2026-09-05T10:00:00
+u000012,cedula,930496940,José,Díaz Guzmán,1975-07-31,M,josé.niño61@ejemplo.test,+57 329 815 6014,A,basico,true,true,76001,2026-09-05T10:00:00
+u000013,cedula,924280139,Deicy,Jaramillo Bustos,1977-05-17,F,deicy.monsalve62@ejemplo.test,+57 332 208 6255,B,basico,true,true,11001,2026-09-05T10:00:00
+u000014,cedula,957447214,Orlando,Anaya Martínez,1947-02-01,M,orlando.garcía63@ejemplo.test,+57 319 921 9402,B,premium,true,true,11001,2026-09-05T10:00:00
+u000015,cedula_extranjeria,915609118,Milena,Andrade López,1957-02-13,F,milena.mercado65@ejemplo.test,+57 317 987 5480,,premium,true,true,11001,2026-09-05T10:00:00
+u000016,cedula,941908765,Daniel,González Silva,1992-12-11,M,daniel.mendoza68@ejemplo.test,+57 304 703 2671,B,premium,true,true,25286,2026-09-05T10:00:00
+u000017,cedula,992696623,Ángela Marisol,Hernández Hernández,1990-02-15,F,ángela.rojas71@ejemplo.test,+57 312 880 7238,,premium,true,true,76001,2026-09-05T10:00:00
+u000018,cedula,933795712,Edilberto,González Vallejo,1992-06-22,M,edilberto.martínez75@ejemplo.test,+57 339 010 5207,B,premium,true,true,25754,2026-09-05T10:00:00
+u000019,cedula,958440477,Dario,Méndez Chacón,1983-03-08,M,dario.medina76@ejemplo.test,+57 343 559 7737,B,basico,true,true,05001,2026-09-05T10:00:00
+u000020,cedula,919224139,Fernanda Lucila,Camacho Escobar,1994-08-12,F,fernanda.castellanos77@ejemplo.test,+57 305 560 4545,,premium,true,true,76001,2026-09-05T10:00:00
+u000021,cedula,982477662,Paola,Jaramillo Moreno,2006-11-04,F,paola.rodríguez78@ejemplo.test,+57 316 213 0041,C,,true,true,11001,2026-09-05T10:00:00
+u000022,cedula,961462256,Alejandra Olga,León Cruz,1961-09-23,F,alejandra.díaz81@ejemplo.test,+57 346 293 3672,,premium,true,true,25286,2026-09-05T10:00:00
+u000023,cedula,989893013,Laura,Acosta Rodríguez,1950-09-02,F,laura.ramírez89@ejemplo.test,+57 308 496 7011,,basico,true,true,76001,2026-09-05T10:00:00
+u000024,cedula,929337746,Nelsy,Montes Pérez,1988-12-10,F,nelsy.reyes91@ejemplo.test,+57 318 003 9711,C,premium,true,true,25754,2026-09-05T10:00:00
+u000025,cedula,975960664,Julio Samuel,Padilla Muñoz,1942-03-12,M,julio.lópez97@ejemplo.test,+57 345 947 0875,,basico,true,true,25286,2026-09-05T10:00:00
+u000026,cedula,941597664,Dario Guillermo,Morales Romero,2000-08-24,M,dario.castellanos100@ejemplo.test,+57 324 025 3033,C,premium,true,true,11001,2026-09-05T10:00:00
+u000027,cedula,985016170,Andrés Pablo,Parra Ríos,1949-09-07,M,andrés.caicedo101@ejemplo.test,+57 307 678 5264,B,basico,true,true,11001,2026-09-05T10:00:00
+u000028,cedula,918109573,Alejandra,Valencia Rodríguez,1953-06-08,F,alejandra.beltrán102@ejemplo.test,+57 334 995 0829,C,basico,true,true,25286,2026-09-05T10:00:00
+u000029,cedula,986409605,Rocío,Loaiza Bohórquez,1963-12-24,F,rocío.acosta104@ejemplo.test,+57 319 376 5669,A,basico,true,true,25286,2026-09-05T10:00:00
+u000030,cedula,930775127,Andrés,Vallejo Niño,1995-08-06,M,andrés.vera105@ejemplo.test,+57 338 164 1694,A,premium,true,true,76001,2026-09-05T10:00:00
+u000031,cedula,963050559,Wilmer,Bustamante Torres,1967-05-12,M,wilmer.arrieta110@ejemplo.test,+57 304 046 3129,,basico,true,true,25286,2026-09-05T10:00:00
+u000032,cedula,932851843,José Álvaro,Gaitán Ramírez,1960-06-04,M,josé.flórez113@ejemplo.test,+57 313 746 1778,,basico,true,true,05001,2026-09-05T10:00:00
+u000033,cedula,927384170,Rubiela,Morales Suárez,1963-11-23,F,rubiela.flórez115@ejemplo.test,+57 345 034 4803,,premium,true,true,05001,2026-09-05T10:00:00
+u000034,cedula,916776645,Patricia Paola,Palacios Daza,1947-12-15,F,patricia.martínez116@ejemplo.test,+57 319 323 0008,,basico,true,true,25754,2026-09-05T10:00:00
+u000035,cedula,990143126,Ciro,Alvarado Osorio,1997-11-05,M,ciro.velásquez124@ejemplo.test,+57 338 994 3078,B,basico,true,true,76001,2026-09-05T10:00:00
+u000036,cedula,947777809,Fredy Jorge,Paz Guevara,1982-03-17,M,fredy.beltrán132@ejemplo.test,+57 327 284 1027,C,basico,true,true,25286,2026-09-05T10:00:00
+u000037,cedula,964114858,Verónica,Pedraza Contreras,1999-12-10,F,verónica.chávez136@ejemplo.test,+57 305 082 0934,A,premium,true,true,25754,2026-09-05T10:00:00
+u000038,cedula,944013332,Sergio Luis,Leal Mendoza,1993-03-08,M,sergio.rodríguez137@ejemplo.test,+57 301 245 4018,A,,true,true,76001,2026-09-05T10:00:00
+u000039,cedula,917268324,Camilo,López Gómez,1994-09-05,M,camilo.ramírez138@ejemplo.test,+57 327 212 7248,C,,true,true,25754,2026-09-05T10:00:00
+u000040,cedula,963815384,María Lucía,Montoya Mena,1973-05-13,F,maría.muñoz139@ejemplo.test,+57 319 985 5225,C,premium,true,true,25754,2026-09-05T10:00:00
+u000041,cedula,954884476,Jenny,Delgado García,1984-09-27,F,jenny.angarita141@ejemplo.test,+57 305 128 2004,A,premium,true,true,11001,2026-09-05T10:00:00
+u000042,cedula,979477513,Joaquín Andrés,Camacho Rodríguez,1973-02-03,M,joaquín.cabrera142@ejemplo.test,+57 313 373 8739,B,,true,true,05001,2026-09-05T10:00:00
+u000043,cedula,933418207,Milena,Serrano Solano,1970-09-18,F,milena.carvajal148@ejemplo.test,+57 337 961 2581,,basico,true,true,11001,2026-09-05T10:00:00
+u000044,cedula,972864611,Daniela María,Mendoza Díaz,1983-05-04,F,daniela.gonzález150@ejemplo.test,+57 301 374 4739,,premium,true,true,25754,2026-09-05T10:00:00
+u000045,cedula,947434564,María Aura,Jiménez Sánchez,2007-07-20,F,maría.murcia155@ejemplo.test,+57 301 001 9949,A,basico,true,true,25286,2026-09-05T10:00:00
+u000046,cedula,918062548,Daniela,Pérez Gaitán,1976-08-05,F,daniela.gómez158@ejemplo.test,+57 326 013 0579,,premium,true,true,11001,2026-09-05T10:00:00
+u000047,cedula,923764593,Tania,Carvajal García,1986-06-07,F,tania.ruiz159@ejemplo.test,+57 342 804 0007,A,,true,true,76001,2026-09-05T10:00:00
+u000048,cedula,931652597,Alveiro Andrés,Murillo Páez,1976-02-05,M,alveiro.rojas161@ejemplo.test,+57 318 257 5215,B,premium,true,true,11001,2026-09-05T10:00:00
+u000049,cedula,929749945,Luz,Pardo Ortiz,1961-12-03,F,luz.espinosa163@ejemplo.test,+57 335 291 6041,,premium,true,true,05001,2026-09-05T10:00:00
+u000050,ppt,946836363,Carmen Deicy,Arenas Obando,1983-03-29,F,carmen.jaimes164@ejemplo.test,+57 301 479 2626,A,premium,true,true,25754,2026-09-05T10:00:00
+u000051,cedula,953726807,Jean José,Cruz Ortiz,1942-07-23,M,jean.meza166@ejemplo.test,+57 301 322 3646,A,,true,true,25286,2026-09-05T10:00:00
+u000052,cedula,981774889,Kevin,Rendón Gómez,1947-06-03,M,kevin.ospina170@ejemplo.test,+57 345 340 5944,,premium,true,true,05001,2026-09-05T10:00:00
+u000053,cedula,971232741,Víctor,Rincón Restrepo,1958-07-14,M,víctor.fonseca173@ejemplo.test,+57 303 522 5746,,premium,true,true,05001,2026-09-05T10:00:00
+u000054,cedula,959274136,Cecilia María,Ochoa Delgado,1943-06-10,F,cecilia.cortés179@ejemplo.test,+57 327 885 4249,A,premium,true,true,11001,2026-09-05T10:00:00
+u000055,cedula,922952294,Óscar Javier,Murillo Parra,1947-12-25,M,óscar.rodríguez180@ejemplo.test,+57 326 875 0995,,premium,true,true,11001,2026-09-05T10:00:00
+u000056,cedula,955890795,Orlando,Álvarez Yepes,1990-02-10,M,orlando.agudelo184@ejemplo.test,+57 328 217 2085,C,premium,true,true,76001,2026-09-05T10:00:00
+u000057,cedula,988248376,María Piedad,Gómez Guzmán,1969-12-14,F,maría.castro187@ejemplo.test,+57 335 384 7609,,premium,true,true,05001,2026-09-05T10:00:00
+u000058,cedula,976204988,Arley,Romero Guerrero,1943-04-20,M,arley.mosquera197@ejemplo.test,+57 342 564 2546,,premium,true,true,11001,2026-09-05T10:00:00
+u000059,cedula,935460820,Miguel Elías,Triana López,1977-03-21,M,miguel.castaño198@ejemplo.test,+57 342 722 2519,,premium,true,true,25754,2026-09-05T10:00:00
+u000060,cedula,951353072,Alexander David,Gómez Melo,1965-12-04,M,alexander.mosquera202@ejemplo.test,+57 343 117 5785,C,basico,true,true,25286,2026-09-05T10:00:00
+u000061,cedula,916302890,Lucila,Ortiz Meneses,1994-01-13,F,lucila.díaz203@ejemplo.test,+57 307 745 4442,C,premium,true,true,25754,2026-09-05T10:00:00
+u000062,cedula,998069139,Angie Judith,López Angarita,1991-06-10,F,angie.hernández204@ejemplo.test,+57 324 733 6771,A,premium,true,true,25754,2026-09-05T10:00:00
+u000063,cedula,995409049,Andrés Miller,Ortiz Molano,1946-04-16,M,andrés.cabrera207@ejemplo.test,+57 308 713 0296,C,premium,true,true,25754,2026-09-05T10:00:00
+u000064,cedula,995917947,Eugenia Esperanza,López Mena,1992-07-03,F,eugenia.hernández213@ejemplo.test,+57 333 518 4885,,premium,true,true,76001,2026-09-05T10:00:00
+u000065,cedula,992673307,Beatriz,Bustos Gómez,1997-09-07,F,beatriz.giraldo214@ejemplo.test,+57 343 669 0338,B,,true,true,25286,2026-09-05T10:00:00
+u000066,cedula,916361560,Isabel Patricia,Cruz Vanegas,1945-11-11,F,isabel.camacho216@ejemplo.test,+57 316 752 7620,,basico,true,true,25754,2026-09-05T10:00:00
+u000067,cedula,970224141,Samuel Brayan,Giraldo Bernal,1994-01-14,M,samuel.erazo218@ejemplo.test,+57 342 203 4910,C,basico,true,true,25754,2026-09-05T10:00:00
+u000068,cedula,940861807,Aldemar Luis,Ruiz Vásquez,1954-11-23,M,aldemar.hernández220@ejemplo.test,+57 311 746 0258,A,basico,true,true,05001,2026-09-05T10:00:00
+u000069,cedula,944837093,Andrés,Martínez Cruz,1980-03-30,M,andrés.cantillo225@ejemplo.test,+57 324 419 7905,C,,true,true,25754,2026-09-05T10:00:00
+u000070,cedula,974546069,Consuelo Lucy,Ortiz López,1963-08-12,F,consuelo.rivera230@ejemplo.test,+57 342 062 9794,B,premium,true,true,25754,2026-09-05T10:00:00
+u000071,cedula,971370781,Diego David,Ríos Perea,2007-03-27,M,diego.reyes231@ejemplo.test,+57 342 119 1758,B,premium,true,true,76001,2026-09-05T10:00:00
+u000072,cedula,987047095,César Hugo,Mosquera Cortés,1949-01-10,M,césar.flórez232@ejemplo.test,+57 302 139 5978,,basico,true,true,76001,2026-09-05T10:00:00
+u000073,cedula,914803532,Laura,Becerra Hernández,1990-05-05,F,laura.ramírez237@ejemplo.test,+57 319 003 0328,,basico,true,true,25754,2026-09-05T10:00:00
+u000074,cedula,927811177,Ángel Juan,Díaz Barrera,2004-01-16,M,ángel.gonzález239@ejemplo.test,+57 344 665 8626,A,premium,true,true,25754,2026-09-05T10:00:00
+u000075,cedula,936905528,Lorena Juliana,Ocampo Bautista,1974-07-09,F,lorena.arrieta246@ejemplo.test,+57 303 981 3566,A,premium,true,true,25286,2026-09-05T10:00:00
+u000076,cedula,992825485,María Johanna,Franco González,1995-08-04,F,maría.pérez247@ejemplo.test,+57 303 440 8346,A,basico,true,true,25754,2026-09-05T10:00:00
+u000077,cedula,968140908,José Cristian,Morales Gutiérrez,1979-07-27,M,josé.torres249@ejemplo.test,+57 327 223 2464,B,basico,true,true,76001,2026-09-05T10:00:00
+u000078,cedula,922696283,Diana,Monroy Mejía,1996-04-15,F,diana.rueda253@ejemplo.test,+57 308 959 5299,C,premium,true,true,25754,2026-09-05T10:00:00
+u000079,ppt,915045577,Arnulfo,López Escobar,1946-03-08,M,arnulfo.aguirre254@ejemplo.test,+57 335 674 5003,A,premium,true,true,25754,2026-09-05T10:00:00
+u000080,cedula,910538009,Campo,Rivera Quintero,1978-09-16,M,campo.muñoz255@ejemplo.test,+57 341 373 0499,C,basico,true,true,05001,2026-09-05T10:00:00
+u000081,cedula,961985703,Óscar Wilmer,Daza Blanco,1971-11-29,M,óscar.bustos260@ejemplo.test,+57 345 209 8459,B,premium,true,true,25286,2026-09-05T10:00:00
+u000082,cedula,965792389,Fernanda,Agudelo Jiménez,1969-03-24,F,fernanda.lópez264@ejemplo.test,+57 349 027 9015,C,premium,true,true,76001,2026-09-05T10:00:00
+u000083,cedula,943529538,Jhoan Danny,Hoyos Jaimes,1991-02-04,M,jhoan.garcía266@ejemplo.test,+57 345 289 2206,B,basico,true,true,05001,2026-09-05T10:00:00
+u000084,cedula,956214249,Eliecer Omar,López Gutiérrez,1941-04-05,M,eliecer.ruiz268@ejemplo.test,+57 334 132 4218,A,premium,true,true,11001,2026-09-05T10:00:00
+u000085,cedula,988697255,Andrés,León Álvarez,1963-04-26,M,andrés.aguilar271@ejemplo.test,+57 306 586 4727,B,premium,true,true,25286,2026-09-05T10:00:00
+u000086,cedula,996900215,Angélica María,Álvarez Contreras,1978-12-05,F,angélica.martínez276@ejemplo.test,+57 315 928 8404,A,basico,true,true,05001,2026-09-05T10:00:00
+u000087,cedula,937466435,Mónica María,Hernández Castillo,1979-06-02,F,mónica.daza277@ejemplo.test,+57 348 408 3829,,premium,true,true,25754,2026-09-05T10:00:00
+u000088,cedula,972352001,Nubia,Buitrago Orozco,1998-11-01,F,nubia.vera278@ejemplo.test,+57 307 987 2140,,basico,true,true,76001,2026-09-05T10:00:00
+u000089,cedula,990077126,Lucía,Delgado Quintero,2000-10-18,F,lucía.castro279@ejemplo.test,+57 318 090 8591,A,,true,true,05001,2026-09-05T10:00:00
+u000090,cedula,955058151,Daniel,Mosquera Castro,2007-08-27,M,daniel.garcía280@ejemplo.test,+57 322 077 2645,,premium,true,true,76001,2026-09-05T10:00:00
+u000091,cedula,944364194,José Diego,Rodríguez Torres,2002-08-23,M,josé.valencia285@ejemplo.test,+57 329 931 6918,B,,true,true,11001,2026-09-05T10:00:00
+u000092,cedula,990895139,Helena Helena,Torres Ordóñez,2006-11-03,F,helena.gonzález290@ejemplo.test,+57 311 552 9018,,basico,true,true,25286,2026-09-05T10:00:00
+u000093,cedula,964132201,Marlén,Lozano Álvarez,1947-04-19,F,marlén.parada297@ejemplo.test,+57 333 030 5958,C,basico,true,true,05001,2026-09-05T10:00:00
+u000094,cedula,947204733,Miguel Cristian,Arias Oviedo,1983-05-22,M,miguel.guerra304@ejemplo.test,+57 334 143 9309,B,basico,true,true,25754,2026-09-05T10:00:00
+u000095,cedula,968564038,Luz Gloria,Torres Santos,1998-11-21,F,luz.sierra305@ejemplo.test,+57 316 581 5450,C,premium,true,true,76001,2026-09-05T10:00:00
+u000096,cedula,996400843,Edwin Daniel,Rodríguez Sánchez,1950-01-28,M,edwin.rincón308@ejemplo.test,+57 309 032 2600,C,premium,true,true,25286,2026-09-05T10:00:00
+u000097,cedula,974574639,Piedad,Bermúdez Andrade,1971-09-19,F,piedad.muñoz310@ejemplo.test,+57 307 544 2863,,basico,true,true,05001,2026-09-05T10:00:00
+u000098,cedula,977561462,Fredy,Saavedra González,1946-07-19,M,fredy.martínez313@ejemplo.test,+57 343 738 8387,B,basico,true,true,25286,2026-09-05T10:00:00
+u000099,cedula,972482580,Maira Paola,Ortiz Ortiz,1995-06-07,F,maira.ceballos314@ejemplo.test,+57 311 842 0598,A,basico,true,true,25754,2026-09-05T10:00:00
+u000100,cedula,957869991,Beatriz Lucía,Álvarez Nieto,1959-09-07,F,beatriz.bermúdez324@ejemplo.test,+57 345 271 9885,A,,true,true,76001,2026-09-05T10:00:00
+u000101,cedula,979030049,Claudia,López Morales,1946-06-30,F,claudia.montes326@ejemplo.test,+57 335 785 0696,,premium,true,true,05001,2026-09-05T10:00:00
+u000102,cedula,985049782,Harold,Pérez Sánchez,1941-04-24,M,harold.rincón327@ejemplo.test,+57 342 267 4559,B,basico,true,true,25754,2026-09-05T10:00:00
+u000103,cedula,967390972,Julián Jair,Díaz Toro,1974-10-11,M,julián.pineda334@ejemplo.test,+57 346 033 0446,,premium,true,true,25286,2026-09-05T10:00:00
+u000104,pasaporte,961806872,Paola Astrid,Ortega Mena,2006-04-16,F,paola.martínez338@ejemplo.test,+57 339 443 5299,C,premium,true,true,76001,2026-09-05T10:00:00
+u000105,cedula,989862986,Irene,Becerra García,1941-03-08,F,irene.rendón340@ejemplo.test,+57 306 514 3105,,basico,true,true,25286,2026-09-05T10:00:00
+u000106,cedula,914068381,Jhon Diego,Ruiz Ordóñez,1957-05-11,M,jhon.cuéllar344@ejemplo.test,+57 337 787 3707,A,premium,true,true,76001,2026-09-05T10:00:00
+u000107,cedula,936779335,José Yesid,Martínez Parra,1992-03-07,M,josé.jaramillo346@ejemplo.test,+57 328 455 9977,,basico,true,true,05001,2026-09-05T10:00:00
+u000108,cedula,927863101,Hugo Kevin,Ávila Duarte,1941-11-04,M,hugo.vélez347@ejemplo.test,+57 344 766 8891,A,premium,true,true,25286,2026-09-05T10:00:00
+u000109,cedula,912792587,María Isabel,Rojas Sánchez,1950-09-27,F,maría.henao348@ejemplo.test,+57 337 647 1122,,premium,true,true,11001,2026-09-05T10:00:00
+u000110,cedula,971217449,Nora,Ríos Pérez,1978-01-29,F,nora.castillo349@ejemplo.test,+57 312 412 0172,A,basico,true,true,76001,2026-09-05T10:00:00
+u000111,cedula,920170113,Anderson Vladimir,Corredor Forero,1964-04-06,M,anderson.garcía353@ejemplo.test,+57 327 120 7580,,basico,true,true,25754,2026-09-05T10:00:00
+u000112,cedula,927750288,Ximena,Álvarez Morales,2004-10-17,F,ximena.martínez356@ejemplo.test,+57 311 906 4048,A,premium,true,true,05001,2026-09-05T10:00:00
+u000113,cedula,940640121,Eder Gerardo,Lozano Hurtado,2008-04-27,M,eder.rivera358@ejemplo.test,+57 348 363 1115,C,basico,true,true,11001,2026-09-05T10:00:00
+u000114,cedula,965658894,Marco,Molina Rangel,1989-11-05,M,marco.sánchez359@ejemplo.test,+57 326 034 5783,A,,true,true,05001,2026-09-05T10:00:00
+u000115,cedula,931175071,Carlos,González Duque,1999-10-02,M,carlos.sánchez368@ejemplo.test,+57 334 709 4564,C,basico,true,true,76001,2026-09-05T10:00:00
+u000116,cedula,919383507,Patricia Lucía,Mora Sánchez,1974-02-12,F,patricia.benavides379@ejemplo.test,+57 308 389 0162,A,,true,true,11001,2026-09-05T10:00:00
+u000117,cedula_extranjeria,954565820,Gustavo,Burbano Ramos,1958-12-06,M,gustavo.rivera380@ejemplo.test,+57 311 533 7285,C,basico,true,true,11001,2026-09-05T10:00:00
+u000118,cedula,921722126,Segundo,Benítez Ríos,1988-03-18,M,segundo.gómez381@ejemplo.test,+57 316 137 8795,,basico,true,true,76001,2026-09-05T10:00:00
+u000119,cedula,934641019,Felipe,Quiroga Díaz,1942-12-30,M,felipe.vanegas385@ejemplo.test,+57 349 503 7141,C,premium,true,true,76001,2026-09-05T10:00:00
+u000120,cedula,995112097,Rafael,Rodríguez Barreto,1988-04-01,M,rafael.ceballos390@ejemplo.test,+57 316 581 2208,C,basico,true,true,05001,2026-09-05T10:00:00
+u000121,cedula,971455638,Julián Andrés,Sánchez Osorio,1985-05-25,M,julián.valencia392@ejemplo.test,+57 335 922 9577,B,premium,true,true,76001,2026-09-05T10:00:00
+u000122,pasaporte,980390085,Ana,Ortega Londoño,2006-06-20,F,ana.sánchez393@ejemplo.test,+57 349 904 9844,B,basico,true,true,25286,2026-09-05T10:00:00
+u000123,cedula,920468307,Katherin Mariela,Betancur Gamboa,1943-11-16,F,katherin.guerrero402@ejemplo.test,+57 306 777 6714,C,,true,true,05001,2026-09-05T10:00:00
+u000124,cedula,962829215,Roberto,Valencia Hernández,1955-10-20,M,roberto.guerrero404@ejemplo.test,+57 301 703 8934,C,premium,true,true,05001,2026-09-05T10:00:00
+u000125,cedula,968381183,Sebastián,López Ortega,1962-05-07,M,sebastián.torres407@ejemplo.test,+57 347 201 1888,,premium,true,true,05001,2026-09-05T10:00:00
+u000126,cedula,987109644,Manuel Orlando,Escobar Álvarez,1988-12-03,M,manuel.suárez408@ejemplo.test,+57 305 629 8853,,premium,true,true,25754,2026-09-05T10:00:00
+u000127,pasaporte,945524883,Lilia Patricia,Galvis Vega,1967-08-09,F,lilia.restrepo409@ejemplo.test,+57 316 046 9083,,basico,true,true,05001,2026-09-05T10:00:00
+u000128,cedula,979683538,Luis Enrique,León Rincón,1972-11-14,M,luis.jaramillo413@ejemplo.test,+57 349 124 8659,,premium,true,true,05001,2026-09-05T10:00:00
+u000129,cedula,916185734,Liliana Yolima,Gil Vargas,1979-12-21,F,liliana.saavedra414@ejemplo.test,+57 314 393 0957,,basico,true,true,76001,2026-09-05T10:00:00
+u000130,cedula,987898551,Erika Adriana,Bernal Osorio,1970-02-19,F,erika.ariza417@ejemplo.test,+57 308 937 3778,,basico,true,true,05001,2026-09-05T10:00:00
+u000131,cedula,927176460,Xiomara,Chaparro Gómez,1968-12-21,F,xiomara.muñoz419@ejemplo.test,+57 344 054 3848,,basico,true,true,25754,2026-09-05T10:00:00
+u000132,cedula_extranjeria,927998707,Francisco,Mendoza Murillo,1943-10-11,M,francisco.garcía420@ejemplo.test,+57 339 497 6485,B,,true,true,11001,2026-09-05T10:00:00
+u000133,cedula,918983481,Ángela Marina,García Gonzáles,1998-01-04,F,ángela.caicedo421@ejemplo.test,+57 332 204 7795,,basico,true,true,25286,2026-09-05T10:00:00
+u000134,cedula,970327938,Camilo Fabián,Ramírez Gómez,1977-07-16,M,camilo.daza426@ejemplo.test,+57 339 832 1699,C,basico,true,true,25754,2026-09-05T10:00:00
+u000135,cedula_extranjeria,963304293,Nidia María,Estrada Galvis,1994-01-30,F,nidia.daza431@ejemplo.test,+57 308 981 1960,C,basico,true,true,25286,2026-09-05T10:00:00
+u000136,cedula,995392661,Andrés José,Ortiz Cardona,1949-01-27,M,andrés.medina448@ejemplo.test,+57 321 691 9627,B,basico,true,true,05001,2026-09-05T10:00:00
+u000137,cedula,961326500,Marina,Hurtado Triana,1991-10-07,F,marina.villa452@ejemplo.test,+57 325 926 1812,B,premium,true,true,25286,2026-09-05T10:00:00
+u000138,cedula,928554206,Alejandra,Velandia Cuéllar,1954-04-26,F,alejandra.ocampo453@ejemplo.test,+57 314 794 7511,B,premium,true,true,05001,2026-09-05T10:00:00
+u000139,cedula,946580268,John Óscar,Sierra Caballero,1990-08-05,M,john.díaz456@ejemplo.test,+57 341 109 0296,A,basico,true,true,05001,2026-09-05T10:00:00
+u000140,cedula,950083419,David José,Cuéllar Mendoza,1980-09-17,M,david.bejarano460@ejemplo.test,+57 334 667 4204,B,,true,true,76001,2026-09-05T10:00:00
+u000141,cedula,924358120,Evelio,Díaz Franco,1945-09-10,M,evelio.pinto465@ejemplo.test,+57 303 978 6911,,basico,true,true,05001,2026-09-05T10:00:00
+u000142,cedula,981293174,Juan Alonso,Salas Lozano,1955-10-29,M,juan.toro466@ejemplo.test,+57 325 275 1312,A,,true,true,05001,2026-09-05T10:00:00
+u000143,cedula,954482930,Claudia,Galvis Acosta,1990-06-15,F,claudia.guerrero470@ejemplo.test,+57 306 639 4974,A,premium,true,true,76001,2026-09-05T10:00:00
+u000144,cedula,932324601,Yeison José,Domínguez Guerra,2007-12-01,M,yeison.rojas472@ejemplo.test,+57 332 566 2314,B,premium,true,true,05001,2026-09-05T10:00:00
+u000145,cedula,965520187,Jonathan David,Garzón Morales,1992-11-12,M,jonathan.burgos475@ejemplo.test,+57 327 340 7674,,basico,true,true,05001,2026-09-05T10:00:00
+u000146,cedula,993411040,María Cecilia,Rodríguez Vargas,1986-08-30,F,maría.ospina479@ejemplo.test,+57 309 652 1519,B,basico,true,true,25754,2026-09-05T10:00:00
+u000147,cedula,990749282,Blanca Myriam,Barreto Ávila,2000-12-03,F,blanca.castro480@ejemplo.test,+57 325 624 6368,C,basico,true,true,25286,2026-09-05T10:00:00
+u000148,cedula,975104858,Alicia,Gutiérrez Hernández,2001-02-24,F,alicia.marín484@ejemplo.test,+57 305 643 3985,,premium,true,true,25286,2026-09-05T10:00:00
+u000149,ppt,923029527,Luz Astrid,Rivera Castañeda,1963-09-27,F,luz.gómez485@ejemplo.test,+57 303 315 8732,,premium,true,true,25286,2026-09-05T10:00:00
+u000150,cedula,943452318,Gilberto Martín,Prada Vargas,1975-12-05,M,gilberto.gallego486@ejemplo.test,+57 336 642 2878,,basico,true,true,25754,2026-09-05T10:00:00
+u000151,cedula,965268660,Cecilia Vanessa,Caro Montoya,1975-11-15,F,cecilia.narváez492@ejemplo.test,+57 338 228 3560,C,,true,true,05001,2026-09-05T10:00:00
+u000152,cedula,974513311,Camilo Gustavo,Jiménez Vásquez,1981-09-10,M,camilo.sánchez495@ejemplo.test,+57 319 449 9183,,basico,true,true,25286,2026-09-05T10:00:00
+u000153,cedula,965257376,Santiago,Forero Mena,1943-04-10,M,santiago.herrera499@ejemplo.test,+57 308 875 2673,B,basico,true,true,11001,2026-09-05T10:00:00
+u000154,cedula,941834515,Jhon Alfonso,Bermúdez Morales,2004-01-14,M,jhon.agudelo502@ejemplo.test,+57 334 642 8303,C,premium,true,true,76001,2026-09-05T10:00:00
+u000155,cedula,945664504,Karina Catalina,Gómez Benítez,1960-09-11,F,karina.hernández508@ejemplo.test,+57 303 318 6445,A,premium,true,true,05001,2026-09-05T10:00:00
+u000156,cedula_extranjeria,947893454,David Argemiro,Torres Cárdenas,1947-07-21,M,david.martínez513@ejemplo.test,+57 308 309 5166,B,basico,true,true,05001,2026-09-05T10:00:00
+u000157,cedula,934866247,Eugenia,Rodríguez Alvarado,1993-06-14,F,eugenia.garcía515@ejemplo.test,+57 319 678 1615,A,premium,true,true,76001,2026-09-05T10:00:00
+u000158,cedula,996783469,Mauricio,García Rodríguez,1964-07-30,M,mauricio.santos517@ejemplo.test,+57 342 740 0175,C,basico,true,true,11001,2026-09-05T10:00:00
+u000159,cedula,992819840,Dayana,Torres Cruz,1993-02-07,F,dayana.ocampo519@ejemplo.test,+57 311 265 4904,B,premium,true,true,25286,2026-09-05T10:00:00
+u000160,cedula,928483912,Emiro,Perea Gaitán,2000-02-22,M,emiro.rincón520@ejemplo.test,+57 338 019 0843,B,premium,true,true,76001,2026-09-05T10:00:00
+u000161,cedula,910248476,Gabriel Javier,Pérez Pérez,1964-08-10,M,gabriel.vásquez521@ejemplo.test,+57 327 222 9980,B,premium,true,true,25286,2026-09-05T10:00:00
+u000162,cedula,977595915,Alonso,Martínez Miranda,1949-06-20,M,alonso.gonzález528@ejemplo.test,+57 317 246 8358,B,premium,true,true,05001,2026-09-05T10:00:00
+u000163,cedula,974272586,Jhon Héctor,Álvarez Ramos,1977-03-17,M,jhon.sarmiento529@ejemplo.test,+57 348 742 9125,,premium,true,true,25754,2026-09-05T10:00:00
+u000164,cedula,913429724,Gloria,Morales Quintero,1990-09-26,F,gloria.leal538@ejemplo.test,+57 309 288 4615,C,,true,true,05001,2026-09-05T10:00:00
+u000165,cedula,931619622,Vicente Manuel,León Arias,2005-06-16,M,vicente.sánchez539@ejemplo.test,+57 347 567 6973,B,basico,true,true,25754,2026-09-05T10:00:00
+u000166,cedula,973505027,Enrique Andrés,Castañeda Castaño,1998-07-21,M,enrique.flórez540@ejemplo.test,+57 331 891 8071,,premium,true,true,76001,2026-09-05T10:00:00
+u000167,cedula,955925474,Rocío María,Muñoz Gamboa,1964-02-08,F,rocío.ortiz541@ejemplo.test,+57 337 420 7886,B,premium,true,true,05001,2026-09-05T10:00:00
+u000168,cedula_extranjeria,912013467,Ruth Lorena,Ariza Naranjo,1975-01-27,F,ruth.montoya542@ejemplo.test,+57 343 436 7834,,basico,true,true,11001,2026-09-05T10:00:00
+u000169,cedula,919779467,Mónica Margarita,Mendoza Jaramillo,2005-02-26,F,mónica.prada549@ejemplo.test,+57 324 373 5055,B,basico,true,true,05001,2026-09-05T10:00:00
+u000170,cedula,953147404,James,Agudelo Arévalo,1942-01-16,M,james.castro554@ejemplo.test,+57 337 425 3955,A,basico,true,true,76001,2026-09-05T10:00:00
+u000171,cedula,936285961,Alejandra Pilar,Rojas Alfonso,1946-11-19,F,alejandra.portilla559@ejemplo.test,+57 336 016 4557,B,basico,true,true,11001,2026-09-05T10:00:00
+u000172,cedula,912273761,Matilde Luz,García Rojas,1950-12-20,F,matilde.estrada562@ejemplo.test,+57 322 025 5617,B,basico,true,true,76001,2026-09-05T10:00:00
+u000173,cedula,923500729,Daniel Antonio,Jiménez Caro,2004-01-31,M,daniel.luna571@ejemplo.test,+57 339 431 9135,,premium,true,true,25754,2026-09-05T10:00:00
+u000174,cedula,956208026,Augusto John,Trujillo Guzmán,1998-11-20,M,augusto.martínez574@ejemplo.test,+57 314 851 9876,C,premium,true,true,25286,2026-09-05T10:00:00
+u000175,cedula,934788695,Eliana Daniela,Tamayo Orozco,1980-05-05,F,eliana.quintero575@ejemplo.test,+57 334 769 3784,A,basico,true,true,76001,2026-09-05T10:00:00
+u000176,cedula,929283800,Milena,Cáceres Marín,1965-07-14,F,milena.rojas580@ejemplo.test,+57 348 032 2757,,basico,true,true,05001,2026-09-05T10:00:00
+u000177,cedula,971837874,María,Barrera Arévalo,1964-10-17,F,maría.niño581@ejemplo.test,+57 341 783 3834,,premium,true,true,11001,2026-09-05T10:00:00
+u000178,cedula,936119876,Catalina Stella,Rangel Castillo,2006-04-07,F,catalina.quiroga584@ejemplo.test,+57 333 661 2923,,premium,true,true,25754,2026-09-05T10:00:00
+u000179,pasaporte,947421671,Alberto Andrés,Muñoz Caicedo,1984-07-20,M,alberto.hurtado587@ejemplo.test,+57 303 436 1876,B,,true,true,11001,2026-09-05T10:00:00
+u000180,cedula,993840433,Cristian,Salas Rodríguez,1959-03-13,M,cristian.bautista590@ejemplo.test,+57 331 403 0325,C,basico,true,true,05001,2026-09-05T10:00:00
+u000181,cedula,956335742,Leonardo Enrique,Sánchez Fuentes,1944-11-29,M,leonardo.velasco591@ejemplo.test,+57 332 771 4621,,basico,true,true,25754,2026-09-05T10:00:00
+u000182,cedula_extranjeria,989709340,Luis,Herrera Díaz,2008-06-18,M,luis.naranjo592@ejemplo.test,+57 315 760 3273,A,premium,true,true,25286,2026-09-05T10:00:00
+u000183,cedula,992314630,Andrés,Vallejo Quintero,1950-04-08,M,andrés.perea595@ejemplo.test,+57 347 255 0985,B,premium,true,true,25754,2026-09-05T10:00:00
+u000184,cedula,960096592,Camila Paola,Meza Morales,1949-05-04,F,camila.soto602@ejemplo.test,+57 333 844 2859,A,premium,true,true,11001,2026-09-05T10:00:00
+u000185,cedula,934508204,Mireya Libia,Morales Barrios,1998-06-07,F,mireya.rivas605@ejemplo.test,+57 349 162 7541,,premium,true,true,11001,2026-09-05T10:00:00
+u000186,cedula,941846645,Manuel,Velásquez Mesa,1949-12-29,M,manuel.torres606@ejemplo.test,+57 327 140 2617,A,basico,true,true,25754,2026-09-05T10:00:00
+u000187,cedula,991379972,Raúl Hernando,Monsalve Ríos,1944-06-14,M,raúl.angulo607@ejemplo.test,+57 346 610 2005,A,premium,true,true,25286,2026-09-05T10:00:00
+u000188,cedula,974908779,Consuelo Nancy,Hernández Fuentes,1971-08-15,F,consuelo.salazar610@ejemplo.test,+57 318 857 7727,,basico,true,true,25286,2026-09-05T10:00:00
+u000189,cedula,927875207,Leonardo Rubén,Alarcón Ortiz,1986-10-08,M,leonardo.mejía614@ejemplo.test,+57 335 596 4455,C,premium,true,true,76001,2026-09-05T10:00:00
+u000190,cedula,996557136,Pablo Jesús,Jiménez Ramírez,1970-11-02,M,pablo.mercado616@ejemplo.test,+57 304 487 7500,,premium,true,true,11001,2026-09-05T10:00:00
+u000191,cedula,910167940,Amparo Aida,Corredor Muñoz,1944-06-17,F,amparo.silva621@ejemplo.test,+57 335 626 5002,,basico,true,true,05001,2026-09-05T10:00:00
+u000192,cedula_extranjeria,970595762,Augusto,Bonilla Carrillo,2006-11-16,M,augusto.ramírez623@ejemplo.test,+57 342 061 2806,,premium,true,true,05001,2026-09-05T10:00:00
+u000193,cedula,927401450,Olga,Bermúdez Camargo,1997-06-24,F,olga.rangel625@ejemplo.test,+57 318 162 6047,B,premium,true,true,05001,2026-09-05T10:00:00
+u000194,cedula,917191246,Rosa Lucía,Morales Ruiz,2000-07-04,F,rosa.daza626@ejemplo.test,+57 338 336 1320,C,premium,true,true,25286,2026-09-05T10:00:00
+u000195,cedula,934228231,Jesús Andrés,Vargas Betancur,1943-10-04,M,jesús.garcía627@ejemplo.test,+57 334 884 7840,,basico,true,true,11001,2026-09-05T10:00:00
+u000196,cedula,947457794,Fabiola,Sandoval Rodríguez,2001-09-13,F,fabiola.sánchez635@ejemplo.test,+57 334 436 7326,,premium,true,true,25754,2026-09-05T10:00:00
+u000197,pasaporte,970521916,Mónica Ingrid,Orozco Díaz,1943-11-04,F,mónica.rodríguez637@ejemplo.test,+57 343 777 4505,,basico,true,true,11001,2026-09-05T10:00:00
+u000198,cedula_extranjeria,948392392,Jean,Toro Osorio,1954-01-24,M,jean.espinosa638@ejemplo.test,+57 334 870 5549,C,basico,true,true,76001,2026-09-05T10:00:00
+u000199,cedula,979851478,Carlos,Ruiz Pérez,1942-02-06,M,carlos.caicedo640@ejemplo.test,+57 313 160 3524,B,basico,true,true,76001,2026-09-05T10:00:00
+u000200,cedula,997044437,Flor,Melo Rodríguez,2000-04-17,F,flor.soto646@ejemplo.test,+57 305 927 4223,B,premium,true,true,11001,2026-09-05T10:00:00
+u000201,cedula,958946240,Lucero Blanca,Ortiz Chávez,1981-01-12,F,lucero.solano647@ejemplo.test,+57 308 838 6508,C,,true,true,25286,2026-09-05T10:00:00
+u000202,cedula,973413516,Rosa Marcela,Guzmán Jiménez,2004-12-01,F,rosa.ruiz648@ejemplo.test,+57 313 162 6661,B,basico,true,true,11001,2026-09-05T10:00:00
+u000203,cedula,974000680,Rocío,Ariza Hernández,1977-04-06,F,rocío.gonzález654@ejemplo.test,+57 329 973 1717,B,,true,true,25754,2026-09-05T10:00:00
+u000204,cedula,989560419,Jairo Pablo,García López,1951-02-23,M,jairo.ramírez655@ejemplo.test,+57 345 915 4573,B,premium,true,true,11001,2026-09-05T10:00:00
+u000205,cedula,995484370,Andrés José,Jiménez Moreno,1966-04-15,M,andrés.rivera658@ejemplo.test,+57 307 335 7850,A,premium,true,true,11001,2026-09-05T10:00:00
+u000206,cedula,945011398,Edison Andrés,Bedoya Marín,1961-10-19,M,edison.aguilar659@ejemplo.test,+57 347 734 9278,B,basico,true,true,25754,2026-09-05T10:00:00
+u000207,pasaporte,973154818,César,Valderrama Hoyos,1972-08-12,M,césar.niño662@ejemplo.test,+57 312 180 6236,A,basico,true,true,05001,2026-09-05T10:00:00
+u000208,cedula,941871961,José Eduardo,Márquez Ariza,2006-03-07,M,josé.rodríguez666@ejemplo.test,+57 345 513 5034,,premium,true,true,25286,2026-09-05T10:00:00
+u000209,cedula_extranjeria,988591339,Enrique Álvaro,Lozano Buitrago,1951-06-28,M,enrique.ospino667@ejemplo.test,+57 309 895 4978,,premium,true,true,05001,2026-09-05T10:00:00
+u000210,cedula,912554535,Jeison Carlos,Cárdenas Rodríguez,1958-12-31,M,jeison.amaya668@ejemplo.test,+57 318 861 6864,A,premium,true,true,25286,2026-09-05T10:00:00
+u000211,cedula,974835955,Jesús,Mendoza Pérez,1987-04-16,M,jesús.arévalo669@ejemplo.test,+57 347 511 8836,C,basico,true,true,76001,2026-09-05T10:00:00
+u000212,pasaporte,969385006,Eugenia,Sierra Ariza,1951-12-08,F,eugenia.gonzález670@ejemplo.test,+57 329 876 7357,,premium,true,true,25286,2026-09-05T10:00:00
+u000213,cedula,934429585,Esperanza Lidia,López Mejía,2005-09-13,F,esperanza.franco677@ejemplo.test,+57 314 023 2327,,basico,true,true,76001,2026-09-05T10:00:00
+u000214,cedula,963083659,David,Jaramillo Maldonado,2000-02-23,M,david.ávila678@ejemplo.test,+57 326 296 5746,A,basico,true,true,25754,2026-09-05T10:00:00
+u000215,cedula,959425232,Ever Javier,Escobar Gutiérrez,1942-02-16,M,ever.chacón679@ejemplo.test,+57 325 604 6154,B,basico,true,true,76001,2026-09-05T10:00:00
+u000216,cedula,992341631,Kevin,Rodríguez Moreno,1966-09-04,M,kevin.bonilla684@ejemplo.test,+57 341 404 1352,B,premium,true,true,25754,2026-09-05T10:00:00
+u000217,cedula,985053191,Sebastián Fernando,Rodríguez López,2008-01-25,M,sebastián.correa689@ejemplo.test,+57 317 118 1872,,basico,true,true,25754,2026-09-05T10:00:00
+u000218,cedula,938747386,Isabel,Naranjo González,1941-03-26,F,isabel.rodríguez692@ejemplo.test,+57 338 359 3374,C,basico,true,true,05001,2026-09-05T10:00:00
+u000219,cedula,933422852,Carmen Diana,Giraldo Márquez,1962-05-22,F,carmen.gutiérrez693@ejemplo.test,+57 338 868 6443,C,basico,true,true,11001,2026-09-05T10:00:00
+u000220,cedula,948054234,Marcela Helena,León Duarte,1968-07-01,F,marcela.ortiz694@ejemplo.test,+57 325 774 3432,,premium,true,true,05001,2026-09-05T10:00:00
+u000221,cedula,965415396,Edna,Barrera Castaño,1942-08-22,F,edna.moreno695@ejemplo.test,+57 326 848 9564,C,premium,true,true,25286,2026-09-05T10:00:00
+u000222,cedula,981668603,Jhon Jhon,Arango Gómez,1947-08-30,M,jhon.vega696@ejemplo.test,+57 303 678 5830,,premium,true,true,76001,2026-09-05T10:00:00
+u000223,cedula,995467037,María Fernanda,López Castillo,1976-09-01,F,maría.lópez703@ejemplo.test,+57 349 249 8613,C,premium,true,true,05001,2026-09-05T10:00:00
+u000224,cedula,932101715,Emilce,Jiménez Acosta,1982-04-05,F,emilce.silva704@ejemplo.test,+57 308 389 3569,,premium,true,true,25754,2026-09-05T10:00:00
+u000225,cedula,999746047,Eider Segundo,Sánchez López,1946-07-17,M,eider.morales705@ejemplo.test,+57 344 960 4266,,basico,true,true,76001,2026-09-05T10:00:00
+u000226,cedula_extranjeria,959108587,Rafael,López Narváez,1970-01-17,M,rafael.olaya706@ejemplo.test,+57 347 983 8454,C,basico,true,true,05001,2026-09-05T10:00:00
+u000227,cedula,926707317,Augusto Luis,Mora Salazar,1981-01-30,M,augusto.navarro710@ejemplo.test,+57 309 352 8042,,basico,true,true,76001,2026-09-05T10:00:00
+u000228,cedula,992104326,Andrea,Rodríguez Osorio,1944-06-24,F,andrea.sánchez715@ejemplo.test,+57 321 407 9914,,premium,true,true,11001,2026-09-05T10:00:00
+u000229,cedula,924834475,María Yolanda,Díaz Barreto,1946-04-15,F,maría.rodríguez717@ejemplo.test,+57 309 355 7085,,basico,true,true,05001,2026-09-05T10:00:00
+u000230,cedula,922391654,Teresa Leidy,Mendoza Castro,1976-12-12,F,teresa.narváez719@ejemplo.test,+57 331 535 5328,A,basico,true,true,25754,2026-09-05T10:00:00
+u000231,cedula,980681309,Camilo Carlos,Daza Posada,1956-08-05,M,camilo.cruz720@ejemplo.test,+57 338 010 2300,C,premium,true,true,25286,2026-09-05T10:00:00
+u000232,cedula,985952750,Antonio,López Figueroa,1983-10-26,M,antonio.acevedo725@ejemplo.test,+57 321 685 0980,A,premium,true,true,25754,2026-09-05T10:00:00
+u000233,cedula,984443111,Germán Daniel,García Ortiz,1994-12-28,M,germán.gil726@ejemplo.test,+57 341 520 7957,A,basico,true,true,11001,2026-09-05T10:00:00
+u000234,ppt,923955702,Rubén,Bermúdez Ospino,1990-10-20,M,rubén.díaz732@ejemplo.test,+57 315 949 0213,A,basico,true,true,25754,2026-09-05T10:00:00
+u000235,cedula,911525299,Manuel Ricardo,Correa Rueda,2005-02-22,M,manuel.figueroa735@ejemplo.test,+57 345 942 7068,B,basico,true,true,05001,2026-09-05T10:00:00
+u000236,ppt,977913013,Esther Miriam,Duarte Jiménez,2008-05-06,F,esther.castaño739@ejemplo.test,+57 347 460 9429,A,basico,true,true,11001,2026-09-05T10:00:00
+u000237,cedula,977941264,Isabel Lilia,Villamizar Martínez,1968-10-10,F,isabel.duarte743@ejemplo.test,+57 319 351 2861,B,basico,true,true,25286,2026-09-05T10:00:00
+u000238,cedula,972390654,Juan José,Córdoba Lozano,2002-01-10,M,juan.ocampo744@ejemplo.test,+57 347 810 1764,A,basico,true,true,05001,2026-09-05T10:00:00
+u000239,pasaporte,996419092,Consuelo Ligia,Trujillo Martínez,1971-07-18,F,consuelo.contreras745@ejemplo.test,+57 318 805 6369,B,premium,true,true,05001,2026-09-05T10:00:00
+u000240,cedula,923572147,Mario Alberto,Bolaños Calderón,2008-02-11,M,mario.velandia748@ejemplo.test,+57 328 877 3239,B,,true,true,25286,2026-09-05T10:00:00
+u000241,cedula,966204375,Beatriz Claudia,Puentes López,1950-12-25,F,beatriz.hernández750@ejemplo.test,+57 322 276 6999,A,,true,true,25286,2026-09-05T10:00:00
+u000242,cedula,998568098,Marlon Alfredo,Rubio Quintero,1989-02-01,M,marlon.cortés752@ejemplo.test,+57 305 920 5321,C,basico,true,true,05001,2026-09-05T10:00:00
+u000243,cedula,971463864,Diana,Vásquez Cortés,1951-01-03,F,diana.molina758@ejemplo.test,+57 341 456 8558,A,basico,true,true,25286,2026-09-05T10:00:00
+u000244,cedula,993894706,Consuelo Mayerly,Marín Rojas,1980-07-18,F,consuelo.valencia760@ejemplo.test,+57 345 897 0837,C,basico,true,true,05001,2026-09-05T10:00:00
+u000245,cedula,924746096,Enrique Héctor,Arroyo Ramírez,1983-10-12,M,enrique.vargas768@ejemplo.test,+57 339 738 4929,,premium,true,true,25286,2026-09-05T10:00:00
+u000246,cedula,916743077,Claudia,García Cortés,1946-02-25,F,claudia.contreras771@ejemplo.test,+57 331 976 2499,C,premium,true,true,11001,2026-09-05T10:00:00
+u000247,cedula,948789389,John Augusto,Duque Portilla,1999-02-28,M,john.rodríguez775@ejemplo.test,+57 312 715 7722,C,basico,true,true,25286,2026-09-05T10:00:00
+u000248,cedula,990455094,Óscar,Castellanos Marín,1977-04-17,M,óscar.arango779@ejemplo.test,+57 318 644 8499,A,premium,true,true,05001,2026-09-05T10:00:00
+u000249,cedula,964277302,Cristina,Rangel Castro,1988-01-19,F,cristina.pabón780@ejemplo.test,+57 328 188 3982,B,basico,true,true,05001,2026-09-05T10:00:00
+u000250,cedula,934989075,Carolina Jimena,Toro Rodríguez,1988-10-31,F,carolina.ceballos782@ejemplo.test,+57 324 979 3508,A,premium,true,true,76001,2026-09-05T10:00:00
+u000251,cedula,926811414,Alonso,Peña Camacho,1966-12-19,M,alonso.salazar783@ejemplo.test,+57 333 856 1945,C,premium,true,true,11001,2026-09-05T10:00:00
+u000252,ppt,939533809,Carolina Johana,Sarmiento Ríos,1999-12-15,F,carolina.rodríguez788@ejemplo.test,+57 338 212 7208,,basico,true,true,25754,2026-09-05T10:00:00
+u000253,cedula,972550429,Miguel Gustavo,Burbano López,1959-10-26,M,miguel.garcía789@ejemplo.test,+57 339 595 1530,C,,true,true,76001,2026-09-05T10:00:00
+u000254,cedula,964391354,Dora Ruby,Zuluaga Parra,1972-10-19,F,dora.ramírez792@ejemplo.test,+57 313 120 6100,C,premium,true,true,25286,2026-09-05T10:00:00
+u000255,cedula_extranjeria,954337393,Patricia Ángela,Cáceres Villa,1976-07-14,F,patricia.barrios794@ejemplo.test,+57 332 421 1423,,premium,true,true,25754,2026-09-05T10:00:00
+u000256,pasaporte,936281347,Sebastián Jeisson,Solano Martínez,1975-12-27,M,sebastián.cabrera797@ejemplo.test,+57 325 824 6699,B,basico,true,true,76001,2026-09-05T10:00:00
+u000257,cedula,917623933,Robinson Ever,Barrios Pacheco,1981-12-21,M,robinson.pérez1@ejemplo.test,+57 337 693 0269,B,,true,true,05001,2026-09-05T10:00:00
+u000258,,,Robinson Ever,Barrios Pacheco,1981-12-21,M,nuevo.robinson.pérez1@ejemplo.test,+57 337 693 0269,,,true,false,05001,2026-09-05T10:00:00
+u000259,cedula,915472898,Alexander,Silva Rojas,1946-09-14,M,alonso.paz3@ejemplo.test,+57 325 683 6311,,,true,true,25286,2026-09-05T10:00:00
+u000260,cedula,978957163,Kevin Héctor,Rodríguez Castro,1970-04-18,M,kevin.ortiz6@ejemplo.test,+57 331 816 6990,A,premium,true,true,05001,2026-09-05T10:00:00
+u000261,cedula,999578905,Mariana Lucía,Restrepo Vanegas,1953-07-13,M,mariana.restrepo.vitrina@ejemplo.test,+57 319 294 7410,A,premium,true,true,11001,2026-09-05T10:00:00
+u000262,,,Mariana,Restrepo Vanegas,1953-07-13,M,nuevo.mariana.restrepo.vitrina@ejemplo.test,+57 319 294 7410,,,true,false,11001,2026-09-05T10:00:00

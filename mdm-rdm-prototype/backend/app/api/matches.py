@@ -1,0 +1,240 @@
+"""Cola de stewardship, detalle con evidencia, decisiones, tareas por owner, unmerge y
+match-preview (SPEC §11, §8.5, §8.6)."""
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from app.core.db import get_session
+from app.matching import policy as matching_policy
+from app.matching.engine import preview, run_matching
+from app.stewardship.decisions import decide_match, decide_task, match_sources
+from app.stewardship.merge import unmerge
+
+router = APIRouter(tags=["stewardship"])
+
+
+def actor_header(x_actor: str = Header(default="anonimo", alias="X-Actor")) -> str:
+    return x_actor[:120]
+
+
+def role_header(x_role: str = Header(default="STEWARD", alias="X-Role")) -> str:
+    return x_role.upper()
+
+
+class DecisionIn(BaseModel):
+    action: str = Field(pattern="^(MERGE|NO_MATCH|ESCALATE)$")
+    justification: str = Field(min_length=5)
+
+
+class TaskDecisionIn(BaseModel):
+    decision: str = Field(pattern="^(MERGE|NO_MATCH|ESCALATE)$")
+    justification: str = Field(min_length=5)
+
+
+class UnmergeIn(BaseModel):
+    merge_sk: int
+    reason: str = Field(min_length=5)
+
+
+class PolicyIn(BaseModel):
+    entity: str = Field(default="PERSON", pattern="^(PERSON|ORGANIZATION)$")
+    params: dict
+    note: str | None = None
+
+
+class SimulateIn(BaseModel):
+    entity: str = Field(default="PERSON", pattern="^(PERSON|ORGANIZATION)$")
+    params: dict
+    scope: str = Field(default="all", pattern="^(all|pending)$")
+
+
+class PreviewIn(BaseModel):
+    party_type: str = "PERSON"
+    first_name: str | None = None
+    first_surname: str | None = None
+    second_surname: str | None = None
+    birth_date: str | None = None
+    identifiers: list[dict] = Field(default_factory=list)
+    emails: list[str] = Field(default_factory=list)
+    phones: list[str] = Field(default_factory=list)
+    divipola: str | None = None
+    country: str | None = None
+    legal_name: str | None = None
+    trade_name: str | None = None
+    ciiu: str | None = None
+
+
+PARTY_SUMMARY = """
+    SELECT p.party_sk, t.value_code AS party_type, g.value_code AS golden_status, st.value_code AS party_status,
+           COALESCE(pp.full_name_normalized, po.legal_name_normalized) AS display_name, pp.birth_date,
+           (SELECT array_agg(v.value_code || ':' || i.id_number) FROM mdm.party_identifier i JOIN rdm.reference_value v ON v.value_sk=i.id_type_cd WHERE i.party_sk=p.party_sk) AS identifiers,
+           (SELECT array_agg(DISTINCT s.source_system_cd) FROM mdm.xref_party_source x JOIN rdm.source_system s ON s.source_system_sk=x.source_system_cd WHERE x.party_sk=p.party_sk) AS sources
+    FROM mdm.party p JOIN rdm.reference_value t ON t.value_sk=p.party_type_cd JOIN rdm.reference_value g ON g.value_sk=p.golden_status_cd
+    JOIN rdm.reference_value st ON st.value_sk=p.party_status_cd
+    LEFT JOIN mdm.party_person pp ON pp.party_sk=p.party_sk LEFT JOIN mdm.party_org po ON po.party_sk=p.party_sk WHERE p.party_sk=:p"""
+
+
+def party_summary(session: Session, party_sk: int) -> dict:
+    r = session.execute(text(PARTY_SUMMARY), {"p": party_sk}).mappings().first()
+    return dict(r) if r else {"party_sk": party_sk}
+
+
+@router.get("/matches", summary="Cola de stewardship")
+def list_matches(decision: str | None = "PROBABLE", status: str | None = "PENDING", limit: int = Query(50, ge=1, le=500),
+                 cursor: int = Query(0, ge=0), session: Session = Depends(get_session)):
+    rows = session.execute(text("""
+        SELECT m.match_sk, m.party_a_sk, m.party_b_sk, m.total_score, d.value_code AS decision, m.match_status, m.rule_version, m.matched_at,
+               (SELECT count(*) FROM mdm.match_review_task t WHERE t.match_sk=m.match_sk AND t.decided_at IS NULL) AS open_tasks
+        FROM mdm.party_match m JOIN rdm.reference_value d ON d.value_sk=m.decision_cd
+        WHERE m.match_sk > :cursor AND (CAST(:dec AS TEXT) IS NULL OR d.value_code=:dec) AND (CAST(:st AS TEXT) IS NULL OR m.match_status=:st)
+        ORDER BY m.match_sk LIMIT :lim"""), {"cursor": cursor, "dec": decision, "st": status, "lim": limit + 1}).mappings().all()
+    items = [dict(r) | {"party_a": party_summary(session, r["party_a_sk"]), "party_b": party_summary(session, r["party_b_sk"])} for r in rows[:limit]]
+    return {"items": items, "next_cursor": items[-1]["match_sk"] if len(rows) > limit else None}
+
+
+@router.get("/matches/{match_sk}", summary="Detalle con score_detail desglosado, fuentes y tareas")
+def get_match(match_sk: int, session: Session = Depends(get_session)):
+    m = session.execute(text("""SELECT m.match_sk, m.party_a_sk, m.party_b_sk, m.total_score, m.score_detail, m.decision_basis, d.value_code AS decision, m.match_status, m.rule_version, m.matched_at
+        FROM mdm.party_match m JOIN rdm.reference_value d ON d.value_sk=m.decision_cd WHERE m.match_sk=:k"""), {"k": match_sk}).mappings().first()
+    if m is None:
+        raise HTTPException(404, "Match inexistente")
+    tasks = session.execute(text("""SELECT t.task_sk, s.source_system_cd, s.data_owner, t.assignee, st.value_code AS status, d.value_code AS decision, t.justification,
+        t.created_at, t.due_at, t.decided_at, t.decided_by, t.due_at < now() AND t.decided_at IS NULL AS overdue FROM mdm.match_review_task t
+        JOIN rdm.source_system s ON s.source_system_sk=t.source_system_cd JOIN rdm.reference_value st ON st.value_sk=t.task_status_cd
+        LEFT JOIN rdm.reference_value d ON d.value_sk=t.decision_cd WHERE t.match_sk=:k ORDER BY t.task_sk"""), {"k": match_sk}).mappings().all()
+    rules = session.execute(text("SELECT r.attribute, r.weight, r.algorithm, r.params FROM mdm.match_rule r JOIN rdm.reference_value t ON t.value_sk=r.entity_type_cd "
+                                 "JOIN mdm.party p ON p.party_type_cd=r.entity_type_cd WHERE p.party_sk=:p AND r.version=:v ORDER BY r.weight DESC"),
+                            {"p": m["party_a_sk"], "v": m["rule_version"]}).mappings().all()
+    return dict(m) | {"party_a": party_summary(session, m["party_a_sk"]), "party_b": party_summary(session, m["party_b_sk"]),
+                      "sources": match_sources(session, match_sk), "tasks": [dict(t) for t in tasks], "rules": [dict(r) for r in rules]}
+
+
+@router.post("/matches/{match_sk}/decision", summary="Decisión del steward (justificación obligatoria)")
+def post_decision(match_sk: int, body: DecisionIn, actor: str = Depends(actor_header), role: str = Depends(role_header), session: Session = Depends(get_session)):
+    try:
+        out = decide_match(session, match_sk, body.action, body.justification, actor, role)
+        session.commit(); return out
+    except LookupError as e:
+        session.rollback(); raise HTTPException(404, str(e))
+    except ValueError as e:
+        session.rollback(); raise HTTPException(409, str(e))
+
+
+@router.get("/review-tasks", summary="Tareas de revisión por owner de fuente")
+def list_tasks(assignee: str | None = None, status: str | None = None, session: Session = Depends(get_session)):
+    rows = session.execute(text("""SELECT t.task_sk, t.match_sk, s.source_system_cd, s.data_owner, t.assignee, st.value_code AS status, d.value_code AS decision,
+        t.due_at, t.decided_at, t.due_at < now() AND t.decided_at IS NULL AS overdue, m.total_score FROM mdm.match_review_task t
+        JOIN rdm.source_system s ON s.source_system_sk=t.source_system_cd JOIN rdm.reference_value st ON st.value_sk=t.task_status_cd
+        LEFT JOIN rdm.reference_value d ON d.value_sk=t.decision_cd JOIN mdm.party_match m ON m.match_sk=t.match_sk
+        WHERE (CAST(:a AS TEXT) IS NULL OR t.assignee=:a) AND (CAST(:s AS TEXT) IS NULL OR st.value_code=:s) ORDER BY t.due_at NULLS LAST, t.task_sk"""),
+                           {"a": assignee, "s": status}).mappings().all()
+    return [dict(r) for r in rows]
+
+
+@router.post("/review-tasks/{task_sk}/decision", summary="Decisión del owner de la fuente (regla de cierre §8.5)")
+def post_task_decision(task_sk: int, body: TaskDecisionIn, actor: str = Depends(actor_header), session: Session = Depends(get_session)):
+    try:
+        out = decide_task(session, task_sk, body.decision, body.justification, actor)
+        session.commit(); return out
+    except LookupError as e:
+        session.rollback(); raise HTTPException(404, str(e))
+    except ValueError as e:
+        session.rollback(); raise HTTPException(409, str(e))
+
+
+@router.get("/merges", summary="Historial de merges (pestaña de la consola, §12)")
+def list_merges(unmerged: bool | None = None, party_sk: int | None = None, limit: int = Query(50, ge=1, le=500), cursor: int = Query(0, ge=0),
+                session: Session = Depends(get_session)):
+    rows = session.execute(text("""
+        SELECT h.merge_sk, h.surviving_party_sk, h.merged_party_sk, mt.value_code AS merge_type, h.match_sk, h.justification, h.decided_by, h.merged_at,
+               h.unmerged, h.unmerged_by, h.unmerged_at, h.unmerge_reason, m.total_score
+        FROM mdm.party_merge_history h JOIN rdm.reference_value mt ON mt.value_sk=h.merge_type_cd LEFT JOIN mdm.party_match m ON m.match_sk=h.match_sk
+        WHERE h.merge_sk > :cursor AND (CAST(:u AS BOOLEAN) IS NULL OR h.unmerged = :u) AND (CAST(:p AS BIGINT) IS NULL OR :p IN (h.surviving_party_sk, h.merged_party_sk))
+        ORDER BY h.merge_sk DESC LIMIT :lim"""), {"cursor": cursor, "u": unmerged, "p": party_sk, "lim": limit + 1}).mappings().all()
+    items = [dict(r) | {"surviving": party_summary(session, r["surviving_party_sk"]), "merged": party_summary(session, r["merged_party_sk"])} for r in rows[:limit]]
+    return {"items": items, "next_cursor": items[-1]["merge_sk"] if len(rows) > limit else None}
+
+
+@router.get("/merges/{merge_sk}", summary="Detalle de un merge con su pre_merge_snapshot")
+def get_merge(merge_sk: int, session: Session = Depends(get_session)):
+    r = session.execute(text("""
+        SELECT h.merge_sk, h.surviving_party_sk, h.merged_party_sk, mt.value_code AS merge_type, h.match_sk, h.justification, h.decided_by, h.merged_at,
+               h.unmerged, h.unmerged_by, h.unmerged_at, h.unmerge_reason, h.pre_merge_snapshot
+        FROM mdm.party_merge_history h JOIN rdm.reference_value mt ON mt.value_sk=h.merge_type_cd WHERE h.merge_sk=:k"""), {"k": merge_sk}).mappings().first()
+    if r is None:
+        raise HTTPException(404, "Merge inexistente")
+    snap = r["pre_merge_snapshot"] or {}
+    counts = {side: {t: len(rows_) for t, rows_ in (snap.get(side) or {}).get("tables", {}).items() if rows_} for side in snap}
+    audit = session.execute(text("""SELECT a.entity, ac.value_code AS action, count(*) AS n FROM mdm.party_audit_log a JOIN rdm.reference_value ac ON ac.value_sk=a.action_cd
+        WHERE a.merge_sk=:k GROUP BY 1,2 ORDER BY 1,2"""), {"k": merge_sk}).mappings().all()
+    return dict(r) | {"surviving": party_summary(session, r["surviving_party_sk"]), "merged": party_summary(session, r["merged_party_sk"]),
+                      "snapshot_counts": counts, "audit": [dict(a) for a in audit]}
+
+
+@router.post("/parties/{party_sk}/unmerge", summary="Deshace un merge desde el snapshot previo")
+def post_unmerge(party_sk: int, body: UnmergeIn, actor: str = Depends(actor_header), session: Session = Depends(get_session)):
+    owner = session.execute(text("SELECT 1 FROM mdm.party_merge_history WHERE merge_sk=:k AND :p IN (surviving_party_sk, merged_party_sk)"), {"k": body.merge_sk, "p": party_sk}).scalar()
+    if not owner:
+        raise HTTPException(404, "El merge no corresponde a este party")
+    try:
+        out = unmerge(session, body.merge_sk, actor, body.reason)
+        session.commit(); return out
+    except ValueError as e:
+        session.rollback(); raise HTTPException(409, str(e))
+
+
+@router.post("/parties/match-preview", summary="Prevención de duplicados en origen: candidatos sin persistir (§8.6)")
+def post_preview(body: PreviewIn, limit: int = Query(10, ge=1, le=50), session: Session = Depends(get_session)):
+    out = preview(session, body.model_dump(), limit)
+    session.rollback()   # nada se persiste
+    return out
+
+
+@router.post("/matching/run", summary="Ejecuta el matching sobre los candidatos pendientes")
+def post_run(actor: str = Depends(actor_header), session: Session = Depends(get_session)):
+    return run_matching(session, actor)
+
+
+# ------------------------------------------------------------------ política de matching v2 (afinable en caliente)
+@router.get("/matching/policy", summary="Política activa, versiones anteriores y atributos disponibles")
+def get_policy(entity: str = Query("PERSON", pattern="^(PERSON|ORGANIZATION)$"), session: Session = Depends(get_session)):
+    matching_policy.ensure_default_policies(session)
+    session.commit()
+    versions = matching_policy.list_versions(session, entity)
+    active = next((v for v in versions if v["is_active"]), None)
+    return {"entity": entity, "active": active, "versions": versions, "attributes": matching_policy.rule_attributes(session, entity),
+            "defaults": matching_policy.DEFAULT_POLICIES[entity]}
+
+
+@router.post("/matching/policy/simulate", summary="Qué pasaría con la política candidata sobre los pares registrados (sin persistir)")
+def post_policy_simulate(body: SimulateIn, session: Session = Depends(get_session)):
+    try:
+        out = matching_policy.simulate(session, body.entity, body.params, body.scope)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    session.rollback()
+    return out
+
+
+@router.post("/matching/policy", summary="Publica una versión nueva de la política (solo Jefatura)")
+def post_policy(body: PolicyIn, actor: str = Depends(actor_header), role: str = Depends(role_header), session: Session = Depends(get_session)):
+    if role != "JEFATURA":
+        raise HTTPException(403, "Solo la Jefatura de Gobierno de Datos publica cambios en la política de matching (SPEC §8.5 num. 5)")
+    try:
+        out = matching_policy.publish_policy(session, body.entity, body.params, body.note, actor)
+        session.commit(); return out
+    except ValueError as e:
+        session.rollback(); raise HTTPException(422, str(e))
+
+
+@router.post("/matching/recalculate", summary="Aplica la política activa a los pares pendientes (solo Jefatura)")
+def post_recalculate(entity: str | None = Query(None, pattern="^(PERSON|ORGANIZATION)$"), actor: str = Depends(actor_header), role: str = Depends(role_header),
+                     session: Session = Depends(get_session)):
+    if role != "JEFATURA":
+        raise HTTPException(403, "Solo la Jefatura de Gobierno de Datos recalcula la cola con una política nueva")
+    try:
+        out = matching_policy.recalculate(session, actor, entity)
+        session.commit(); return out
+    except ValueError as e:
+        session.rollback(); raise HTTPException(409, str(e))
