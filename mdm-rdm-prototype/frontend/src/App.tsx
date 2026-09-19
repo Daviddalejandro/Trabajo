@@ -6,6 +6,7 @@ import Stewardship from "./pages/Stewardship";
 import AdminRdm from "./pages/AdminRdm";
 import Vista360 from "./pages/Vista360";
 import Compliance from "./pages/Compliance";
+import Matching from "./pages/Matching";
 
 const NAV = [
   ["#/", "Tablero"],
@@ -13,6 +14,7 @@ const NAV = [
   ["#/rdm", "Admin RDM"],
   ["#/party", "Vista 360"],
   ["#/compliance", "Cumplimiento"],
+  ["#/matching", "Política de matching"],
 ] as const;
 
 export default function App() {
@@ -38,6 +40,7 @@ export default function App() {
   else if (hash.startsWith("#/rdm")) page = <AdminRdm />;
   else if (hash.startsWith("#/party")) page = <Vista360 hash={hash} />;
   else if (hash.startsWith("#/compliance")) page = <Compliance />;
+  else if (hash.startsWith("#/matching")) page = <Matching key={session.actor} />;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">

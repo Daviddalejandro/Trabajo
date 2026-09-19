@@ -42,9 +42,10 @@ def org_tokens(name: str | None) -> str | None:
     return " ".join(sorted(toks)) or None
 
 
-def load_features(session: Session, party_sks: list[int] | None = None) -> dict[int, dict]:
-    """Carga en memoria los rasgos de los parties GOLDEN y CANDIDATE (o de la lista dada)."""
+def load_features(session: Session, party_sks: list[int] | None = None, any_status: bool = False) -> dict[int, dict]:
+    """Carga en memoria los rasgos de los parties GOLDEN y CANDIDATE (o de la lista dada; `any_status` incluye MERGED)."""
     filt = "AND p.party_sk = ANY(:sks)" if party_sks is not None else ""
+    status = "" if any_status else "AND g.value_code IN ('GOLDEN','CANDIDATE')"
     params = {"sks": party_sks} if party_sks is not None else {}
     rows = session.execute(text(f"""
         SELECT p.party_sk, t.value_code AS party_type, g.value_code AS golden_status,
@@ -62,7 +63,7 @@ def load_features(session: Session, party_sks: list[int] | None = None) -> dict[
         FROM mdm.party p JOIN rdm.reference_value t ON t.value_sk=p.party_type_cd JOIN rdm.reference_value g ON g.value_sk=p.golden_status_cd
         LEFT JOIN mdm.party_person pp ON pp.party_sk=p.party_sk LEFT JOIN mdm.party_org po ON po.party_sk=p.party_sk
         LEFT JOIN rdm.reference_value ci ON ci.value_sk=po.ciiu_cd
-        WHERE g.value_code IN ('GOLDEN','CANDIDATE') {filt}"""), params).mappings().all()
+        WHERE 1=1 {status} {filt}"""), params).mappings().all()
     feats: dict[int, dict] = {}
     for r in rows:
         f = dict(r)

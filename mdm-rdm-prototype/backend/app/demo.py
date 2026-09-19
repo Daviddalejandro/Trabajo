@@ -57,11 +57,11 @@ def plant_and_report(session: Session, actor: str = "demo") -> list[dict]:
     b = session.execute(text("""SELECT count(*) FROM mdm.party_match m JOIN rdm.reference_value d ON d.value_sk=m.decision_cd
         WHERE d.value_code='PROBABLE' AND m.match_status='PENDING' AND m.party_a_sk IN (SELECT party_sk FROM mdm.xref_party_source WHERE external_id=:x)
            OR m.party_b_sk IN (SELECT party_sk FROM mdm.xref_party_source WHERE external_id=:x)"""), {"x": C["B"]["web_portal_1"]}).scalar()
-    add("B", b >= 1, "par PROBABLE pendiente en la consola")
+    add("B", b >= 1, "par PROBABLE pendiente en la consola (sin documento y con correo nuevo: grupo G3)")
     c1, c2 = party_of(session, "SAP_CRM", C["C"]["crm_bp"]), party_of(session, "WEB_PORTAL", C["C"]["web_portal"])
     cdec = session.execute(text("SELECT d.value_code FROM mdm.party_match m JOIN rdm.reference_value d ON d.value_sk=m.decision_cd WHERE (party_a_sk,party_b_sk) IN ((:a,:b),(:b,:a))"),
                            {"a": c1, "b": c2}).scalar()
-    add("C", c1 != c2 and cdec == "POSSIBLE", f"homónimos sin merge · decisión {cdec}")
+    add("C", c1 != c2 and cdec == "POSSIBLE", f"homónimos sin merge · decisión {cdec} (documento contradice, fecha parcial: ningún grupo)")
     d_mm, d_sd = party_of(session, "SAP_ECC_MM", C["D"]["ecc_mm"]), party_of(session, "SAP_ECC_SD", C["D"]["ecc_sd"])
     add("D", d_mm == d_sd, f"MM y SD → golden {d_sd}")
     e = party_of(session, "SAP_CRM", C["E"]["crm_bp"]); er = reasons(session, e)
@@ -81,7 +81,7 @@ def plant_and_report(session: Session, actor: str = "demo") -> list[dict]:
         f"madre BENEFITS {mr.get((sp, 'BENEFITS'))} · madre COMMERCIAL {mr.get((sp, 'COMMERCIAL'))} · hijo COMMERCIAL {cr.get((sp, 'COMMERCIAL'))}")
     k = session.execute(text("""SELECT count(*) FROM mdm.party_match m JOIN rdm.reference_value d ON d.value_sk=m.decision_cd WHERE d.value_code='PROBABLE' AND m.match_status='PENDING'
         AND (m.party_a_sk IN (SELECT party_sk FROM mdm.xref_party_source WHERE external_id=:x) OR m.party_b_sk IN (SELECT party_sk FROM mdm.xref_party_source WHERE external_id=:x))"""), {"x": C["K"]["sf_ec"]}).scalar()
-    add("K", k >= 1, "par PROBABLE SF_EC vs SAP_CRM pendiente (escalar a owners desde la consola)")
+    add("K", k >= 1, "par PROBABLE SF_EC vs SAP_CRM pendiente (pasaporte vs cédula no comparables, grupo G2; escalar a owners desde la consola)")
     add("L", True, "se ejecuta desde la consola: historial de merges → deshacer el merge AUTO del caso A")
     add("M", True, "GET /audiences?purpose=COMMERCIAL&channel=EMAIL&role=AFFILIATE (auditado)")
     add("N", True, "POST /parties/match-preview con los datos del caso A → AUTO_MERGE sin persistir")

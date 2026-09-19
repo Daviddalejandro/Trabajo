@@ -1,5 +1,5 @@
 # ESPECIFICACIÓN DE PROTOTIPO FUNCIONAL — MDM/RDM in-house · Dominio Party
-**Colsubsidio · Jefatura de Gobierno de Datos (ARC)** · Versión 2.0 · 2026-09-13
+**Colsubsidio · Jefatura de Gobierno de Datos (ARC)** · Versión 2.1 · 2026-09-19
 **Documento de handoff para Claude Code** — autor del modelo: David Alejandro Ballesteros Díaz
 
 > **Versión 2.0 consolidada.** Integra y depura las versiones 1.0 a 1.5 (historial en
@@ -348,6 +348,7 @@ Convención de linaje (regla dura §3.14): donde la tabla dice **[linaje]** llev
 
 | Tabla | Propósito y campos clave |
 |---|---|
+| **`MATCH_POLICY`** | **Política de decisión v2 versionada** (§8.4 bis): `policy_sk`, `entity_type_cd FK`, `version`, `params JSONB` (umbrales, cobertura mínima, piso de puntos brutos, `auto_requires_group`, vetos y su modo, grupos de suficiencia), `is_active` (una por tipo), `note`, `created_by`, `created_at`; auditada. `PARTY_MATCH.decision_basis JSONB` conserva evidencia, cobertura, estados, grupos evaluados y versión con la que se decidió cada par |
 | `MATCH_RULE` | Reglas y pesos de matching versionados (los de §8 se siembran aquí). `rule_sk`, `entity_type_cd FK` (reutiliza `CAT_PARTY_TYPE`), `attribute`, `weight`, `algorithm`, **`params JSONB`** (umbral, puntaje parcial, tolerancia: p. ej. `{"jw_min":0.92,"partial":15}`; estructurado para que la consola muestre la regla aplicada sin texto libre), `version`, `is_active` |
 | `PARTY_DQ_ISSUE` | Hallazgos de calidad de la etapa DQ. `dq_issue_sk`, `staging_ref`, `party_sk FK NULL`, `dq_category_cd FK`, `field`, `detail`, `severity_cd FK`, `detected_at`, **`resolved_at`** (se puebla cuando `rehomologate` o una carga posterior corrige el hallazgo) |
 | `PARTY_AUDIT_LOG` | Bitácora central (Ley 1581/2012 art. 17). `audit_sk`, `party_sk FK NULL`, `entity`, `entity_sk`, `action_cd FK`, `old_value JSONB`, `new_value JSONB`, `actor`, `source_system_cd FK NULL`, `batch_id NULL`, `arco_request_id FK NULL` (trazabilidad ARCO, Ley 1581/2012 arts. 14–15), **`merge_sk FK NULL`** (agrupa todos los reapuntamientos de un merge/unmerge), `occurred_at` |
@@ -676,6 +677,45 @@ Cada comparación guarda en `PARTY_MATCH.score_detail` el **desglose por atribut
 evidencia que consume la consola y la trazabilidad exigida como sistema algorítmico
 de decisión sobre datos personales (Ley 1581/2012; NIST AI RMF 1.0 MAP/MEASURE;
 ISO/IEC 42001:2023 cl. 6.1).
+
+### 8.4 bis Política de decisión v2: grupos de suficiencia, evidencia normalizada y vetos (afinable)
+
+Los pesos de §8.2–§8.3 no cambian; cambia **cómo se decide** con ellos, porque no todos los
+atributos viajan en todos los pares y la ausencia de un dato no es evidencia en contra
+(Fellegi & Sunter, 1969). La política vive en `MATCH_POLICY` (una versión activa por tipo de
+entidad; cada ajuste publica la siguiente versión y nunca edita la publicada, mismo principio que
+el RDM §3.7) y `PARTY_MATCH.decision_basis` guarda con cuál se decidió cada par.
+
+1. **Estado por atributo** en `score_detail`: `AGREE` / `PARTIAL` / `DISAGREE` / `MISSING`. El
+   documento es `MISSING` cuando falta en uno de los dos o cuando los tipos no son comparables
+   (cédula vs. pasaporte); es `DISAGREE` solo con el mismo tipo y distinto número.
+2. **Evidencia** = puntos / peso de los atributos comparables (0–100). **Cobertura** = peso
+   comparable / peso total. `total_score` pasa a ser la evidencia; la consola muestra ambas.
+3. **Grupos de suficiencia**: conjuntos de atributos que, presentes en ambos registros y todos
+   coincidentes, deciden por sí mismos (`a|b` = basta uno). Política inicial de personas:
+   G1 documento + primer apellido → `AUTO_MERGE`; G2 nombre + dos apellidos + fecha → `PROBABLE`
+   (sola no fusiona: riesgo de fecha heredada en grupos familiares); G3 = G2 + correo o teléfono
+   confirmado del titular → `PROBABLE`; G4 = G2 + correo **y** teléfono confirmados → `AUTO_MERGE`.
+   Organizaciones: O1 NIT + razón social o nombre comercial → `AUTO_MERGE`; O2 razón social +
+   municipio → `PROBABLE`.
+4. **Vía de umbrales** (§8.4) sobre la evidencia si la cobertura alcanza el mínimo (60 %) y sobre
+   los puntos brutos si no; por debajo de 50 puntos brutos no hay candidato; sin un grupo
+   satisfecho el umbral nunca fusiona solo (`auto_requires_group`), como máximo `PROBABLE`.
+5. **Vetos**: un identificador fuerte contradictorio (documento, NIT) nunca se fusiona solo.
+   Modo `REVIEW` (inicial): el par baja a revisión humana (dígitos transpuestos, homónimos).
+   Modo `NO_MATCH`: son personas distintas, decisión vinculante registrada.
+6. Decisión final = la más fuerte entre grupos satisfechos y vía de umbrales, acotada por el
+   veto; la regla de unicidad §3.16 fuerza a revisión cualquier `AUTO_MERGE` cuyo documento ya
+   sea golden en un tercero.
+7. **Afinación en caliente**: `GET/POST /matching/policy` (publicar: solo Jefatura),
+   `POST /matching/policy/simulate` (reevalúa la evidencia registrada de todos los pares bajo la
+   política candidata, mide el acuerdo con las decisiones humanas y no persiste) y
+   `POST /matching/recalculate` (aplica la activa a los pares pendientes: fusiona, resuelve
+   `NO_MATCH` o cambia la decisión; nunca toca lo decidido por humanos). Página `#/matching`.
+
+Fundamento: Ley 1581/2012 art. 4 lit. d (veracidad o calidad) y art. 17; ISO/IEC 42001:2023
+cl. 6.1; NIST AI RMF 1.0 función MEASURE (calibración con verdad conocida: los casos plantados);
+DAMA-DMBOK2 Cap. 10.
 
 ### 8.5 Zona gris: decisión del steward y workflow entre owners de fuente
 
@@ -1037,3 +1077,4 @@ fase.
 | 1.4 | Contexto y confianza del contacto: `confirmation_status_cd`, `origin_cd`, rol `REFERENCE`; el matching solo puntúa teléfonos confirmados por el titular. |
 | 1.5 | Una o varias finalidades por contacto: preferencias a nivel de contacto en `PARTY_CONTACT_PREF` (reemplaza el alcance escalar de 1.4). |
 | 2.0 | Consolidación: `staging.LOAD_BATCH`, caché de elegibilidad por vínculo, `MATCH_RULE.params`, feed de cambios, índices obligatorios, paginación, ejecución sin Docker, estrategia GitHub + Drive (§17). |
+| 2.1 | Política de decisión de matching v2 afinable (§8.4 bis): estado por atributo, evidencia normalizada y cobertura, grupos de suficiencia, vetos por identificador, `MATCH_POLICY` versionada y `PARTY_MATCH.decision_basis`; simulación y recálculo desde la consola; casos B, K, U y V2 replantados por grupo. |

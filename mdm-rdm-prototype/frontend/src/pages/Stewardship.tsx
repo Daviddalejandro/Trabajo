@@ -133,14 +133,15 @@ export function MatchDetail({ matchSk, onChanged, taskMode }: { matchSk: number;
 
   if (!m) return msg ? <Notice kind={msg.kind}>{msg.text}</Notice> : <Spinner />;
   const open = m.match_status !== "RESOLVED";
+  const b = m.decision_basis;
   const canDecide = open && just.trim().length >= 5;
   const role = getSession().role;
   const multi = (m.sources?.length ?? 0) > 1;
 
   return (
     <div className="space-y-4">
-      <Card title={<span>Par #{m.match_sk} · <span className="font-mono">{Number(m.total_score).toFixed(1)}</span> / 100 <Badge tone={statusTone(m.decision)}>{m.decision}</Badge> <Badge tone={statusTone(m.match_status)}>{m.match_status}</Badge></span>}
-        actions={<span className="text-xs text-slate-500">Reglas v{m.rule_version} · {fmtDate(m.matched_at)}</span>}>
+      <Card title={<span>Par #{m.match_sk} · evidencia <span className="font-mono">{Number(m.total_score).toFixed(1)}</span> %{b ? <> sobre cobertura <span className="font-mono">{Number(b.coverage).toFixed(0)}</span> %</> : " / 100"} <Badge tone={statusTone(m.decision)}>{m.decision}</Badge> <Badge tone={statusTone(m.match_status)}>{m.match_status}</Badge></span>}
+        actions={<span className="text-xs text-slate-500">Reglas v{m.rule_version}{b?.policy_version ? ` · política v${b.policy_version}` : ""} · {fmtDate(m.matched_at)}</span>}>
         <div className="grid gap-4 md:grid-cols-2">
           <PartyHead p={m.party_a} side="A" />
           <PartyHead p={m.party_b} side="B" />
@@ -150,25 +151,28 @@ export function MatchDetail({ matchSk, onChanged, taskMode }: { matchSk: number;
           <thead className="text-xs uppercase text-slate-500"><tr><th className="px-2 text-left">Atributo</th><th className="px-2 text-left">Puntos</th><th className="px-2 text-left">Valor A</th><th className="px-2 text-left">Valor B</th><th className="px-2 text-left">Algoritmo</th></tr></thead>
           <tbody>
             {m.score_detail.map((r: any, i: number) => {
-              const diff = r.similarity < 1;
+              const state: string = r.state ?? (r.similarity >= 1 ? "AGREE" : r.points > 0 ? "PARTIAL" : "DISAGREE");
+              const missing = state === "MISSING";
+              const diff = !missing && r.similarity < 1;
               const pct = r.weight ? Math.round((r.points / r.weight) * 100) : 0;
               return (
-                <tr key={i} className="border-t align-top">
-                  <td className="px-2 py-1 font-medium">{r.attribute}</td>
+                <tr key={i} className={`border-t align-top ${missing ? "text-slate-400" : ""}`} data-state={state}>
+                  <td className="px-2 py-1 font-medium">{r.attribute} <StateBadge state={state} /></td>
                   <td className="px-2 py-1 w-40">
                     <div className="flex items-center gap-2">
-                      <div className="h-2 flex-1 rounded bg-slate-200"><div className={`h-2 rounded ${pct >= 100 ? "bg-green-500" : pct > 0 ? "bg-amber-400" : "bg-slate-300"}`} style={{ width: `${pct}%` }} /></div>
-                      <span className="w-14 text-right font-mono text-xs">{r.points}/{r.weight}</span>
+                      <div className="h-2 flex-1 rounded bg-slate-200"><div className={`h-2 rounded ${missing ? "bg-slate-200" : pct >= 100 ? "bg-green-500" : pct > 0 ? "bg-amber-400" : "bg-red-300"}`} style={{ width: `${missing ? 100 : pct}%` }} /></div>
+                      <span className="w-14 text-right font-mono text-xs">{missing ? "—" : `${r.points}/${r.weight}`}</span>
                     </div>
                   </td>
                   <td className={`px-2 py-1 ${diff ? "bg-amber-50" : ""}`}>{fmtVal(r.value_a)}</td>
                   <td className={`px-2 py-1 ${diff ? "bg-amber-50" : ""}`}>{fmtVal(r.value_b)}</td>
-                  <td className="px-2 py-1 text-xs text-slate-500">{r.algorithm}{r.note ? ` · ${r.note}` : ""}{r.similarity !== undefined ? ` · sim ${Number(r.similarity).toFixed(2)}` : ""}</td>
+                  <td className="px-2 py-1 text-xs text-slate-500">{r.algorithm}{r.note ? ` · ${r.note}` : ""}{!missing && r.similarity !== undefined ? ` · sim ${Number(r.similarity).toFixed(2)}` : ""}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
+        {b && <DecisionBasis b={b} />}
       </Card>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -219,6 +223,51 @@ function describe(r: any): string {
     case "ESCALATED_TO_JEFATURA": return "Decisiones divididas: escalado a la Jefatura de Gobierno de Datos";
     default: return JSON.stringify(r);
   }
+}
+
+const STATE_LABEL: Record<string, [string, "green" | "yellow" | "red" | "gray"]> = {
+  AGREE: ["coincide", "green"], PARTIAL: ["parcial", "yellow"], DISAGREE: ["contradice", "red"], MISSING: ["sin dato", "gray"],
+};
+
+function StateBadge({ state }: { state: string }) {
+  const [label, tone] = STATE_LABEL[state] ?? [state, "gray"];
+  return <Badge tone={tone}>{label}</Badge>;
+}
+
+function DecisionBasis({ b }: { b: any }) {
+  const by: string = b.decided_by ?? "";
+  const explain = by.startsWith("group:") ? `grupo ${by.slice(6).split("+")[0]} satisfecho`
+    : by.startsWith("veto:") ? `identificador contradictorio (${by.slice(5)}): son personas distintas`
+    : by.startsWith("forced_review") ? "documento ya golden en otro party: revisión forzada (regla dura 3.16)"
+    : by === "threshold:evidence" ? `umbrales sobre la evidencia normalizada (${Number(b.threshold_score).toFixed(1)})`
+    : `umbrales sobre puntos brutos (${Number(b.threshold_score).toFixed(1)}; cobertura por debajo del mínimo)`;
+  const vetoNote = by.includes("+veto_review") ? " · un identificador contradice: nunca se fusiona solo, baja a revisión" : "";
+  return (
+    <div className="mt-4" data-testid="decision-basis">
+      <h4 className="mb-1 text-xs font-semibold uppercase text-slate-500">Base de la decisión · política v{b.policy_version}</h4>
+      <p className="text-sm">
+        <b>{b.decision}</b> por {explain}{vetoNote}. Evidencia <span className="font-mono">{Number(b.evidence).toFixed(1)} %</span> = {b.raw_points} puntos sobre {b.weight_available} comparables de {b.weight_total}
+        (cobertura <span className="font-mono">{Number(b.coverage).toFixed(0)} %</span>){b.vetoed_by?.length ? <> · veto: <span className="font-mono">{b.vetoed_by.join(", ")}</span> ({b.veto_mode})</> : null}.
+        <a className="ml-2 text-xs text-blue-700 underline" href="#/matching">afinar la política</a>
+      </p>
+      <table className="mt-1 w-full text-sm">
+        <thead className="text-xs uppercase text-slate-500"><tr><th className="px-2 text-left">Grupo</th><th className="px-2 text-left">Decide</th><th className="px-2 text-left">Resultado en este par</th></tr></thead>
+        <tbody>
+          {(b.groups ?? []).map((g: any) => (
+            <tr key={g.code} className={`border-t ${g.satisfied ? "bg-green-50" : ""} ${!g.active ? "text-slate-400" : ""}`}>
+              <td className="px-2 py-1"><span className="font-mono text-xs">{g.code}</span> {g.name}</td>
+              <td className="px-2 py-1"><Badge tone={statusTone(g.decision)}>{g.decision}</Badge></td>
+              <td className="px-2 py-1 text-xs">
+                {!g.active ? "desactivado" : g.satisfied ? <span className="font-semibold text-green-800">satisfecho</span>
+                  : g.applies ? <>aplica pero no coincide: <span className="font-mono">{g.failing.join(", ")}</span></>
+                  : <>no aplica, falta el dato: <span className="font-mono">{g.missing.join(", ")}</span></>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 function fmtVal(v: unknown): string {

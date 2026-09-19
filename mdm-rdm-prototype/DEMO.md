@@ -62,10 +62,13 @@ El guion final recorre los 21 casos plantados de la especificación (§13, A–U
 2. **Caso A:** las tres fuentes (SD, CRM, SF_EC) apuntan al mismo golden; `PARTY_MERGE_HISTORY`
    con `merge_type=AUTO`, `decided_by=engine.v1` y `pre_merge_snapshot`; `PARTY_SURVIVORSHIP`
    registra la fuente ganadora por atributo (nombre desde SF_EC, email más reciente).
-3. **Caso B:** usuario del portal sin documento vs. golden CRM → `PROBABLE` en `GET /matches`;
+3. **Caso B:** usuario del portal re-registrado sin documento y con correo nuevo → `PROBABLE` por el grupo
+   G3 (demográfica + celular confirmado; con el mismo correo sería G4 y fusionaría solo). El detalle muestra
+   evidencia ≈ 93 % sobre cobertura 70 % y el documento como **sin dato** (no como contradicción).
    `POST /matches/{sk}/decision` sin justificación → 422; con `X-Role: STEWARD` y justificación → merge `STEWARD`.
-4. **Caso C:** homónimos con fecha de nacimiento distinta → `POSSIBLE`, sin merge; `score_detail`
-   muestra 0 puntos en documento y fecha.
+4. **Caso C:** homónimos con fecha de nacimiento distinta → `POSSIBLE` (evidencia 55 sobre cobertura 100,
+   ningún grupo satisfecho), sin merge; `score_detail` muestra el documento como **contradice** y la fecha
+   como **parcial**.
 5. **Caso D:** proveedor MM `LA ESPIGA` y cliente SD `La Espiga S.A.S.` con el mismo NIT → merge
    automático (NIT 50 + razón social 25 + municipio 10).
 6. **Caso G:** `POST /pipeline/ecc_sd/run?mode=delta` → `loaded=0`, `matched=0`, `auto_merged=0`.
@@ -108,9 +111,14 @@ Requisito: `make rebuild` (deja B y K pendientes) y `make api` + `cd frontend &&
    DIGITAL_USER) con sub-rol y UES, servicios en CREDITO, SALUD y SUBSIDIO, los tres tipos de segmento y
    las relaciones persona↔organización (`EMPLOYEE_OF`, `LEGAL_REP_OF`, `SHAREHOLDER_OF`) y persona↔persona
    (`SPOUSE_OF`, `PARENT_OF`/`CHILD_OF`, `BENEFICIARY_OF`) con su inversa. El mismo caso deja un par
-   `PROBABLE` en `#/stewardship`: la tarjeta **Evidencia A** muestra esos roles, segmentos, servicios y
-   relaciones frente al registro del portal sin documento.
-8. `make test-e2e` reproduce 2–6 con Playwright (6 pruebas).
+   `PROBABLE` en `#/stewardship` (registro del portal sin documento y con correo nuevo → grupo G3): la
+   tarjeta **Evidencia A** muestra esos roles, segmentos, servicios y relaciones, y la **base de la decisión**
+   explica por qué no fusionó solo (G4 aplica pero el correo no coincide).
+8. **Política de matching** (`#/matching`): cambiar G3 a *Fusiona solo* → **Simular** muestra que B y U
+   pasarían a `AUTO_MERGE` (K sigue `PROBABLE`: solo satisface G2); actuando como `jefatura.gd`, **Publicar**
+   crea la versión 2 y **Recalcular pendientes** fusiona esos pares (merge `AUTO`, reversible, con
+   `decided_by = engine.v1.p2`); volver a publicar la política inicial deja la v3 activa con el historial completo.
+9. `make test-e2e` reproduce 2–6 con Playwright (6 pruebas).
 
 ## Fase 5 · Cumplimiento embebido
 

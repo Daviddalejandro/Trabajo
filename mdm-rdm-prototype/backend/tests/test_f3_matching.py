@@ -54,7 +54,7 @@ def test_case_A_auto_merge_and_survivorship():
     assert sd == crm and status_of(sd) == "GOLDEN"
     mh = q("""SELECT m.merge_sk, mt.value_code, m.decided_by, m.pre_merge_snapshot, m.match_sk FROM mdm.party_merge_history m
               JOIN rdm.reference_value mt ON mt.value_sk=m.merge_type_cd WHERE m.surviving_party_sk=:p AND NOT m.unmerged""", p=sd).first()
-    assert mh[1] == "AUTO" and mh[2] == "engine.v1" and {"surviving", "merged"} <= set(mh[3])
+    assert mh[1] == "AUTO" and mh[2].startswith("engine.v1.p") and {"surviving", "merged"} <= set(mh[3])   # pesos v1, política N
     m = q("SELECT total_score, score_detail, match_status FROM mdm.party_match WHERE match_sk=:k", k=mh[4]).one()
     assert float(m[0]) >= 85 and m[2] == "RESOLVED"
     attrs = {d["attribute"]: d for d in m[1]}

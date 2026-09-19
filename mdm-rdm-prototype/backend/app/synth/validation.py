@@ -169,8 +169,9 @@ class ValidationSet:
         # V1 · auto-merge: mismo documento, nombre con error tipográfico en crédito
         p = P[0]; C["V1"] = {"ecc": self.emit_ecc_person(p, contracts=[("CT-V1", "ZSAL", "A")]),
                              "credit": self.emit_credit(p, nombres=(p.first[:-1] + "h " + p.middle).strip()), "doc": p.doc}
-        # V2 · probable: crédito con documento distinto (tarjeta de identidad antigua), mismo nombre, fecha, email y celular
-        p = P[1]; C["V2"] = {"ecc": self.emit_ecc_person(p), "credit": self.emit_credit(p, tipo_id="T", num_id=self._doc())}
+        # V2 · probable: crédito con documento distinto (tarjeta de identidad antigua: tipos no comparables), mismo nombre, fecha y
+        #     email; celular distinto → grupo G3 = PROBABLE (con el mismo celular sería G4 = AUTO)
+        p = P[1]; C["V2"] = {"ecc": self.emit_ecc_person(p), "credit": self.emit_credit(p, tipo_id="T", num_id=self._doc(), celular=f"30{self.rng.randint(10_000_000, 99_999_999)}")}
         # V3 · posible: homónimos con la misma fecha de nacimiento y documentos distintos, sin contacto común
         p = P[2]; h = self._person(9003); h.first, h.middle, h.sur1, h.sur2, h.birth, h.gender, h.city = p.first, p.middle, p.sur1, p.sur2, p.birth, p.gender, p.city
         C["V3"] = {"ecc": self.emit_ecc_person(p), "credit": self.emit_credit(h)}

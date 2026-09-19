@@ -179,7 +179,7 @@ def test_V1_auto_merge_same_document_typo(C):
     a, b = pof(K, C["V1"]["ecc"]), pof(E, C["V1"]["credit"])
     assert a == b and status_of(a) == ("GOLDEN", "ACTIVE")
     h = q("SELECT mt.value_code, h.decided_by FROM mdm.party_merge_history h JOIN rdm.reference_value mt ON mt.value_sk=h.merge_type_cd WHERE h.surviving_party_sk=:p", p=a).first()
-    assert h == ("AUTO", "engine.v1")
+    assert h[0] == "AUTO" and h[1].startswith("engine.v1.p")
     assert q("SELECT count(*) FROM mdm.party_identifier WHERE party_sk=:p AND is_golden", p=a).scalar_one() == 1
 
 
@@ -203,7 +203,9 @@ def test_V5_organization_same_nit(C):
 
 
 def test_V2_V3_V18_probable_and_possible_never_merge_alone(C):
-    for case, expected in (("V2", "PROBABLE"), ("V3", "POSSIBLE"), ("V18", "PROBABLE")):
+    # V2 por el grupo G3 (sin celular común), V3 por G2 con documento contradictorio (veto en modo REVIEW: nunca auto),
+    # V18 por G4 bajado a revisión por el veto del documento (dígito transpuesto)
+    for case, expected in (("V2", "PROBABLE"), ("V3", "PROBABLE"), ("V18", "PROBABLE")):
         a, b = pof(K, C[case]["ecc"]), pof(E, C[case]["credit"])
         assert a != b, case
         d = decision(a, b)

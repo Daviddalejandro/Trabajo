@@ -2,7 +2,7 @@
 
 Prototipo demostrable del Master Data Management (MDM) y Reference Data Management
 (RDM) del dominio Party, construido por fases según
-[`SPEC_PROTOTIPO_MDM_RDM_PARTY.md`](../SPEC_PROTOTIPO_MDM_RDM_PARTY.md) (v2.0).
+[`SPEC_PROTOTIPO_MDM_RDM_PARTY.md`](../SPEC_PROTOTIPO_MDM_RDM_PARTY.md) (v2.1).
 Opera **exclusivamente con datos sintéticos**.
 
 ## Estado por fase
@@ -12,8 +12,9 @@ Opera **exclusivamente con datos sintéticos**.
 | F0 | Scaffolding: db + api + ui, Alembic, Makefile, healthchecks, PostgreSQL local sin Docker | ✅ tests en verde |
 | F1 | RDM: 43 catálogos (263 valores), 6 sistemas fuente, 24 homologaciones, 6 vistas, trigger de inmutabilidad, auditoría por trigger, endpoints RDM | ✅ 25 tests en verde |
 | F2 | Staging (5 RAW + `LOAD_BATCH`) + `mdm` (29 tablas, triggers de auditoría y de unicidad golden), generador sintético (1.592 registros, 22 casos plantados), pipeline de 7 etapas con carga de candidatos, `rehomologate`, API de parties y stats | ✅ 42 tests en verde |
-| F3 | Matching (blocking + scoring con evidencia + umbrales), merge automático con snapshot, survivorship por atributo, cola de stewardship con tareas por owner, unmerge, match-preview | ✅ 56 tests en verde |
+| F3 | Matching (blocking + scoring con estado por atributo + política v2 afinable: grupos de suficiencia, evidencia normalizada, vetos), merge automático con snapshot, survivorship por atributo, cola de stewardship con tareas por owner, unmerge, match-preview | ✅ 56 tests en verde |
 | F4 | UI: Consola de Stewardship (cola con evidencia lado a lado, tareas por owner, historial de merges con snapshot y unmerge), Admin RDM (valores, homologaciones, probador, rehomologar con conteo previo), Vista 360 (8 capas), tablero; endpoints de apoyo; e2e con Playwright | ✅ 65 tests backend + 6 e2e en verde |
+| Política v2 | Decisión de matching afinable en caliente: estado por atributo, evidencia sobre lo comparable, grupos de suficiencia, vetos; `mdm.match_policy` versionada, `party_match.decision_basis`, módulo **Política de matching** (`#/matching`) con simular / publicar / recalcular; guarda de unicidad golden (§3.16) antes de toda fusión AUTO | ✅ 10 tests (`test_f6_policy.py`) · total backend 129 + 7 e2e en verde |
 | F5 | Cumplimiento embebido: elegibilidad por contacto y finalidad (12 precedencias), consentimientos multi-tipo, ARCO con SLA en días hábiles, RNE, audiencias auditadas, purga simulada, feed de cambios, módulo Cumplimiento en la UI, `make demo` (21 casos verificados) y `make export-drive` | ✅ 79 tests backend + 7 e2e en verde |
 
 ## Arranque
@@ -157,7 +158,7 @@ curl -X POST "localhost:8000/api/v1/parties/match-preview" -d '{"party_type":"PE
 |---|---|
 | Blocking | `DOC_HASH`, `EMAIL_HASH`, `PHONE_HASH` (solo OWNER + CONFIRMED_BY_TITULAR), `SURNAME_SOUNDEX` (soundex tolerante al español: LL/Y, B/V, C/S/Z, H muda); organizaciones: `NIT_HASH`, `LEGAL_NAME_TOKENS` (sin S.A.S./LTDA/de Colombia). Los buckets se persisten en `PARTY_BUCKET`/`BUCKET_CANDIDATE`. |
 | Scoring | `MATCH_RULE` v1: PERSON 30/20/15/15/10/5/3/2 (documento, primer apellido, nombre, fecha de nacimiento, email, teléfono, municipio, género); ORGANIZATION 50/25/10/10/5. Cada par guarda `score_detail` (atributo, valores, algoritmo, similitud, puntos, nota). |
-| Umbrales | ≥ 85 `AUTO_MERGE` · 70–84 `PROBABLE` · 50–69 `POSSIBLE` · < 50 `NO_MATCH` (no se persiste). |
+| Política v2 (SPEC §8.4 bis) | Cada atributo con estado `AGREE` / `PARTIAL` / `DISAGREE` / `MISSING`; **evidencia** = puntos sobre el peso comparable y **cobertura** = peso comparable sobre el total; **grupos de suficiencia** (G1 documental → AUTO; G2 demográfica → PROBABLE; G3 = G2 + un contacto confirmado → PROBABLE; G4 = G2 + correo y teléfono confirmados → AUTO); umbrales ≥ 85 / 70 / 50 sobre la evidencia (cobertura mínima 60 %, piso de 50 puntos brutos, nunca AUTO sin grupo); veto por documento/NIT contradictorio (`REVIEW`: baja a revisión; `NO_MATCH`: son distintos). Versionada en `mdm.match_policy`, afinable en `#/matching` (simular sin persistir, publicar como versión nueva —solo Jefatura—, recalcular la cola). |
 | Merge | `PARTY_MERGE_HISTORY.pre_merge_snapshot` con las capas 2–5 y 8 de ambos parties; reapunte fila a fila con savepoint (las que chocan por unicidad se quedan en el absorbido, nunca se borran); absorbido `MERGED`, sobreviviente `GOLDEN`; auditoría con `merge_sk`. |
 | Survivorship | `SOURCE_PRIORITY` SF_EC > SAP_CRM > SAP_ECC_SD > SAP_ECC_MM > WEB_PORTAL para nombres y documento; `MOST_RECENT` para email, teléfono principal y fallecido; `MOST_COMPLETE` de respaldo. Cada atributo escribe `PARTY_SURVIVORSHIP` (valor, fuente, estrategia). |
 | Stewardship | `GET /matches` cola; decisión con justificación obligatoria (422 sin ella) y cabecera `X-Role` (`STEWARD` / `JEFATURA`); par con más de una fuente → `MATCH_REVIEW_TASK` por fuente asignada a su `data_steward`; regla de cierre §8.5 (consenso → `OWNER_CONSENSUS`, desacuerdo → escalado a Jefatura). |
@@ -173,10 +174,11 @@ Decisiones de implementación de la Fase 3:
   automáticamente: se abre un par `PROBABLE` forzado y un hallazgo `UNIQUENESS` (regla dura §3.16).
 - **Decisiones humanas vinculantes.** Un par resuelto `NO_MATCH` (steward o unmerge) no vuelve a
   proponerse aunque el score lo supere; el motor lo omite en corridas posteriores.
-- **Actor de auditoría.** En merges `AUTO` el actor es el del pipeline y `decided_by = engine.v1`;
+- **Actor de auditoría.** En merges `AUTO` el actor es el del pipeline y `decided_by = engine.v1.pN` (pesos v1, política N; la justificación registra evidencia, cobertura y el grupo o veto que decidió);
   en merges humanos el actor es el steward u owner que decidió (Ley 1581/2012 art. 17; ISO/IEC 27001:2022 A.8.15).
-- **Corrida sobre los sintéticos** (5 fuentes, 1.580 registros): 684 merges automáticos, 894 goldens,
-  2 pares `PROBABLE` (casos B y K) y 1 `POSSIBLE` (caso C); ninguna persona se compara con una organización.
+- **Corrida sobre los sintéticos** (5 fuentes, 1.592 registros): 691 merges automáticos (613 por G1 documental,
+  59 por O1 NIT, 19 por G4 sin documento comparable), 900 goldens, 3 pares `PROBABLE` (casos B, K y U, cada uno por
+  un grupo distinto) y 1 `POSSIBLE` (caso C); ninguna persona se compara con una organización.
 
 ### Opción C · Google Colab (sin instalar nada)
 
@@ -190,13 +192,14 @@ con enlace para abrirla en el navegador. Detalle en [`colab/README.md`](colab/RE
 make rebuild                                   # base desde cero con B y K pendientes en la consola
 make api                                       # FastAPI :8000
 cd frontend && npm install && npm run dev      # UI en :5173 (VITE_API_BASE opcional)
-make test-e2e                                  # Playwright: rebuild → API :8001 + UI :5174 → 6 pruebas
+make test-e2e                                  # Playwright: rebuild → API :8001 + UI :5174 → 7 pruebas
 ```
 
 | Módulo | Ruta | Qué hace |
 |---|---|---|
 | Tablero | `#/` | Goldens, candidatos, fusionados, pares en cola; última carga por fuente; matching por decisión; hallazgos DQ; tareas abiertas por owner. |
-| Consola de Stewardship | `#/stewardship` | **Cola** (PROBABLE/POSSIBLE): score total, desglose por atributo con barra de puntos y valores A/B resaltando diferencias, fuentes y owners, roles/segmentos/servicios/relaciones/contactos de cada party; acciones **Fusionar** / **No es la misma persona** / **Escalar** con justificación obligatoria (botones deshabilitados sin ella). **Tareas por owner**: las `MATCH_REVIEW_TASK` del actor con `due_at`, decisión y resultado de la regla de cierre. **Historial de merges**: `pre_merge_snapshot` (filas por tabla y JSON), auditoría por `merge_sk` y **unmerge** con razón. |
+| Política de matching | `#/matching` | Editor de la política v2 (grupos de suficiencia con sus atributos y decisión, umbrales, cobertura mínima, piso de puntos, vetos y su modo), **simulación** sobre todos los pares registrados (transiciones, pares que cambian, acuerdo con las decisiones humanas), **publicación como versión nueva** (solo Jefatura, con nota) y **recálculo de la cola pendiente**; historial de versiones con carga al editor. |
+| Consola de Stewardship | `#/stewardship` | **Cola** (PROBABLE/POSSIBLE): evidencia sobre cobertura, desglose por atributo con estado (coincide / parcial / contradice / sin dato), barra de puntos y valores A/B resaltando diferencias, **base de la decisión** (grupo satisfecho, veto o umbral, con cada grupo de la política evaluado sobre el par), fuentes y owners, roles/segmentos/servicios/relaciones/contactos de cada party; acciones **Fusionar** / **No es la misma persona** / **Escalar** con justificación obligatoria (botones deshabilitados sin ella). **Tareas por owner**: las `MATCH_REVIEW_TASK` del actor con `due_at`, decisión y resultado de la regla de cierre. **Historial de merges**: `pre_merge_snapshot` (filas por tabla y JSON), auditoría por `merge_sk` y **unmerge** con razón. |
 | Admin RDM | `#/rdm` | Dominio → catálogo → valores con jerarquía (DIVIPOLA, segmentos, servicios), alta de valor (la SK la asigna la base), deprecación con confirmación, homologaciones por sistema fuente con alta, probador sistema/campo/valor → canónico y **Rehomologar** con conteo previo de UNKNOWN corregibles. |
 | Vista 360 | `#/party` y `#/party/:sk` | Búsqueda y perfil por las 8 capas en orden con la leyenda de colores: XREF y linaje, core con fuente ganadora por campo, identificadores golden, roles por UES, vínculos de servicio por UES, segmentos por tipo, relaciones con el otro extremo, contactos agrupados (propios, cobranza no confirmados, compartidos/acudiente, referencias) con finalidades por contacto vs. canal, hallazgos, retención, auditoría, survivorship, merges, consentimientos y ARCO.. Cabecera con **resumen ejecutivo**: ¿se puede contactar por finalidad y por qué no? (Ley 2300/2023 arts. 3 y 5), servicios activos por UES, hallazgos DQ abiertos, pares de matching pendientes (enlazados a la consola), fuentes, merges y autorizaciones, marcas de menor de edad y fallecido. Además: nombres por tipo con vigencia, verificación de identificadores, rol bajo el cual se sostiene cada vínculo, miembros del grupo con enlace, validez técnica del medio de contacto, geocodificación de la dirección, línea de tiempo de auditoría filtrable y quién otorgó cada autorización |
 
@@ -249,14 +252,14 @@ Decisiones de implementación de la Fase 5:
 - **Frecuencia** (precedencia 11): sin historial de envíos en el prototipo, solo `NEVER` se considera excedida.
 - **Caso H** trae ahora un crédito activo en SD para que la cobranza sea legítima (precedencia 8) mientras el RNE bloquea solo lo comercial; **caso S** recibe su crédito en `data/synth/ecc_sd_delta.csv` (corrida delta) y pasa de `NO_ACTIVE_SERVICE` a `ELIGIBLE` sin tocar BENEFITS.
 - **`make demo`** verifica los 21 casos sobre la base reconstruida y falla si alguno no cumple; F, L, M y N se ejecutan desde la API o la consola según el guion.
-- **Caso U · vitrina 360**: una persona sintética con las ocho capas pobladas (cinco fuentes, cuatro roles, los tres tipos de segmento, servicios en tres UES y relaciones persona↔organización y persona↔persona). Se busca en la Vista 360 como `Mariana Lucía Restrepo Vanegas` y deja un par `PROBABLE` en la Consola de Stewardship; detalle en `docs/GUIA_PRUEBAS_MANUALES.md` §3 bis.
+- **Caso U · vitrina 360**: una persona sintética con las ocho capas pobladas (cinco fuentes, cuatro roles, los tres tipos de segmento, servicios en tres UES y relaciones persona↔organización y persona↔persona). Se busca en la Vista 360 como `Mariana Lucía Restrepo Vanegas` y deja un par `PROBABLE` en la Consola de Stewardship (registro del portal sin documento y con correo nuevo: grupo G3); detalle en `docs/GUIA_PRUEBAS_MANUALES.md` §3 bis.
 
 ## Conjunto de validación (SAP ECC + sistema de crédito)
 
 ```bash
 make test-validation                          # 37 pruebas: genera, ingiere y verifica los casos V1–V28
 python backend/cli.py validation-generate     # backend/data/validation/*.csv + manifest_validacion.json
-make validation-load                          # deja ECC + crédito en la consola (zona gris: V2, V18 PROBABLE; V3 POSSIBLE)
+make validation-load                          # deja ECC + crédito en la consola (zona gris: V2 por G3, V18 por veto del documento, V3 por G2)
 ```
 
 Dos fuentes distintas de las del escenario demo: un extracto SAP ECC (KNA1, adaptador `ecc_sd`) y un

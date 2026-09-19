@@ -186,7 +186,7 @@ class Universe:
     def emit_crm_person(self, p: Person, roles: str = "ZAFI", categoria: str = "", telefonos: list[str] | None = None,
                         relaciones: list[str] | None = None, grupo: str = "", consent_dp: str = "Y", consent_com: str = "Y",
                         prefs: str = "", email_prefs: str = "", fallecido: str = "", estado_afil: str = "A",
-                        afiliacion: str | None = None, id_type: str | None = None) -> str:
+                        afiliacion: str | None = None, id_type: str | None = None, email: str | None = None) -> str:
         pid = self.new_id("partner"); p.sources["crm_bp"] = pid
         tels = telefonos if telefonos is not None else [f"{p.phone}:TIT:OWN:TIT"]
         idt = id_type or {"CC": "ZCC", "CE": "ZCE", "TI": "ZTI", "PAS": "ZPAS", "PPT": "ZPPT"}[p.doc_type]
@@ -196,7 +196,7 @@ class Universe:
             "BIRTHDT": p.birth.strftime("%Y%m%d"), "IDTYPE": idt, "IDNUMBER": p.doc, "RLTYP": roles,
             "ZZ_CATEGORIA": categoria, "ZZ_AFILIACION": afiliacion if afiliacion is not None else (f"AF-{pid[-6:]}" if "ZAFI" in roles else ""),
             "ZZ_ESTADO_AFIL": estado_afil, "COUNTRY": "CO", "REGION": REGIO_BY_CITY[p.city], "CITY1": p.city,
-            "STREET": p.street, "SMTP_ADDR": p.email, "TELEFONOS": ";".join(tels),
+            "STREET": p.street, "SMTP_ADDR": email if email is not None else p.email, "TELEFONOS": ";".join(tels),
             "RELACIONES": ";".join(relaciones or []), "ZZ_GRUPO_FAM": grupo, "ZZ_CONSENT_DP": consent_dp,
             "ZZ_CONSENT_COM": consent_com, "ZZ_PREF": prefs, "ZZ_PREF_EMAIL": email_prefs, "ZZ_FALLECIDO": fallecido,
             "ZZ_TIPO_ORG": "", "CHDAT": "20260901",
@@ -218,14 +218,14 @@ class Universe:
 
     def emit_portal(self, p: Person, categoria: str = "", segmento: str = "", doc: str | None = "keep",
                     tipo_doc: str | None = None, nombres: str | None = None, apellidos: str | None = None,
-                    acepta_datos: str = "true", acepta_comercial: str = "true", genero: str | None = None) -> str:
+                    acepta_datos: str = "true", acepta_comercial: str = "true", genero: str | None = None, email: str | None = None) -> str:
         uid = self.new_id("user"); p.sources["web_portal"] = uid
         td = tipo_doc or {"CC": "cedula", "CE": "cedula_extranjeria", "TI": "tarjeta_identidad", "PAS": "pasaporte", "PPT": "ppt"}[p.doc_type]
         self.rows["web_portal"].append({
             "user_id": uid, "tipo_doc": td if doc else "", "num_doc": (p.doc if doc == "keep" else (doc or "")),
             "nombres": nombres if nombres is not None else f"{p.first} {p.middle}".strip(),
             "apellidos": apellidos if apellidos is not None else f"{p.sur1} {p.sur2}",
-            "fecha_nacimiento": p.birth.isoformat(), "genero": genero or p.gender, "email": p.email,
+            "fecha_nacimiento": p.birth.isoformat(), "genero": genero or p.gender, "email": email if email is not None else p.email,
             "celular": f"+57 {p.phone[:3]} {p.phone[3:6]} {p.phone[6:]}", "categoria": categoria,
             "segmento_comercial": segmento, "acepta_datos": acepta_datos, "acepta_comercial": acepta_comercial,
             "ciudad": p.city, "updated_at": "2026-09-05T10:00:00",
@@ -270,11 +270,12 @@ class Universe:
         a = P[0]
         cases["A"] = {"ecc_sd": self.emit_sd_person(a, name_variant=f"{a.first[:-1]}{a.first[-1].swapcase()} {a.middle}".strip()),
                       "crm_bp": self.emit_crm_person(a, categoria="A"), "doc": a.doc}
-        # --- Caso B · probable en una sola fuente: usuario re-registrado sin documento, JW alto + misma fecha
+        # --- Caso B · probable en una sola fuente: usuario re-registrado sin documento y con correo nuevo; nombres JW alto,
+        #     misma fecha y mismo celular confirmado → grupo G3 (demográfica + un contacto) = PROBABLE; con el mismo correo sería G4 = AUTO
         b = P[1]
         cases["B"] = {"web_portal_1": self.emit_portal(b, categoria="B"),
                       "web_portal_2": self.emit_portal(b, doc=None, nombres=f"{b.first} {b.middle}".strip().replace("a", "á", 1),
-                                                       acepta_comercial="false")}
+                                                       acepta_comercial="false", email=f"nuevo.{b.email}")}
         # --- Caso C · posible: homónimos con fecha distinta
         c1, c2 = P[2], P[3]
         c2.first, c2.middle, c2.sur1, c2.sur2 = c1.first, c1.middle, c1.sur1, c1.sur2
@@ -310,9 +311,11 @@ class Universe:
                       "child": self.emit_crm_person(child, roles="ZBEN", grupo="FAM-0007", telefonos=[f"{shared}:TIT:OWN:TIT"],
                                                     consent_com="Y"), "shared_phone": shared}
         # relaciones madre→hijo (PARENT_OF con inversa CHILD_OF) se adjuntan al caso O
-        # --- Caso K · zona gris entre owners: SF_EC vs CRM, sin documento común (CRM sin documento), nombres JW alto + misma fecha
+        # --- Caso K · zona gris entre owners: SF_EC (cédula) vs CRM (pasaporte: documentos no comparables), correo personal distinto
+        #     y celular sin confirmar; nombres JW alto + misma fecha → grupo G2 (solo demográfica) = PROBABLE, nunca auto-merge
         k = P[8]
-        cases["K"] = {"sf_ec": self.emit_sf_ec(k, division="SAL"), "crm_bp": self.emit_crm_person(k, categoria="B", id_type="ZPAS")}
+        cases["K"] = {"sf_ec": self.emit_sf_ec(k, division="SAL"),
+                      "crm_bp": self.emit_crm_person(k, categoria="B", id_type="ZPAS", email=f"personal.{k.email}", telefonos=[f"{k.phone}:TIT:OWN:UNC"])}
         self.rows["crm_bp"][-1]["IDNUMBER"] = f"P{rng.randint(100000, 999999)}"   # pasaporte distinto: sin documento común
         # --- Caso L · unmerge del caso A (se ejecuta en F3)
         cases["L"] = {"uses": "A"}
@@ -397,8 +400,8 @@ class Universe:
         }
         # la hija es además beneficiaria del titular: se anota en su propio registro de CRM, que ya existe
         self.rows["crm_bp"][[r["PARTNER"] for r in self.rows["crm_bp"]].index(u_daughter)]["RELACIONES"] = f"{cases['U']['crm_bp']}:ZBEN"
-        # segundo registro en el portal sin documento: par PROBABLE pendiente en la consola
-        cases["U"]["web_portal_dup"] = self.emit_portal(u, doc=None, nombres=u.first, acepta_comercial="false")
+        # segundo registro en el portal sin documento y con correo nuevo: G3 (demográfica + celular confirmado) → PROBABLE en la consola
+        cases["U"]["web_portal_dup"] = self.emit_portal(u, doc=None, nombres=u.first, acepta_comercial="false", email=f"nuevo.{u.email}")
         self.manifest["counts"] = {k: len(v) for k, v in self.rows.items()}
 
     def write(self, out_dir: Path = DATA_DIR) -> dict:

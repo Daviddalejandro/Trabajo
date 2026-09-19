@@ -1,7 +1,8 @@
 # Guía de pruebas manuales · consola visual y zona gris de matching
 
-Cómo probar el prototipo desde la interfaz, con foco en los pares de la **zona gris** (score entre
-50 y 85, decisiones `PROBABLE` y `POSSIBLE`, SPEC §8.4) que requieren decisión de un steward.
+Cómo probar el prototipo desde la interfaz, con foco en los pares de la **zona gris** (decisiones
+`PROBABLE` y `POSSIBLE`, SPEC §8.4 y §8.4 bis) que requieren decisión de un steward, y en la
+**política de matching** afinable desde `#/matching`.
 Todo con datos sintéticos.
 
 ## 1. Arranque (una vez)
@@ -19,8 +20,8 @@ y el tablero (`#/`) muestra el estado del servicio en verde.
 
 | Conjunto | Comando | Qué deja en la cola de stewardship |
 |---|---|---|
-| Escenario demo (5 fuentes SAP/SF/portal, 21 casos A–U) | `make demo` | Caso **B** (portal sin documento vs. CRM, PROBABLE), caso **K** (SF_EC vs. SAP_CRM, dos owners) y caso **U** (vitrina 360, PROBABLE); caso **C** como POSSIBLE |
-| Validación SAP ECC + sistema de crédito (casos V1–V28) | `make validation-load` | **V2** (tarjeta de identidad antigua vs. cédula, PROBABLE 70), **V18** (dígito transpuesto, PROBABLE 70), **V3** (homónimos con la misma fecha, POSSIBLE 62) |
+| Escenario demo (5 fuentes SAP/SF/portal, 21 casos A–U) | `make demo` | Caso **B** (portal re-registrado sin documento y con correo nuevo: PROBABLE por G3), caso **K** (SF_EC vs. SAP_CRM, pasaporte vs. cédula, dos owners: PROBABLE por G2) y caso **U** (vitrina 360: PROBABLE por G3); caso **C** como POSSIBLE |
+| Validación SAP ECC + sistema de crédito (casos V1–V28) | `make validation-load` | **V2** (tarjeta de identidad antigua vs. cédula: tipos no comparables, PROBABLE por G3), **V18** (dígito transpuesto: el veto del documento baja G4 a revisión, PROBABLE), **V3** (homónimos con la misma fecha y documentos distintos, PROBABLE por G2 con evidencia 62) |
 
 Ambos comandos parten de cero (el segundo conserva el RDM) y aplican el matching; al terminar
 imprimen el resumen de pares por decisión. Se pueden alternar tantas veces como se quiera.
@@ -78,7 +79,7 @@ sin tildes, por documento o por el correo `mariana.restrepo.vitrina@ejemplo.test
 | 7 · Golden Record | Cuatro merges AUTO vigentes y el survivorship campo a campo; el par pendiente enlaza a la consola |
 | 8 · Consents | DATA_PROCESSING (SF_EC) y COMMERCIAL (SAP_CRM), ambos GRANTED |
 
-**En la Consola de Stewardship** el mismo caso deja un par `PROBABLE` (70/100): el segundo
+**En la Consola de Stewardship** el mismo caso deja un par `PROBABLE` (evidencia ≈ 93 % sobre cobertura 70 %, grupo G3): el segundo
 registro del portal no trae documento, así que `document` puntúa 0/30. Al abrirlo, la tarjeta
 **Evidencia A · roles, segmentos, relaciones y contactos** muestra los cuatro roles, los tres
 segmentos, los servicios y las relaciones de la persona consolidada, y la **Evidencia B**
@@ -96,18 +97,24 @@ Capturas: [`09_stewardship_vitrina_evidencia.png`](evidence/f4/README.md),
 | **Editar un CSV y reingerir** | Copiar `backend/data/validation/credito_core.csv` (o `ecc_kna1_validacion.csv`), modificar o agregar filas (documento con un dígito cambiado, apellido con error, tarjeta de identidad vs. cédula, homónimo con la misma fecha) y ejecutar `python backend/cli.py ingest --source credito_core --file <ruta>` | Ver el par aparecer en la cola y decidirlo en la consola |
 | **Corrida delta** | Mismo `ingest` con `--mode delta`: las filas sin cambio de hash quedan `UNCHANGED`; las nuevas o modificadas entran por XREF (sin matching) o por matching (nuevas) | Simular la carga nocturna del sistema fuente |
 
-Recetas para caer en cada zona con la regla v1 de personas (documento 30, primer apellido 20,
-nombre 15, fecha 15, segundo apellido 10, correo 5, teléfono 3, municipio 2):
+Recetas para caer en cada zona con los pesos v1 de personas (documento 30, primer apellido 20,
+nombre 15, fecha 15, segundo apellido 10, correo 5, teléfono 3, municipio 2) y la política v2
+inicial (SPEC §8.4 bis). Lo que no viaja en uno de los dos registros queda **sin dato**: no suma ni
+resta, y la **evidencia** se mide sobre lo comparable (la **cobertura** dice cuánto se pudo comparar).
 
-| Objetivo | Construcción | Score aproximado |
+| Objetivo | Construcción | Qué lo decide |
 |---|---|---|
-| `AUTO_MERGE` (≥ 85) | Mismo documento y mismo apellido/nombre, aunque cambien correo o municipio | 85–100 |
-| `PROBABLE` (70–84) | Documento distinto (tipo distinto, dígito transpuesto o ausente) con nombre, apellidos, fecha y correo iguales | 70 |
-| `POSSIBLE` (50–69) | Documentos distintos, homónimo con la misma fecha, sin correo ni teléfono en común | 50–65 |
-| `NO_MATCH` (< 50) | Solo coincide el nombre o solo la fecha | < 50 |
+| `AUTO_MERGE` | Mismo documento (tipo y número) y mismo primer apellido, aunque cambien correo o municipio | grupo G1 |
+| `AUTO_MERGE` sin documento | Sin documento en uno de los dos, con nombre, dos apellidos, fecha, correo **y** celular confirmado iguales | grupo G4 |
+| `PROBABLE` | Sin documento comparable (ausente o cédula vs. pasaporte) con nombre, apellidos y fecha iguales, y como mucho un contacto en común | grupos G2 / G3 |
+| `PROBABLE` con documento contradictorio | Mismo tipo con distinto número (dígito transpuesto) y todo lo demás igual: el veto impide fusionar solo | G4 + veto en modo `REVIEW` |
+| `POSSIBLE` | Homónimo con fecha a menos de un año (parcial) o segundo apellido distinto: ningún grupo, evidencia 50–69 | vía de umbrales |
+| `NO_MATCH` | Solo coincide el nombre o solo la fecha (menos de 50 puntos brutos); o documento contradictorio con el veto en modo `NO_MATCH` | piso de puntos / veto |
 
-Umbrales en `backend/app/matching/rules.py` (`MATCH_RULE` v1); cambiar un peso y volver a
-ejecutar `python backend/cli.py match` permite ver cómo se mueven los pares entre zonas.
+Para mover un par de zona no hace falta tocar código: en `#/matching` se cambia la decisión de un grupo,
+el modo del veto o los umbrales, **Simular** muestra qué pares cambiarían (y el acuerdo con lo que ya
+decidieron los stewards), **Publicar** crea la versión siguiente (solo `jefatura.gd`) y **Recalcular
+pendientes** la aplica a la cola. Los pesos siguen en `backend/app/matching/rules.py` (`MATCH_RULE` v1).
 
 ## 5. Verificaciones rápidas de cierre
 

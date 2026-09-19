@@ -33,8 +33,8 @@ CALIFICACION (A–E → LOW/MEDIUM/HIGH), TIPO_TEL, ESTADO_TEL, FALLECIDO. Relac
 | Caso | Construcción | Desenlace verificado |
 |---|---|---|
 | V1 | Mismo documento, nombre con error tipográfico en crédito | Auto-merge; un documento golden |
-| V2 | Crédito con tarjeta de identidad antigua; nombre, fecha, correo y celular iguales | PROBABLE (70); dos owners (steward.sd, steward.credito) → OWNER_CONSENSUS; unmerge; NO_MATCH vinculante |
-| V3 | Homónimos con la misma fecha de nacimiento y documentos distintos | POSSIBLE (62), sin merge |
+| V2 | Crédito con tarjeta de identidad antigua (tipos de documento no comparables); nombre, fecha y correo iguales, celular distinto | PROBABLE por el grupo G3 (evidencia ≈ 96 sobre cobertura 70); dos owners (steward.sd, steward.credito) → OWNER_CONSENSUS; unmerge; NO_MATCH vinculante |
+| V3 | Homónimos con la misma fecha de nacimiento y documentos distintos (mismo tipo) | PROBABLE por el grupo G2 (evidencia 62): el documento contradictorio impide fusionar solo y el par va a revisión, nunca a merge automático |
 | V4 | Dos clientes de crédito con el mismo documento + ECC | Los tres colapsan en un golden con 3 XREF y 3 obligaciones |
 | V5 | Empresa con el mismo NIT en ECC y crédito | Merge de organización; NIT golden |
 | V6 | FALLECIDO=S con obligación vigente | `party_status=DECEASED`; toda elegibilidad `DECEASED` |
@@ -49,7 +49,7 @@ CALIFICACION (A–E → LOW/MEDIUM/HIGH), TIPO_TEL, ESTADO_TEL, FALLECIDO. Relac
 | V15 | ARCO CANCELLATION con obligación vigente | 3 consentimientos revocados; no es candidato a purga |
 | V16 | Audiencia COLLECTIONS / PHONE / CREDITO_SOCIAL ACTIVE | Incluye V1 y V16, excluye V6 y V8; auditada |
 | V17 | match-preview con los datos de V1 | AUTO_MERGE sugerido sin persistir |
-| V18 | Documento con dígito transpuesto | PROBABLE; NO_MATCH del steward es final |
+| V18 | Documento con dígito transpuesto | G4 satisfecho pero el veto del documento (modo REVIEW) lo baja a PROBABLE; NO_MATCH del steward es final |
 | V19 | Nombre en mayúsculas en crédito, correo nuevo | Nombre desde SAP_ECC_SD (prioridad); correo desde CREDITO_CORE (MOST_RECENT) |
 | V20 | Feed de cambios | Inserciones de obligaciones con fuente CREDITO_CORE |
 | V21 | Export a Drive | Hoja "Sistemas fuente" incluye CREDITO_CORE |

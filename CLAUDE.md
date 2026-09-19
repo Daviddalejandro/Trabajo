@@ -18,10 +18,10 @@ entrada para continuar el trabajo sin perder contexto. Léelo completo antes de 
 
 Prototipo funcional in-house de Master Data Management (MDM) y Reference Data Management (RDM) para el
 dominio Party (personas y organizaciones), construido por fases según `SPEC_PROTOTIPO_MDM_RDM_PARTY.md`
-(v2.0, fuente de verdad funcional; sus secciones se citan como "SPEC §n").
+(v2.1, fuente de verdad funcional; sus secciones se citan como "SPEC §n").
 
 ```
-SPEC_PROTOTIPO_MDM_RDM_PARTY.md   especificación v2.0 (29 tablas mdm en 8 capas, 43 catálogos rdm, 21 casos demo A–U, fases F0–F5)
+SPEC_PROTOTIPO_MDM_RDM_PARTY.md   especificación v2.1 (29 tablas mdm en 8 capas + MATCH_POLICY, 43 catálogos rdm, 21 casos demo A–U, fases F0–F5)
 mdm-rdm-prototype/
   README.md                       arranque, arquitectura, comandos, módulos de la UI, convenciones
   DEMO.md                         guion de demostración por fase (casos A–U)
@@ -36,10 +36,10 @@ mdm-rdm-prototype/
   colab/                          cuaderno de Google Colab (build_notebook.py → MDM_Prototipo_Colab.ipynb) y UI compilada con base relativa
 ```
 
-## Estado (2026-09-14)
+## Estado (2026-09-19)
 
 Fases F0–F5 completas y aprobadas por el autor; conjunto de validación (dos fuentes adicionales) completo;
-guía de pruebas manuales publicada. Todo está en la rama `claude/pensive-ptolemy-bg3ikj` y en el
+guía de pruebas manuales publicada; política de decisión de matching v2 (SPEC §8.4 bis, afinable desde `#/matching`) implementada. Todo está en la rama `claude/pensive-ptolemy-bg3ikj` y en el
 PR #1 (`Daviddalejandro/Trabajo`), limpio y sin conflictos, pendiente solo de que el autor lo fusione a `main`.
 Si el PR ya fue fusionado, continuar desde `main` en una rama nueva.
 
@@ -63,7 +63,7 @@ tras cambiar la UI, `make ui-colab` y subir el cambio: el cuaderno clona la rama
 |---|---|
 | Escenario demo (21 casos A–U) en la consola | `make demo` |
 | Conjunto SAP ECC + crédito (V1–V28) en la consola | `make validation-load` |
-| Suite backend completa (119 pruebas, reconstruye la base) | `make test-backend` |
+| Suite backend completa (129 pruebas, reconstruye la base) | `make test-backend` |
 | Solo validación (37) | `make test-validation` |
 | UI compilada + e2e Playwright (7) | `make test-frontend` · `make test-e2e` |
 | Entregables para Drive | `make export-drive` |
@@ -84,7 +84,10 @@ Antes de subir cambios: `make test-backend` (o las suites afectadas) y `cd front
 - Roles: los declara el sistema fuente y se homologan por RDM (SAP ECC SD desde `BPROL`, SAP CRM desde `RLTYP`);
   `CUSTOMER` es el cliente de crédito y solo lo aporta `CREDITO_CORE`. La UES del rol, si la fuente no la manda,
   sale de `default_business_unit` en `CAT_PARTY_ROLE`. Nunca fijar un rol en el código del adaptador.
-- Matching: `MATCH_RULE` v1 en `backend/app/matching/rules.py`, umbrales 85/70/50 (SPEC §8.4).
+- Matching: pesos `MATCH_RULE` v1 en `backend/app/matching/rules.py`; la **decisión** la toma la política v2
+  (`backend/app/matching/policy.py`, tabla `mdm.match_policy`, SPEC §8.4 bis): estados por atributo, evidencia sobre
+  lo comparable, grupos de suficiencia G1–G4/O1–O2, umbrales 85/70/50 sobre la evidencia, veto por documento. Se afina
+  desde `#/matching` publicando versiones (solo Jefatura); nunca cambiar la decisión en código si basta con la política.
   Survivorship: `SOURCE_PRIORITY` en `backend/app/survivorship/engine.py` (SF_EC, SAP_CRM, SAP_ECC_SD,
   SAP_ECC_MM, CREDITO_CORE, WEB_PORTAL) más MOST_RECENT / MOST_COMPLETE (SPEC §9).
 - Nueva fuente = adaptador en `backend/app/pipeline/sources/`, fila en `SOURCE_SYSTEMS` y homologaciones en

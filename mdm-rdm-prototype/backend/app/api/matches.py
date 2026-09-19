@@ -6,6 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.db import get_session
+from app.matching import policy as matching_policy
 from app.matching.engine import preview, run_matching
 from app.stewardship.decisions import decide_match, decide_task, match_sources
 from app.stewardship.merge import unmerge
@@ -34,6 +35,18 @@ class TaskDecisionIn(BaseModel):
 class UnmergeIn(BaseModel):
     merge_sk: int
     reason: str = Field(min_length=5)
+
+
+class PolicyIn(BaseModel):
+    entity: str = Field(default="PERSON", pattern="^(PERSON|ORGANIZATION)$")
+    params: dict
+    note: str | None = None
+
+
+class SimulateIn(BaseModel):
+    entity: str = Field(default="PERSON", pattern="^(PERSON|ORGANIZATION)$")
+    params: dict
+    scope: str = Field(default="all", pattern="^(all|pending)$")
 
 
 class PreviewIn(BaseModel):
@@ -82,7 +95,7 @@ def list_matches(decision: str | None = "PROBABLE", status: str | None = "PENDIN
 
 @router.get("/matches/{match_sk}", summary="Detalle con score_detail desglosado, fuentes y tareas")
 def get_match(match_sk: int, session: Session = Depends(get_session)):
-    m = session.execute(text("""SELECT m.match_sk, m.party_a_sk, m.party_b_sk, m.total_score, m.score_detail, d.value_code AS decision, m.match_status, m.rule_version, m.matched_at
+    m = session.execute(text("""SELECT m.match_sk, m.party_a_sk, m.party_b_sk, m.total_score, m.score_detail, m.decision_basis, d.value_code AS decision, m.match_status, m.rule_version, m.matched_at
         FROM mdm.party_match m JOIN rdm.reference_value d ON d.value_sk=m.decision_cd WHERE m.match_sk=:k"""), {"k": match_sk}).mappings().first()
     if m is None:
         raise HTTPException(404, "Match inexistente")
@@ -181,3 +194,47 @@ def post_preview(body: PreviewIn, limit: int = Query(10, ge=1, le=50), session: 
 @router.post("/matching/run", summary="Ejecuta el matching sobre los candidatos pendientes")
 def post_run(actor: str = Depends(actor_header), session: Session = Depends(get_session)):
     return run_matching(session, actor)
+
+
+# ------------------------------------------------------------------ política de matching v2 (afinable en caliente)
+@router.get("/matching/policy", summary="Política activa, versiones anteriores y atributos disponibles")
+def get_policy(entity: str = Query("PERSON", pattern="^(PERSON|ORGANIZATION)$"), session: Session = Depends(get_session)):
+    matching_policy.ensure_default_policies(session)
+    session.commit()
+    versions = matching_policy.list_versions(session, entity)
+    active = next((v for v in versions if v["is_active"]), None)
+    return {"entity": entity, "active": active, "versions": versions, "attributes": matching_policy.rule_attributes(session, entity),
+            "defaults": matching_policy.DEFAULT_POLICIES[entity]}
+
+
+@router.post("/matching/policy/simulate", summary="Qué pasaría con la política candidata sobre los pares registrados (sin persistir)")
+def post_policy_simulate(body: SimulateIn, session: Session = Depends(get_session)):
+    try:
+        out = matching_policy.simulate(session, body.entity, body.params, body.scope)
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    session.rollback()
+    return out
+
+
+@router.post("/matching/policy", summary="Publica una versión nueva de la política (solo Jefatura)")
+def post_policy(body: PolicyIn, actor: str = Depends(actor_header), role: str = Depends(role_header), session: Session = Depends(get_session)):
+    if role != "JEFATURA":
+        raise HTTPException(403, "Solo la Jefatura de Gobierno de Datos publica cambios en la política de matching (SPEC §8.5 num. 5)")
+    try:
+        out = matching_policy.publish_policy(session, body.entity, body.params, body.note, actor)
+        session.commit(); return out
+    except ValueError as e:
+        session.rollback(); raise HTTPException(422, str(e))
+
+
+@router.post("/matching/recalculate", summary="Aplica la política activa a los pares pendientes (solo Jefatura)")
+def post_recalculate(entity: str | None = Query(None, pattern="^(PERSON|ORGANIZATION)$"), actor: str = Depends(actor_header), role: str = Depends(role_header),
+                     session: Session = Depends(get_session)):
+    if role != "JEFATURA":
+        raise HTTPException(403, "Solo la Jefatura de Gobierno de Datos recalcula la cola con una política nueva")
+    try:
+        out = matching_policy.recalculate(session, actor, entity)
+        session.commit(); return out
+    except ValueError as e:
+        session.rollback(); raise HTTPException(409, str(e))

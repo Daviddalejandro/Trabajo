@@ -154,6 +154,7 @@ from google.colab import output
 URL = output.eval_js("google.colab.kernel.proxyPort(8000)")
 print("Consola de Stewardship:", URL + "#/stewardship")
 print("Tablero:", URL + "#/")
+print("Política de matching (grupos, umbrales, vetos; simular y publicar como JEFATURA):", URL + "#/matching")
 print("Swagger de la API:", URL + "docs")
 from IPython.display import HTML, display
 display(HTML(f'<p style="font-size:1.1em"><a href="{URL}#/stewardship" target="_blank">🔗 Abrir la consola en una pestaña nueva</a></p>'))
@@ -194,8 +195,11 @@ def cola(decision=None):
 
 def detalle(match_sk):
     m = api(f"/matches/{match_sk}")
-    print(f"Par #{m['match_sk']} · {m['total_score']}/100 · {m['decision']} · {m['match_status']}")
-    display(pd.DataFrame(m["score_detail"])[["attribute", "points", "weight", "value_a", "value_b", "algorithm", "similarity"]])
+    b = m.get("decision_basis") or {}
+    print(f"Par #{m['match_sk']} · evidencia {m['total_score']} % sobre cobertura {b.get('coverage', '?')} % · {m['decision']} · {m['match_status']}"
+          f" · decidido por {b.get('decided_by', 'reglas v1')} (política v{b.get('policy_version', '?')})")
+    cols = ["attribute", "state", "points", "weight", "value_a", "value_b", "algorithm", "similarity"]
+    df = pd.DataFrame(m["score_detail"]); display(df[[c for c in cols if c in df.columns]])
     display(pd.DataFrame(m["sources"]))
     return m
 
@@ -216,6 +220,23 @@ def vista360(party_sk):
     p = api(f"/parties/{party_sk}/golden")
     print(json.dumps({k: p[k] for k in list(p)[:12]}, ensure_ascii=False, indent=1)[:3000]); return p
 
+def politica(entity="PERSON"):
+    """Política de decisión v2 activa (SPEC §8.4 bis): grupos de suficiencia, umbrales sobre evidencia, vetos."""
+    r = api("/matching/policy", entity=entity)
+    print(f"{entity} · política v{r['active']['version']} · versiones {[v['version'] for v in r['versions']]}")
+    print(json.dumps(r["active"]["params"], ensure_ascii=False, indent=1)[:4000]); return r
+
+def simular_politica(params, entity="PERSON", scope="pending"):
+    """Qué cambiaría en la cola (o en todos los pares) con otra política, sin persistir nada."""
+    r = api("/matching/policy/simulate", "POST", {"entity": entity, "params": params, "scope": scope})
+    print(json.dumps(r.get("summary", r), ensure_ascii=False, indent=1)[:3000]); return r
+
+def publicar_politica(params, nota, entity="PERSON"):
+    """Solo JEFATURA: crea la versión N+1 (la anterior queda inmutable, regla dura 3.7) y recalcula la cola."""
+    r = api("/matching/policy", "POST", {"entity": entity, "params": params, "note": nota}, actor="jefatura.gd", role="JEFATURA")
+    print(json.dumps(r, ensure_ascii=False, indent=1)[:2000])
+    print(json.dumps(api("/matching/recalculate", "POST", actor="jefatura.gd", role="JEFATURA", entity=entity), ensure_ascii=False, indent=1)[:3000]); return r
+
 def match_preview(**datos):
     """Ej.: match_preview(party_type="PERSON", first_name="Ana", first_surname="Rangel", birth_date="1953-03-14",
               identifiers=[{"id_type": "CC", "id_number": "948298165"}], emails=["ana@x.test"], phones=["+573001234567"])"""
@@ -230,7 +251,7 @@ code('''
 PAR = 188  #@param {type:"integer"}
 m = detalle(PAR)
 owners = [s["data_steward"] for s in m["sources"]]
-r = decidir(PAR, "MERGE", "Misma persona: TI antigua vs CC, coinciden nombre, apellidos, fecha, correo y celular")
+r = decidir(PAR, "MERGE", "Misma persona: TI antigua vs CC (no comparables), coinciden nombre, apellidos, fecha y correo (grupo G3)")
 if len(owners) > 1:
     for owner in owners:
         t = api("/review-tasks", actor=owner, assignee=owner, status="RECEIVED")

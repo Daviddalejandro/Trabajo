@@ -3,7 +3,7 @@
 Documento de traspaso: qué está hecho, qué se decidió y por qué, qué falta, y cómo retomar el trabajo en
 una sesión nueva de Claude Code sin perder el contexto. Se actualiza al cierre de cada jornada de trabajo.
 
-Última actualización: 2026-09-16 (caso U · vitrina 360 y búsqueda normalizada) · rama `claude/pensive-ptolemy-bg3ikj` · PR #1 de `Daviddalejandro/Trabajo`.
+Última actualización: 2026-09-19 (política de decisión de matching v2 afinable · SPEC v2.1) · rama `claude/pensive-ptolemy-bg3ikj` · PR #1 de `Daviddalejandro/Trabajo`.
 
 ## 1. Estado por fase (SPEC Anexo A)
 
@@ -15,17 +15,20 @@ una sesión nueva de Claude Code sin perder el contexto. Se actualiza al cierre 
 | F3 | Matching, merge/unmerge con snapshot, survivorship, stewardship con owners | Aprobada | `tests/test_f3_matching.py` (14) |
 | F4 | UI: Tablero, Consola de Stewardship, Admin RDM, Vista 360; e2e Playwright | Aprobada | `tests/test_f4_ui_api.py` (11), `e2e/f4.spec.ts` (6), `docs/evidence/f4/` |
 | F5 | Cumplimiento: elegibilidad (12 precedencias), consentimientos, ARCO, RNE, audiencias, purga simulada, feed; `make demo`; export a Drive | Aprobada | `tests/test_f5_compliance.py` (14), `e2e/f5.spec.ts` (1), `docs/evidence/f5/` |
+| Política v2 | Decisión de matching por estado de atributo, evidencia sobre lo comparable, grupos de suficiencia y vetos; versionada en `mdm.match_policy`; módulo `#/matching` (simular, publicar, recalcular); guarda §3.16 en fusiones AUTO | Implementada, pendiente de afinar con las UES | `tests/test_f6_policy.py` (10), SPEC §8.4 bis |
 | Validación | Fuentes SAP ECC KNA1 + sistema de crédito (`CREDITO_CORE`), casos V1–V28 | Completa | `tests/test_validation_suite.py` (37), `docs/validation/README.md`, `docs/evidence/validation/` |
 | Pruebas manuales | `make validation-load`, guía y actor `steward.credito` | Completa | `docs/GUIA_PRUEBAS_MANUALES.md` |
 | Colab | Cuaderno autocontenido, UI servida desde la API (`UI_DIST_DIR`), zip en Drive `08_Colab` | Completa (celdas de API verificadas aquí; la instalación de PostgreSQL en Colab queda por confirmar en la primera corrida) | `colab/` |
 
-Totales verificados: backend 119 pruebas, e2e 7, `make demo` 21/21 casos, `npm run build` correcto.
+Totales verificados: backend 129 pruebas, e2e 7, `make demo` 21/21 casos, `npm run build` correcto.
 
 ## 2. Decisiones tomadas (y dónde viven)
 
 | Decisión | Razón | Dónde |
 |---|---|---|
 | Umbrales 85 / 70 / 50 y pesos v1 de personas (documento 30, apellido 20, nombre 15, fecha 15, segundo apellido 10, correo 5, teléfono 3, municipio 2) | SPEC §8.2–§8.4 | `backend/app/matching/rules.py`, tabla `mdm.match_rule` |
+| **Política de decisión v2, afinable en caliente**: estado por atributo (`AGREE`/`PARTIAL`/`DISAGREE`/`MISSING`; lo que no viaja no suma ni resta), evidencia normalizada sobre el peso comparable y cobertura, grupos de suficiencia (G1 documental → AUTO, G2 demográfica → PROBABLE, G3 = G2 + un contacto confirmado → PROBABLE, G4 = G2 + correo y teléfono confirmados → AUTO; O1/O2 para organizaciones), umbrales solo sobre la evidencia con cobertura ≥ 60 % y piso de 50 puntos brutos, nunca AUTO sin grupo, veto por documento/NIT contradictorio en modo `REVIEW` (a revisión) o `NO_MATCH`. Versionada en `mdm.match_policy` (publica solo la Jefatura; nunca se edita una versión), `party_match.decision_basis` guarda con cuál se decidió; simular sin persistir y recalcular la cola desde `#/matching`. Los casos B, K, U y V2 se replantaron para que cada uno quede en la zona gris por un grupo distinto | Petición del autor (par #693: "era realmente un 100"): un documento ausente se trataba igual que uno contradictorio; SPEC §8.4 bis; Fellegi & Sunter (1969); Ley 1581/2012 art. 4 lit. d y art. 17; ISO/IEC 42001:2023 cl. 6.1; NIST AI RMF 1.0 MEASURE | Migración `f6_0006`, `backend/app/matching/policy.py`, `scoring.py`, `engine.py`, `api/matches.py`, `frontend/src/pages/Matching.tsx`, `tests/test_f6_policy.py` |
+| Toda fusión `AUTO` verifica antes la unicidad de documento golden (§3.16): si el documento de uno de los dos ya es golden en un tercero, el par se fuerza a revisión en vez de fusionar (defecto detectado al permitir merges entre dos candidatos del mismo lote) | Regla dura §3.16 | `backend/app/matching/engine.py` (`golden_conflict`) |
 | `SOURCE_PRIORITY` = SF_EC > SAP_CRM > SAP_ECC_SD > SAP_ECC_MM > CREDITO_CORE > WEB_PORTAL | SPEC §9; `CREDITO_CORE` entró al final del bloque SAP a falta de definición de la UES de Crédito | `backend/app/survivorship/engine.py` |
 | Toda fusión de la zona gris exige justificación; pares con dos owners requieren consenso (`OWNER_CONSENSUS`); un NO_MATCH es vinculante; desacuerdo escala a Jefatura | SPEC §3.12, §8.5; Ley 1581/2012 art. 17 lit. a) | `backend/app/stewardship/decisions.py`, `merge.py` |
 | Merge AUTO conserva `pre_merge_snapshot` y es reversible con unmerge | SPEC §8.7; DAMA-DMBOK2 Cap. 10 | `backend/app/stewardship/merge.py` |
@@ -58,6 +61,7 @@ Del autor (decisiones o acciones fuera del código):
 Del prototipo (posibles siguientes iteraciones, no comprometidas):
 
 - Ajustes que surjan de las pruebas manuales del autor (pesos, umbrales, reglas de bloqueo, textos de la UI).
+- Afinar la política de matching con las UES desde `#/matching` (simular → publicar → recalcular): decidir si G3 fusiona solo, si el veto del documento debe ser `NO_MATCH`, y calibrar con los pares ya decididos por los stewards (acuerdo con humanos que reporta la simulación).
 - Extractores reales SAP (RFC/OData) en lugar de CSV, cuando la UES entregue los campos definitivos.
 - SSO real en lugar del selector "Actúa como" (SPEC §2 lo deja fuera del prototipo).
 
@@ -88,7 +92,7 @@ Copiar tal cual y completar la última línea:
 Contexto: De Trabajo.
 Proyecto: prototipo MDM/RDM Party de Colsubsidio en este repositorio (Daviddalejandro/Trabajo).
 Lee CLAUDE.md, mdm-rdm-prototype/docs/ESTADO_Y_CONTINUIDAD.md y mdm-rdm-prototype/README.md antes de actuar.
-Fases F0–F5 y el conjunto de validación están completos y aprobados; no rehagas nada.
+Fases F0–F5, el conjunto de validación y la política de matching v2 (#/matching) están completos; no rehagas nada.
 Mantén las convenciones: datos sintéticos, commits en español con prefijo, pruebas en verde antes de subir,
 citación normativa (norma colombiana primero, luego marco internacional).
 Trabaja en la rama que indique la sesión y no empujes a otra.
