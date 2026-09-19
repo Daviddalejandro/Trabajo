@@ -58,9 +58,9 @@ imprimen el resumen de pares por decisión. Se pueden alternar tantas veces como
 Capturas de referencia: [`docs/evidence/validation/`](evidence/validation/README.md) y
 [`docs/evidence/f4/`](evidence/f4/README.md).
 
-## 3 ter. Vitrina S1–S5: digitación muy parecida, homónimo, tres documentos, NIT
+## 3 ter. Vitrina S1–S7: digitación muy parecida, homónimo, tres documentos, NIT, todo mal digitado
 
-`make showcase` sobre la base actual (demo o validación) carga cinco casos en modo DELTA e imprime `party_sk` y `match_sk`:
+`make showcase` sobre la base actual (demo o validación) carga siete casos en modo DELTA e imprime `party_sk` y `match_sk`:
 
 | Caso | Ir a | Qué mirar |
 |---|---|---|
@@ -69,6 +69,8 @@ Capturas de referencia: [`docs/evidence/validation/`](evidence/validation/README
 | S3 homónimo | `#/stewardship` → filtro Posible | `document` «contradice»; evidencia 57 |
 | S4 tres identificadores | `#/party/<sk>` capa 3 · Identity | CC golden verificada + pasaporte + TI, cada uno con su fuente; capa 7 con tres merges AUTO |
 | S5 NIT con razón social mal digitada | `#/party/<sk>` | Organización con dos fuentes (SD y MM) y survivorship de la razón social |
+| S6 todos los campos con un error de digitación | `#/stewardship` → filtro **Posible** (evidencia 59) | Todas las filas en amarillo salvo el nombre (Jaro-Winkler lo absorbe): documento, fecha, correo y celular «digitación», apellidos «parecido»; base de la decisión: umbral de evidencia, ningún grupo. Para que un caso así suba a PROBABLE hay que subir los puntos parciales en `MATCH_RULE` (`partial_typo`, `partial_near`) o bajar el umbral en `#/matching`; para que fusione solo haría falta apagar `auto_requires_group`, lo que no se recomienda |
+| S7 igual que S6 pero el apellido cambia de Soundex | `#/modelo` → Cargas y buckets → explorador con el `party_sk` | 0 vecinos en todas las claves: el registro nunca se comparó. Límite del bloqueo exacto |
 
 Y en `#/modelo` → **Cargas y buckets**: los lotes DELTA de la vitrina con sus etapas, el simulador de carga transaccional
 y el explorador de buckets (pruebe con el `party_sk` de S4).

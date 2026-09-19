@@ -264,10 +264,11 @@ cola()
 ''')
 
 md("""
-## 6 bis · Vitrina S1–S5 (opcional): digitación muy parecida, homónimo, tres documentos, NIT
+## 6 bis · Vitrina S1–S7 (opcional): digitación muy parecida, homónimo, tres documentos, NIT, todo mal digitado
 
-Carga en modo DELTA cinco casos sintéticos sobre la base actual y verifica cada uno. Imprime el `party_sk` y el `match_sk`:
-S1–S3 se ven en la Consola de Stewardship; S4 (golden con CC + pasaporte + TI) y S5 (organización) en la Vista 360.
+Carga en modo DELTA siete casos sintéticos sobre la base actual y verifica cada uno. Imprime el `party_sk` y el `match_sk`:
+S1–S3 y S6 (todos los campos con un error de digitación) se ven en la Consola de Stewardship; S4 (golden con CC + pasaporte + TI) y S5
+(organización) en la Vista 360; S7 (sin bucket común) en el explorador de buckets.
 Los lotes quedan en **Modelo y cargas → Cargas y buckets**, donde también está el simulador de carga transaccional.
 """)
 code('''

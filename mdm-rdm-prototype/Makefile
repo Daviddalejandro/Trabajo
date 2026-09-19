@@ -30,7 +30,7 @@ purge:         ## F5: purga simulada (nunca borra)
 demo:          ## F5: rebuild → rne-sync → caso Q → verificación de los 20 casos; deja B y K en la consola
 	cd backend && python cli.py demo
 
-showcase:      ## Vitrina: casos S1–S5 (digitación, homónimo, tres documentos, NIT) en modo DELTA sobre la base actual
+showcase:      ## Vitrina: casos S1–S7 (digitación, homónimo, tres documentos, NIT, todo mal digitado) en modo DELTA sobre la base actual
 	cd backend && python cli.py showcase
 
 rebuild:       ## Reconstruye rdm + mdm + staging desde cero con sintéticos (deja B y K en la consola)

@@ -249,8 +249,8 @@ def demo(actor: str = typer.Option("demo")) -> None:
 
 @cli.command("showcase")
 def showcase(actor: str = typer.Option("showcase")) -> None:
-    """Vitrina · Carga en modo DELTA los casos S1–S5 (digitación muy parecida, homónimo, golden con tres tipos de documento,
-    organización con NIT igual) sobre la base actual y verifica cada uno. Se ejecuta después de `demo` o `validation-load`."""
+    """Vitrina · Carga en modo DELTA los casos S1–S7 (digitación muy parecida, homónimo, golden con tres tipos de documento,
+    organización con NIT igual, todos los campos mal digitados) sobre la base actual y verifica cada uno. Se ejecuta después de `demo` o `validation-load`."""
     from app.core.db import SessionLocal
     from app.synth.showcase import CASES, load, report
 
@@ -267,7 +267,7 @@ def showcase(actor: str = typer.Option("showcase")) -> None:
         typer.echo(f"{'':16s}{r['evidence']}")
     if not all(r["ok"] for r in rows):
         raise typer.Exit(code=1)
-    typer.echo("\nVitrina lista: S1–S3 en la Consola de Stewardship, S4 y S5 en la Vista 360 (party_sk arriba).")
+    typer.echo("\nVitrina lista: S1–S3 y S6 en la Consola de Stewardship (S3 y S6 con el filtro Posible), S4 y S5 en la Vista 360, S7 en Modelo y cargas → explorador de buckets (party_sk arriba).")
 
 
 @cli.command("export-drive")

@@ -261,8 +261,9 @@ Decisiones de implementación de la Fase 5:
 ```bash
 make test-validation                          # 37 pruebas: genera, ingiere y verifica los casos V1–V28
 python backend/cli.py validation-generate     # backend/data/validation/*.csv + manifest_validacion.json
-make showcase                                 # vitrina S1–S5 en modo DELTA sobre la base actual: cédula con dígito transpuesto (S1), portal sin documento con
-                                              # nombre, fecha (día/mes) y correo mal digitados (S2), homónimo (S3), golden con CC + pasaporte + TI (S4), NIT con razón social mal digitada (S5)
+make showcase                                 # vitrina S1–S7 en modo DELTA sobre la base actual: cédula con dígito transpuesto (S1), portal sin documento con
+                                              # nombre, fecha (día/mes) y correo mal digitados (S2), homónimo (S3), golden con CC + pasaporte + TI (S4), NIT con razón
+                                              # social mal digitada (S5), todos los campos con un error de digitación (S6) y el mismo caso sin bucket común (S7)
 make validation-load                          # deja ECC + crédito en la consola (zona gris: V2 por G3, V18 por veto del documento, V3 por G2)
 ```
 

@@ -10,7 +10,7 @@ def q(sql, **p):
         return conn.execute(text(sql), p)
 
 
-def test_showcase_cases_s1_to_s5():
+def test_showcase_cases_s1_to_s7():
     from app.synth.showcase import CASES, load, report
 
     with SessionLocal() as session:
@@ -24,6 +24,9 @@ def test_showcase_cases_s1_to_s5():
     # S1: par PROBABLE con documento «posible error de digitación» y veto; S3: POSSIBLE con documento contradictorio
     by = {r["case"]: r for r in rows}
     assert "veto_review" in by["S1"]["evidence"] and "DISAGREE" in by["S3"]["evidence"] and "3 identificadores" in by["S4"]["evidence"]
+    # S6: todos los campos con un error de digitación → comparado y en zona gris con parciales; S7: sin bucket común → sin par
+    assert "document=PARTIAL/TYPO" in by["S6"]["evidence"] and "birth_date=PARTIAL/DM_SWAP" in by["S6"]["evidence"] and "POSSIBLE" in by["S6"]["evidence"]
+    assert "sin par" in by["S7"]["evidence"] and by["S7"]["party"]
 
 
 def test_transactional_record_goes_through_the_seven_stages(client):

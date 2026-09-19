@@ -48,13 +48,49 @@
       "legal_typo": "Berbosa-Guzmán S.A.",
       "ecc_sd": "0000900002",
       "ecc_mm": "0000900001"
+    },
+    "S6": {
+      "a": {
+        "doc": "935403402",
+        "name": "Eduardo Parada Jaramillo",
+        "birth": "1974-06-12",
+        "email": "eduardo.ortega9004@ejemplo.test",
+        "phone": "3121423465"
+      },
+      "b": {
+        "doc": "935404302",
+        "name": "Edaardo Perada Jeramillo",
+        "birth": "1974-12-06",
+        "email": "eduardo.ortega9004s@ejemplo.test",
+        "phone": "3121424365"
+      },
+      "sf_ec": "00090004",
+      "crm": "0009000004"
+    },
+    "S7": {
+      "a": {
+        "doc": "977048677",
+        "name": "Jesús García Suárez",
+        "birth": "1942-05-12",
+        "email": "jesús.gómez9005@ejemplo.test",
+        "phone": "3074647682"
+      },
+      "b": {
+        "doc": "977046877",
+        "name": "Jasús Varcía Saárez",
+        "birth": "1942-12-05",
+        "email": "jesús.gómez9005s@ejemplo.test",
+        "phone": "3074646782"
+      },
+      "sf_ec": "00090005",
+      "crm": "0009000005"
     }
   },
   "counts": {
-    "sf_ec": 4,
+    "sf_ec": 5,
     "ecc_sd": 2,
     "ecc_mm": 1,
-    "crm_bp": 3,
-    "web_portal": 3
+    "crm_bp": 5,
+    "web_portal": 2
   }
 }

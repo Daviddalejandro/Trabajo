@@ -21,7 +21,35 @@ CASES = {
     "S3": "Homónimo: mismos nombres y apellidos, cédula distinta, nacido con menos de un año de diferencia → POSSIBLE; el documento contradice",
     "S4": "Una persona con tres identificadores (CC en SF_EC, pasaporte en CRM, TI antigua en el portal) → fusiona sola por G4; golden con 3 documentos",
     "S5": "Organización: mismo NIT, razón social con error de digitación en MM → fusiona sola por O1 (NIT + razón social)",
+    "S6": "Todos los campos con un solo error de digitación (cédula, nombre, apellidos, fecha, correo, celular) que aún cae en un bucket → se compara y queda en la zona gris; los nombres los absorbe Jaro-Winkler, el resto queda parcial",
+    "S7": "Todos los campos con un error de digitación y además el primer apellido cambia de Soundex (B/V) → no comparte ningún bucket: nunca se compara (límite del bloqueo exacto, visible en el explorador de buckets)",
 }
+
+
+def _typo_word(word: str, keep_soundex: bool) -> str:
+    """Un solo error de digitación en un nombre: sustitución de una letra. Con `keep_soundex` elige una que conserve
+    el Soundex español (s↔z, vocal por vocal); sin él, cambia la primera consonante (b↔v, c↔s) para romperlo."""
+    from app.matching.features import soundex_es
+
+    base = soundex_es(word)
+    letters = list(word)
+    candidates = []
+    vowels = "aeiou"
+    for i, ch in enumerate(letters):
+        low = ch.lower()
+        # conservar el Soundex: una vocal por otra (el Soundex español solo codifica consonantes); romperlo: la primera consonante
+        reps = [v for v in vowels if v != low] if keep_soundex else ["v", "b", "s", "c", "m", "n"]
+        if keep_soundex and (i == 0 or low not in vowels):
+            continue
+        if not keep_soundex and low in vowels:
+            continue
+        for rep in reps:
+            w = "".join(letters[:i] + [rep.upper() if ch.isupper() else rep] + letters[i + 1:])
+            if (soundex_es(w) == base) == keep_soundex:
+                candidates.append(w)
+        if candidates:
+            break
+    return candidates[0] if candidates else word + ("s" if keep_soundex else "")
 
 
 def _swap(doc: str, i: int = 5) -> str:
@@ -70,8 +98,18 @@ def build(seed: int = SEED) -> tuple[Universe, dict]:
     o = O[0]
     legal_typo = o.legal.replace("a", "e", 1) if "a" in o.legal else o.legal + "s"
     m["cases"]["S5"] = {"nit": f"{o.nit}-{o.dv}", "legal": o.legal, "legal_typo": legal_typo, "ecc_sd": u.emit_sd_org(o), "ecc_mm": u.emit_mm_org(o, legal=legal_typo)}
-    # una persona más sin caso: ruido normal
-    u.emit_sf_ec(P[4]); u.emit_portal(P[5])
+    # S6 y S7 · todos los campos con un error de digitación en el registro B (CRM)
+    for code, keep, idx in (("S6", True, 4), ("S7", False, 5)):
+        p = P[idx]; p.doc_type = "CC"
+        day = min(p.birth.day, 12)
+        p.birth = p.birth.replace(day=day if day != p.birth.month else (day % 12) + 1)
+        b = p.birth
+        q = type(p)(**{**p.__dict__, "doc": _swap(p.doc), "first": _typo_word(p.first, True), "sur1": _typo_word(p.sur1, keep), "sur2": _typo_word(p.sur2, True),
+                       "birth": b.replace(month=b.day, day=b.month), "email": p.email.replace("@", "s@", 1), "phone": _swap(p.phone, 6)})
+        q.sources = {}
+        m["cases"][code] = {"a": {"doc": p.doc, "name": f"{p.first} {p.sur1} {p.sur2}", "birth": b.isoformat(), "email": p.email, "phone": p.phone},
+                            "b": {"doc": q.doc, "name": f"{q.first} {q.sur1} {q.sur2}", "birth": q.birth.isoformat(), "email": q.email, "phone": q.phone},
+                            "sf_ec": u.emit_sf_ec(p), "crm": u.emit_crm_person(q, categoria="A", telefonos=[f"{q.phone}:TIT:OWN:TIT"])}
     m["counts"] = {k: len(v) for k, v in u.rows.items()}
     return u, m
 
@@ -146,4 +184,15 @@ def report(session, m: dict) -> list[dict]:
     sks = {party_of("SAP_ECC_SD", c["S5"]["ecc_sd"]), party_of("SAP_ECC_MM", c["S5"]["ecc_mm"])}
     ok = len(sks) == 1
     out.append({"case": "S5", "ok": ok, "evidence": f"party {next(iter(sks))} · NIT {c['S5']['nit']} · «{c['S5']['legal']}» vs «{c['S5']['legal_typo']}» fusionados" if ok else f"sin fusionar: {sks}", "party": next(iter(sks)) if ok else None, "match": None})
+    # S6: comparado (comparte el bucket Soundex del apellido) y en zona gris con estados parciales
+    a, b = party_of("SF_EC", c["S6"]["sf_ec"]), party_of("SAP_CRM", c["S6"]["crm"])
+    pr = pair(a, b) if a and b else None
+    states = {r["attribute"]: (r["state"], r.get("reason")) for r in (pr["score_detail"] if pr else [])}
+    ok = bool(pr) and pr["decision"] in ("PROBABLE", "POSSIBLE") and pr["match_status"] == "PENDING" and states.get("document") == ("PARTIAL", "TYPO") and states.get("birth_date") == ("PARTIAL", "DM_SWAP") and states.get("email") == ("PARTIAL", "TYPO") and states.get("phone") == ("PARTIAL", "TYPO")
+    out.append({"case": "S6", "ok": ok, "evidence": (f"par #{pr['match_sk']} · {pr['decision']} · evidencia {pr['total_score']} · {pr['decision_basis']['decided_by']} · estados " + ", ".join(f"{k}={v[0]}{'/' + v[1] if v[1] else ''}" for k, v in states.items()) + f" · A «{c['S6']['a']['name']}» {c['S6']['a']['doc']} / B «{c['S6']['b']['name']}» {c['S6']['b']['doc']}") if pr else "sin par", "party": a, "match": pr["match_sk"] if pr else None})
+    # S7: dos parties distintos, sin par (ningún bucket en común)
+    a, b = party_of("SF_EC", c["S7"]["sf_ec"]), party_of("SAP_CRM", c["S7"]["crm"])
+    pr = pair(a, b) if a and b else None
+    ok = bool(a and b) and a != b and pr is None
+    out.append({"case": "S7", "ok": ok, "evidence": f"parties {a} y {b} sin par: A «{c['S7']['a']['name']}» / B «{c['S7']['b']['name']}» no comparten documento, correo, celular ni Soundex del apellido → nunca se compararon" if ok else f"inesperado: par {pr['match_sk'] if pr else None}", "party": a, "match": None})
     return out

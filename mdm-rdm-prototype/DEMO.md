@@ -147,10 +147,11 @@ los 21 casos (todos OK). Luego, con `make api` y la UI:
 10. `make export-drive` genera `docs/drive/` (diccionario, catálogos, matching, cumplimiento, evidencia,
     demo y resumen ejecutivo) para subir a la carpeta `MDM_RDM_Prototipo` de Google Drive.
 
-## Vitrina · casos S1–S5 y cargas masivas/transaccionales
+## Vitrina · casos S1–S7 y cargas masivas/transaccionales
 
 `make showcase` (después de `make demo` o `make validation-load`) ingiere en modo **DELTA** cinco casos sintéticos
-que el escenario A–U no cubre y verifica cada uno; imprime el `party_sk` y el `match_sk` para ir directo.
+que el escenario A–U no cubre y verifica cada uno; imprime el `party_sk` y el `match_sk` para ir directo. Cinco casos originales
+más dos (S6, S7) para responder «¿qué pasa si *todos* los campos traen un error de digitación?».
 
 | Caso | Dónde verlo | Qué muestra |
 |---|---|---|
@@ -159,6 +160,8 @@ que el escenario A–U no cubre y verifica cada uno; imprime el `party_sk` y el 
 | **S3** homónimo: mismos nombres y apellidos, otra cédula, nacido un año después | Consola de Stewardship, par POSSIBLE | Evidencia 57; el documento **contradice** (veto) y la fecha es parcial: nunca fusiona solo |
 | **S4** la misma persona con CC (SF_EC), pasaporte (CRM) y TI antigua (portal) | Vista 360 del `party_sk` impreso, capa 3 | Fusionó sola por G4 (correo y celular confirmados); el golden conserva los **tres identificadores** con su fuente y solo la CC marcada golden |
 | **S5** organización con el mismo NIT y razón social mal digitada en MM | Vista 360 del `party_sk` impreso | Fusión automática por O1 (NIT + razón social por tokens) |
+| **S6** todos los campos con un solo error de digitación: cédula (dígito transpuesto), nombre y apellidos (una vocal), fecha (día y mes intercambiados), correo (un carácter), celular (dígito transpuesto) | Consola de Stewardship, filtro **Posible** | Se compara porque el apellido conserva el Soundex; evidencia **59**: documento, fecha, correo y celular «parcial · digitación», apellidos «parcial · parecido», el nombre lo absorbe Jaro-Winkler (coincide). Ningún grupo se satisface → POSSIBLE por umbral: con todo ligeramente mal, el motor no se atreve a «probable» y menos a fusionar; lo decide el steward |
+| **S7** lo mismo que S6 pero la letra cambiada del primer apellido altera el Soundex (García → Varcía) | Modelo y cargas → explorador de buckets con el `party_sk` impreso | No comparte documento, correo, celular ni Soundex: **no cae en ningún bucket común y nunca se compara**. Es el límite del bloqueo exacto; el explorador lo muestra (0 vecinos en cada clave) |
 
 En **Modelo y cargas → Cargas y buckets** se ven esos cinco lotes DELTA con sus etapas (extraídos, sin cambio por hash,
 cuarentena, XREF, cargados, buckets, comparados, auto, a revisión). El simulador de **carga transaccional** envía un
