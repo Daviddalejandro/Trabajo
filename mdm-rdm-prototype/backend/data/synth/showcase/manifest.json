@@ -1,0 +1,60 @@
+{
+  "seed": 20260920,
+  "cases": {
+    "S1": {
+      "doc": "956555954",
+      "doc_typo": "956559554",
+      "email": "margarita.peña9000@ejemplo.test",
+      "phone": "3026975930",
+      "name": "Margarita Hernández Galeano",
+      "sf_ec": "00090001",
+      "crm": "0009000001"
+    },
+    "S2": {
+      "doc": "943714576",
+      "email": "diana.acosta9001@ejemplo.test",
+      "phone": "3334834001",
+      "name": "Diana Díaz Rincón",
+      "ecc_sd": "0000900001",
+      "name_typo": "Diano Díaz Rincón",
+      "email_typo": "diana.acosta9001s@ejemplo.test",
+      "birth": "1948-03-12",
+      "birth_typo": "1948-12-03",
+      "portal": "u900001"
+    },
+    "S3": {
+      "doc_a": "997755277",
+      "name": "Esperanza Gómez Mosquera",
+      "birth_a": "1946-12-21",
+      "sf_ec": "00090002",
+      "doc_b": "949291738",
+      "birth_b": "1947-12-21",
+      "crm": "0009000002"
+    },
+    "S4": {
+      "cc": "957911735",
+      "passport": "AB769799",
+      "ti": "986461182",
+      "email": "paola.gómez9003@ejemplo.test",
+      "phone": "3385686996",
+      "name": "Paola Navarro Guzmán",
+      "sf_ec": "00090003",
+      "crm": "0009000003",
+      "portal": "u900002"
+    },
+    "S5": {
+      "nit": "868411051-9",
+      "legal": "Barbosa-Guzmán S.A.",
+      "legal_typo": "Berbosa-Guzmán S.A.",
+      "ecc_sd": "0000900002",
+      "ecc_mm": "0000900001"
+    }
+  },
+  "counts": {
+    "sf_ec": 4,
+    "ecc_sd": 2,
+    "ecc_mm": 1,
+    "crm_bp": 3,
+    "web_portal": 3
+  }
+}

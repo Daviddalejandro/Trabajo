@@ -1,5 +1,6 @@
 """Endpoints de operación del pipeline (SPEC §11): ejecución por fuente, rehomologación y estadísticas."""
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -21,6 +22,58 @@ def run(source: str, mode: str = Query("full", pattern="^(full|delta)$"), file: 
     if source not in SOURCES:
         raise HTTPException(404, f"Fuente {source} no existe; válidas: {', '.join(SOURCES)}")
     return run_ingest(session, source, mode, file, actor)
+
+
+class RecordIn(BaseModel):
+    external_id: str = Field(min_length=1, max_length=60)
+    payload: dict
+
+
+@router.get("/pipeline/batches", summary="Bitácora de cargas (staging.LOAD_BATCH): masivas FULL/DELTA y transaccionales TX")
+def batches(limit: int = Query(50, ge=1, le=500), session: Session = Depends(get_session)):
+    rows = session.execute(text("""
+        SELECT b.batch_id, s.source_system_cd AS source, b.mode, b.status, b.started_at, b.finished_at, b.actor,
+               b.extracted, b.unchanged_hash, b.standardized, b.homologated, b.unknown_codes, b.dq_passed, b.dq_quarantined,
+               b.xref_hits, b.loaded, b.matched, b.auto_merged, b.probable, b.detail,
+               (SELECT count(*) FROM mdm.party_bucket k WHERE k.batch_id=b.batch_id) AS buckets
+        FROM staging.load_batch b JOIN rdm.source_system s ON s.source_system_sk=b.source_system_cd
+        ORDER BY b.batch_id DESC LIMIT :l"""), {"l": limit}).mappings().all()
+    return [dict(r) for r in rows]
+
+
+@router.get("/pipeline/{source}/example", summary="Un registro nativo de la fuente (de su landing zone) para probar la carga transaccional")
+def example(source: str, session: Session = Depends(get_session)):
+    if source not in SOURCES:
+        raise HTTPException(404, f"Fuente {source} no existe; válidas: {', '.join(SOURCES)}")
+    _, table = SOURCES[source]
+    row = session.execute(text(f"SELECT external_id, payload FROM staging.{table} ORDER BY raw_sk DESC LIMIT 1")).first()
+    if not row:
+        raise HTTPException(404, f"La landing zone de {source} está vacía: ingiera primero la fuente")
+    from datetime import datetime
+    return {"source": source, "external_id_example": row[0], "suggested_external_id": f"TX{datetime.now().strftime('%H%M%S')}", "payload": row[1]}
+
+
+@router.post("/pipeline/{source}/record", summary="Carga transaccional: un registro nativo por las 7 etapas (lote TX auditado, buckets y matching incluidos)")
+def record(source: str, body: RecordIn, actor: str = Depends(actor_header), session: Session = Depends(get_session)):
+    if source not in SOURCES:
+        raise HTTPException(404, f"Fuente {source} no existe; válidas: {', '.join(SOURCES)}")
+    r = run_ingest(session, source, "tx", None, actor, rows=[(body.external_id, body.payload)])
+    system_cd = SOURCES[source][0]
+    party = session.execute(text("SELECT x.party_sk FROM mdm.xref_party_source x JOIN rdm.source_system s ON s.source_system_sk=x.source_system_cd "
+                                 "WHERE s.source_system_cd=:s AND x.external_id=:e"), {"s": system_cd, "e": body.external_id}).scalar()
+    outcome = None
+    if party:
+        g = session.execute(text("SELECT g.value_code FROM mdm.party p JOIN rdm.reference_value g ON g.value_sk=p.golden_status_cd WHERE p.party_sk=:p"), {"p": party}).scalar()
+        merged_into = session.execute(text("SELECT surviving_party_sk FROM mdm.party_merge_history WHERE merged_party_sk=:p AND unmerged_at IS NULL ORDER BY merge_sk DESC LIMIT 1"), {"p": party}).scalar()
+        pending = session.execute(text("""SELECT m.match_sk, d.value_code, m.total_score FROM mdm.party_match m JOIN rdm.reference_value d ON d.value_sk=m.decision_cd
+            WHERE (m.party_a_sk=:p OR m.party_b_sk=:p) AND m.match_status IN ('PENDING','IN_REVIEW') ORDER BY m.match_sk DESC"""), {"p": party}).all()
+        buckets = session.execute(text("""SELECT s.value_code, b.blocking_key, (SELECT count(*) FROM mdm.bucket_candidate c2 WHERE c2.bucket_sk=b.bucket_sk) AS members
+            FROM mdm.bucket_candidate c JOIN mdm.party_bucket b ON b.bucket_sk=c.bucket_sk JOIN rdm.reference_value s ON s.value_sk=b.blocking_strategy_cd
+            WHERE c.party_sk=:p AND b.batch_id=:b ORDER BY 1"""), {"p": party, "b": r["batch_id"]}).all()
+        outcome = {"party_sk": party, "golden_status": g, "merged_into": merged_into, "xref_hit": r["xref_hits"] > 0,
+                   "pending_matches": [{"match_sk": m, "decision": d, "score": float(sc)} for m, d, sc in pending],
+                   "buckets": [{"strategy": st, "key": k, "members": int(n)} for st, k, n in buckets]}
+    return {**r, "outcome": outcome}
 
 
 @router.get("/rdm/rehomologate/preview", summary="Cuántos UNKNOWN hay y cuántos se corregirían con los mapeos vigentes (§7.2)")

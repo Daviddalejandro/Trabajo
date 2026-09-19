@@ -134,6 +134,17 @@ test("Admin RDM · alta y deprecación de valor sin tocar SKs, homologación y r
   await expect(page.getByTestId("tester-result")).toContainText("CAT_GENDER.M");
 });
 
+test("Modelo y cargas · modelo relacional desde el catálogo, etapas del lote y explorador de buckets", async ({ page }) => {
+  await page.goto("/#/modelo");
+  await page.waitForSelector("[data-testid='erd']");
+  expect(await page.locator("[data-testid='erd'] [class*='border-l-4']").count()).toBeGreaterThanOrEqual(37);   // 30 mdm + 7 staging
+  await page.locator("[data-testid='erd']").getByRole("button", { name: "party", exact: true }).click();
+  await expect(page.getByText("← la referencia").first()).toBeVisible();
+  await page.getByRole("tab", { name: "Cargas y buckets" }).click();
+  await expect(page.getByTestId("pipeline-stages")).toBeVisible();
+  await expect(page.getByText("Buckets más poblados")).toBeVisible();
+});
+
 test("Vista 360 · las 8 capas en orden con fuente ganadora por campo", async ({ page }) => {
   await page.goto("/#/party");
   await page.getByLabel("Buscar").fill("ESPIGA");

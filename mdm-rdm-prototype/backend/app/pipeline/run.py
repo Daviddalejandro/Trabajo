@@ -50,7 +50,9 @@ def write_issues(session: Session, issues: list[dict], hom: Homologator, source_
 
 
 def run_ingest(session: Session, source: str, mode: str = "full", path: str | None = None, actor: str = "pipeline",
-               match: bool = True) -> dict:
+               match: bool = True, rows: list[tuple[str, dict]] | None = None) -> dict:
+    """Las 7 etapas para una fuente. `rows` (external_id, payload nativo) reemplaza la extracción del CSV: es la
+    carga transaccional (un registro por llamada, mismo pipeline, mismo lote auditado) frente a la masiva (FULL/DELTA)."""
     adapter = get_adapter(source)
     system_cd, table = SOURCES[source]
     source_sk = session.execute(text("SELECT source_system_sk FROM rdm.source_system WHERE source_system_cd=:c"), {"c": system_cd}).scalar_one()
@@ -65,7 +67,7 @@ def run_ingest(session: Session, source: str, mode: str = "full", path: str | No
         new_parties: list[int] = []
         updated_goldens: list[int] = []
         # 1 · Extracción (CSV que replica la estructura nativa; en producción: conector real)
-        rows = adapter.extract(path or DATA_DIR / f"{source}.csv")
+        rows = rows if rows is not None else adapter.extract(path or DATA_DIR / f"{source}.csv")
         counters["extracted"] = len(rows)
         for external_id, payload in rows:
             h = sha256(payload)
@@ -124,7 +126,8 @@ def run_ingest(session: Session, source: str, mode: str = "full", path: str | No
         touched = session.execute(text("SELECT DISTINCT party_sk FROM mdm.party_audit_log WHERE batch_id=:b AND party_sk IS NOT NULL"), {"b": batch_id}).scalars().all()
         counters["eligibility_recomputed"] = recompute_parties(session, list(touched) + new_parties + updated_goldens)
         close_batch(session, batch_id, "OK", {k: v for k, v in counters.items() if k != "eligibility_recomputed"},
-                    {"source": source, "path": str(path or DATA_DIR / f"{source}.csv"), "eligibility_recomputed": counters["eligibility_recomputed"]})
+                    {"source": source, "path": "transaccional (API)" if path is None and mode.upper() == "TX" else str(path or DATA_DIR / f"{source}.csv"),
+                     "eligibility_recomputed": counters["eligibility_recomputed"], "external_ids": [e for e, _ in rows][:20] if mode.upper() == "TX" else None})
         session.commit()
     except Exception as exc:  # noqa: BLE001 — se registra en la bitácora y se propaga
         session.rollback()

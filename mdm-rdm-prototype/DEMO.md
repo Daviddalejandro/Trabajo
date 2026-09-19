@@ -146,3 +146,23 @@ los 21 casos (todos OK). Luego, con `make api` y la UI:
 9. **Feed de cambios**: `GET /changes?since=…` entrega party, entidad, acción y `golden_version` para SAP CDP.
 10. `make export-drive` genera `docs/drive/` (diccionario, catálogos, matching, cumplimiento, evidencia,
     demo y resumen ejecutivo) para subir a la carpeta `MDM_RDM_Prototipo` de Google Drive.
+
+## Vitrina · casos S1–S5 y cargas masivas/transaccionales
+
+`make showcase` (después de `make demo` o `make validation-load`) ingiere en modo **DELTA** cinco casos sintéticos
+que el escenario A–U no cubre y verifica cada uno; imprime el `party_sk` y el `match_sk` para ir directo.
+
+| Caso | Dónde verlo | Qué muestra |
+|---|---|---|
+| **S1** cédula con un dígito transpuesto (`956555954` vs `956559554`), mismo correo y celular | Consola de Stewardship, par PROBABLE | Evidencia 82: el documento aparece como **parcial · posible error de digitación**, el grupo G4 está satisfecho pero el veto de digitación lo baja a revisión (`group:G4+veto_review:document`); el steward decide |
+| **S2** portal sin documento; nombre con una letra cambiada, fecha con día y mes intercambiados, correo con un carácter de más | Consola de Stewardship, par PROBABLE | Evidencia 90 sobre cobertura 70 por la **vía de umbrales**: ningún grupo se satisface con parciales; la fecha dice «día y mes intercambiados» y el correo «posible error de digitación» |
+| **S3** homónimo: mismos nombres y apellidos, otra cédula, nacido un año después | Consola de Stewardship, par POSSIBLE | Evidencia 57; el documento **contradice** (veto) y la fecha es parcial: nunca fusiona solo |
+| **S4** la misma persona con CC (SF_EC), pasaporte (CRM) y TI antigua (portal) | Vista 360 del `party_sk` impreso, capa 3 | Fusionó sola por G4 (correo y celular confirmados); el golden conserva los **tres identificadores** con su fuente y solo la CC marcada golden |
+| **S5** organización con el mismo NIT y razón social mal digitada en MM | Vista 360 del `party_sk` impreso | Fusión automática por O1 (NIT + razón social por tokens) |
+
+En **Modelo y cargas → Cargas y buckets** se ven esos cinco lotes DELTA con sus etapas (extraídos, sin cambio por hash,
+cuarentena, XREF, cargados, buckets, comparados, auto, a revisión). El simulador de **carga transaccional** envía un
+registro nativo por `POST /pipeline/{fuente}/record` y muestra al instante el party creado o actualizado por XREF, los
+buckets en los que cayó y la decisión; enviar el mismo ID externo con cambios = actualización por XREF, sin cambios =
+`unchanged_hash` (idempotencia). El explorador de buckets responde, para cualquier `party_sk`, con quién se compararía
+un registro igual (documento, correo, celular, Soundex del apellido, NIT, tokens de la razón social).

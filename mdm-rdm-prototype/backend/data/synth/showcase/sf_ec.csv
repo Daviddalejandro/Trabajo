@@ -1,0 +1,5 @@
+personIdExternal,firstName,middleName,lastName,secondLastName,gender,dateOfBirth,nationalIdType,nationalId,email,cellPhone,employmentStatus,terminationReason,hireDate,division,city,street,lastModifiedDateTime
+00090001,Margarita,Maritza,Hernández,Galeano,F,1956-04-06,CC,956555954,margarita.peña9000@ejemplo.test,3026975930,A,,1978-04-01,MER,25754,Carrera 30 # 78-27,2026-09-01T02:00:00
+00090002,Esperanza,Mercedes,Gómez,Mosquera,F,1946-12-21,CC,997755277,esperanza.ospina9002@ejemplo.test,3477092982,A,,1968-12-15,HOT,25286,Cr. 34 Bis # 5-4 Este,2026-09-01T02:00:00
+00090003,Paola,Xiomara,Navarro,Guzmán,F,1954-11-18,CC,957911735,paola.gómez9003@ejemplo.test,3385686996,A,,1976-11-12,VIV,05001,Transversal 107P # 2-87 Este,2026-09-01T02:00:00
+00090004,Eduardo,,Parada,Jaramillo,M,1974-06-26,CC,935403402,eduardo.ortega9004@ejemplo.test,3121423465,A,,1996-06-20,CRE,25286,Avenida calle 5ª # 80-32 Sur,2026-09-01T02:00:00

@@ -247,6 +247,29 @@ def demo(actor: str = typer.Option("demo")) -> None:
     typer.echo("\nDemo lista: consola con los casos B y K pendientes en http://localhost:5173/#/stewardship")
 
 
+@cli.command("showcase")
+def showcase(actor: str = typer.Option("showcase")) -> None:
+    """Vitrina · Carga en modo DELTA los casos S1–S5 (digitación muy parecida, homónimo, golden con tres tipos de documento,
+    organización con NIT igual) sobre la base actual y verifica cada uno. Se ejecuta después de `demo` o `validation-load`."""
+    from app.core.db import SessionLocal
+    from app.synth.showcase import CASES, load, report
+
+    with SessionLocal() as session:
+        m, batches = load(session, actor)
+        for b in batches:
+            typer.echo(f"lote {b['batch_id']} {b['source']} {b['mode']} · extraídos {b['extracted']} · cargados {b['loaded']} · comparados {b['matched']} · auto {b['auto_merged']} · probables {b['probable']}")
+        rows = report(session, m)
+        session.commit()
+    typer.echo("")
+    typer.echo(f"{'Caso':6s}{'Estado':10s}Evidencia")
+    for r in rows:
+        typer.echo(f"{r['case']:6s}{('OK' if r['ok'] else 'REVISAR'):10s}{CASES[r['case']]}")
+        typer.echo(f"{'':16s}{r['evidence']}")
+    if not all(r["ok"] for r in rows):
+        raise typer.Exit(code=1)
+    typer.echo("\nVitrina lista: S1–S3 en la Consola de Stewardship, S4 y S5 en la Vista 360 (party_sk arriba).")
+
+
 @cli.command("export-drive")
 def export_drive(out: str = typer.Option("../docs/drive", help="Carpeta de salida (SPEC §17)")) -> None:
     """F5 · Genera en docs/drive/ los entregables por carpeta de Drive: diccionario, catálogos, matching, cumplimiento, evidencia, demo y comité."""

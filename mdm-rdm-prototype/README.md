@@ -14,7 +14,7 @@ Opera **exclusivamente con datos sintéticos**.
 | F2 | Staging (5 RAW + `LOAD_BATCH`) + `mdm` (29 tablas, triggers de auditoría y de unicidad golden), generador sintético (1.592 registros, 22 casos plantados), pipeline de 7 etapas con carga de candidatos, `rehomologate`, API de parties y stats | ✅ 42 tests en verde |
 | F3 | Matching (blocking + scoring con estado por atributo + política v2 afinable: grupos de suficiencia, evidencia normalizada, vetos), merge automático con snapshot, survivorship por atributo, cola de stewardship con tareas por owner, unmerge, match-preview | ✅ 56 tests en verde |
 | F4 | UI: Consola de Stewardship (cola con evidencia lado a lado, tareas por owner, historial de merges con snapshot y unmerge), Admin RDM (valores, homologaciones, probador, rehomologar con conteo previo), Vista 360 (8 capas), tablero; endpoints de apoyo; e2e con Playwright | ✅ 65 tests backend + 6 e2e en verde |
-| Política v2 | Decisión de matching afinable en caliente: estado por atributo, evidencia sobre lo comparable, grupos de suficiencia, vetos; `mdm.match_policy` versionada, `party_match.decision_basis`, módulo **Política de matching** (`#/matching`) con simular / publicar / recalcular; guarda de unicidad golden (§3.16) antes de toda fusión AUTO | ✅ 12 tests (`test_f6_policy.py`) · total backend 132 + 7 e2e en verde |
+| Política v2 | Decisión de matching afinable en caliente: estado por atributo, evidencia sobre lo comparable, grupos de suficiencia, vetos; `mdm.match_policy` versionada, `party_match.decision_basis`, módulo **Política de matching** (`#/matching`) con simular / publicar / recalcular; guarda de unicidad golden (§3.16) antes de toda fusión AUTO | ✅ 12 tests (`test_f6_policy.py`) · total backend 135 + 8 e2e en verde |
 | F5 | Cumplimiento embebido: elegibilidad por contacto y finalidad (12 precedencias), consentimientos multi-tipo, ARCO con SLA en días hábiles, RNE, audiencias auditadas, purga simulada, feed de cambios, módulo Cumplimiento en la UI, `make demo` (21 casos verificados) y `make export-drive` | ✅ 79 tests backend + 7 e2e en verde |
 
 ## Arranque
@@ -193,12 +193,13 @@ con enlace para abrirla en el navegador. Detalle en [`colab/README.md`](colab/RE
 make rebuild                                   # base desde cero con B y K pendientes en la consola
 make api                                       # FastAPI :8000
 cd frontend && npm install && npm run dev      # UI en :5173 (VITE_API_BASE opcional)
-make test-e2e                                  # Playwright: rebuild → API :8001 + UI :5174 → 7 pruebas
+make test-e2e                                  # Playwright: rebuild → API :8001 + UI :5174 → 8 pruebas
 ```
 
 | Módulo | Ruta | Qué hace |
 |---|---|---|
 | Tablero | `#/` | Goldens, candidatos, fusionados, pares en cola; última carga por fuente; matching por decisión; hallazgos DQ; tareas abiertas por owner. |
+| Modelo y cargas | `#/modelo` | **Modelo relacional** leído del catálogo (37 tablas mdm + staging por capa, columnas, PK/FK, filas; clic resalta relaciones) y **Cargas y buckets**: los tres modos de entrada (FULL masiva, DELTA incremental, TX transaccional) por las mismas 7 etapas con los contadores de cada lote de `staging.LOAD_BATCH`, simulador de carga transaccional (`POST /pipeline/{fuente}/record`: un registro nativo → party creado o actualizado por XREF, buckets en los que cayó, decisión), estadísticas de buckets por estrategia y explorador «¿con quién se compararía este party?» |
 | Política de matching | `#/matching` | Editor de la política v2 (grupos de suficiencia con sus atributos y decisión, umbrales, cobertura mínima, piso de puntos, vetos y su modo), **simulación** sobre todos los pares registrados (transiciones, pares que cambian, acuerdo con las decisiones humanas), **publicación como versión nueva** (solo Jefatura, con nota) y **recálculo de la cola pendiente**; historial de versiones con carga al editor. |
 | Consola de Stewardship | `#/stewardship` | **Cola** (PROBABLE/POSSIBLE): evidencia sobre cobertura, desglose por atributo con estado (coincide / parcial / contradice / sin dato), barra de puntos y valores A/B resaltando diferencias, **base de la decisión** (grupo satisfecho, veto o umbral, con cada grupo de la política evaluado sobre el par), fuentes y owners, roles/segmentos/servicios/relaciones/contactos de cada party; acciones **Fusionar** / **No es la misma persona** / **Escalar** con justificación obligatoria (botones deshabilitados sin ella). **Tareas por owner**: las `MATCH_REVIEW_TASK` del actor con `due_at`, decisión y resultado de la regla de cierre. **Historial de merges**: `pre_merge_snapshot` (filas por tabla y JSON), auditoría por `merge_sk` y **unmerge** con razón. |
 | Admin RDM | `#/rdm` | Dominio → catálogo → valores con jerarquía (DIVIPOLA, segmentos, servicios), alta de valor (la SK la asigna la base), deprecación con confirmación, homologaciones por sistema fuente con alta, probador sistema/campo/valor → canónico y **Rehomologar** con conteo previo de UNKNOWN corregibles. |
@@ -260,6 +261,8 @@ Decisiones de implementación de la Fase 5:
 ```bash
 make test-validation                          # 37 pruebas: genera, ingiere y verifica los casos V1–V28
 python backend/cli.py validation-generate     # backend/data/validation/*.csv + manifest_validacion.json
+make showcase                                 # vitrina S1–S5 en modo DELTA sobre la base actual: cédula con dígito transpuesto (S1), portal sin documento con
+                                              # nombre, fecha (día/mes) y correo mal digitados (S2), homónimo (S3), golden con CC + pasaporte + TI (S4), NIT con razón social mal digitada (S5)
 make validation-load                          # deja ECC + crédito en la consola (zona gris: V2 por G3, V18 por veto del documento, V3 por G2)
 ```
 

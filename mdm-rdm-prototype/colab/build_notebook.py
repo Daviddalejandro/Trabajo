@@ -155,6 +155,7 @@ URL = output.eval_js("google.colab.kernel.proxyPort(8000)")
 print("Consola de Stewardship:", URL + "#/stewardship")
 print("Tablero:", URL + "#/")
 print("Política de matching (grupos, umbrales, vetos; simular y publicar como JEFATURA):", URL + "#/matching")
+print("Modelo relacional, cargas masivas/transaccionales y buckets:", URL + "#/modelo")
 print("Swagger de la API:", URL + "docs")
 from IPython.display import HTML, display
 display(HTML(f'<p style="font-size:1.1em"><a href="{URL}#/stewardship" target="_blank">🔗 Abrir la consola en una pestaña nueva</a></p>'))
@@ -259,6 +260,19 @@ if len(owners) > 1:
             if task["match_sk"] == PAR:
                 decidir_tarea(task["task_sk"], "MERGE", f"Owner {owner}: evidencia suficiente", actor=owner)
 print("\\nCola después de la decisión:")
+cola()
+''')
+
+md("""
+## 6 bis · Vitrina S1–S5 (opcional): digitación muy parecida, homónimo, tres documentos, NIT
+
+Carga en modo DELTA cinco casos sintéticos sobre la base actual y verifica cada uno. Imprime el `party_sk` y el `match_sk`:
+S1–S3 se ven en la Consola de Stewardship; S4 (golden con CC + pasaporte + TI) y S5 (organización) en la Vista 360.
+Los lotes quedan en **Modelo y cargas → Cargas y buckets**, donde también está el simulador de carga transaccional.
+""")
+code('''
+sh(sys.executable, "cli.py", "showcase")
+print("\\nCola después de la vitrina:")
 cola()
 ''')
 

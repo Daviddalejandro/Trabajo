@@ -58,6 +58,21 @@ imprimen el resumen de pares por decisión. Se pueden alternar tantas veces como
 Capturas de referencia: [`docs/evidence/validation/`](evidence/validation/README.md) y
 [`docs/evidence/f4/`](evidence/f4/README.md).
 
+## 3 ter. Vitrina S1–S5: digitación muy parecida, homónimo, tres documentos, NIT
+
+`make showcase` sobre la base actual (demo o validación) carga cinco casos en modo DELTA e imprime `party_sk` y `match_sk`:
+
+| Caso | Ir a | Qué mirar |
+|---|---|---|
+| S1 cédula con dígito transpuesto | `#/stewardship` → par PROBABLE (evidencia 82) | Fila `document` en amarillo «parcial · posible error de digitación»; base de la decisión: G4 satisfecho + veto de digitación. Con «Vetar también el posible error de digitación» apagado en `#/matching`, **Simular** lo muestra pasando a AUTO_MERGE |
+| S2 sin documento, nombre/fecha/correo mal digitados | `#/stewardship` → par PROBABLE (evidencia 90 sobre cobertura 70) | `birth_date` «día y mes intercambiados», `email` «posible error de digitación», `document` «sin dato»; decidido por umbral de evidencia, sin grupo |
+| S3 homónimo | `#/stewardship` → filtro Posible | `document` «contradice»; evidencia 57 |
+| S4 tres identificadores | `#/party/<sk>` capa 3 · Identity | CC golden verificada + pasaporte + TI, cada uno con su fuente; capa 7 con tres merges AUTO |
+| S5 NIT con razón social mal digitada | `#/party/<sk>` | Organización con dos fuentes (SD y MM) y survivorship de la razón social |
+
+Y en `#/modelo` → **Cargas y buckets**: los lotes DELTA de la vitrina con sus etapas, el simulador de carga transaccional
+y el explorador de buckets (pruebe con el `party_sk` de S4).
+
 ## 3 bis. Caso U · vitrina 360: una persona con todas las capas pobladas
 
 Tras `make demo`, el caso **U** deja en la base una sola persona sintética con todo lo que el

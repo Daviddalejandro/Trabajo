@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.api import compliance, health, matches, parties, pipeline, rdm
+from app.api import compliance, health, matches, model, parties, pipeline, rdm
 from app.core.config import settings
 
 app = FastAPI(
@@ -29,6 +29,7 @@ app.include_router(pipeline.router, prefix=settings.api_prefix)
 app.include_router(matches.router, prefix=settings.api_prefix)
 app.include_router(parties.router, prefix=settings.api_prefix)
 app.include_router(compliance.router, prefix=settings.api_prefix)
+app.include_router(model.router, prefix=settings.api_prefix)
 
 # UI compilada servida por la propia API (un solo puerto, sin CORS): `UI_DIST_DIR=../colab/ui`.
 # Va después de los routers para que /api/v1 y /health tengan prioridad; las rutas de la UI son hash (#/…).
