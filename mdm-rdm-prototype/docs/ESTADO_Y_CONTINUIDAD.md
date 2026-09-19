@@ -111,3 +111,6 @@ Ejemplos de última línea para las pruebas de mañana:
 - PR #1: `https://github.com/Daviddalejandro/Trabajo/pull/1`.
 - Google Drive, carpeta `MDM_RDM_Prototipo` (subcarpetas 00–07 según SPEC §17): evidencia de fases,
   matching, cumplimiento y resumen ejecutivo para comité. `make export-drive` regenera el contenido en `docs/drive/`.
+- Cuaderno de Colab en Drive `MDM_RDM_Prototipo/08_Colab/MDM_Prototipo_Colab.ipynb`
+  (`https://colab.research.google.com/drive/1M6t8gQxwfhdPCMppfBga1u3ynnx7psbC`), copia del `colab/MDM_Prototipo_Colab.ipynb`
+  del commit `bbf7116` (2026-09-19); tras cambiar el cuaderno, reemplazar la copia (subir la nueva y enviar la anterior a la papelera).
