@@ -116,5 +116,5 @@ Ejemplos de última línea para las pruebas de mañana:
 - Google Drive, carpeta `MDM_RDM_Prototipo` (subcarpetas 00–07 según SPEC §17): evidencia de fases,
   matching, cumplimiento y resumen ejecutivo para comité. `make export-drive` regenera el contenido en `docs/drive/`.
 - Cuaderno de Colab en Drive `MDM_RDM_Prototipo/08_Colab/MDM_Prototipo_Colab.ipynb`
-  (`https://colab.research.google.com/drive/1nNoTm49D7Hi-HzHP8xufDBSJsqQUUy5V`), copia del `colab/MDM_Prototipo_Colab.ipynb`
-  del commit `a55b0bb` (2026-09-19, con la celda de vitrina); tras cambiar el cuaderno, reemplazar la copia (subir la nueva y enviar la anterior a la papelera).
+  (`https://colab.research.google.com/drive/1La3BuJ0ex55GogaApG2l7ESqq5ASqvyQ`), copia del `colab/MDM_Prototipo_Colab.ipynb`
+  del commit `903baa5` (2026-09-19, con la celda de vitrina S1–S7); tras cambiar el cuaderno, reemplazar la copia (subir la nueva y enviar la anterior a la papelera).
