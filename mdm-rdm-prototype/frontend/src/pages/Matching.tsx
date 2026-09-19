@@ -13,7 +13,7 @@ type Group = { code: string; name: string; attributes: string[]; decision: "AUTO
 type Params = {
   thresholds: { AUTO_MERGE: number; PROBABLE: number; POSSIBLE: number };
   min_coverage: number; min_raw_points: number; auto_requires_group: boolean;
-  veto_attributes: string[]; veto_mode: "REVIEW" | "NO_MATCH"; groups: Group[];
+  veto_attributes: string[]; veto_mode: "REVIEW" | "NO_MATCH"; veto_typo: boolean; groups: Group[];
 };
 
 const DECISION_LABEL: Record<string, string> = { AUTO_MERGE: "Fusiona solo (AUTO_MERGE)", PROBABLE: "A revisión (PROBABLE)", POSSIBLE: "Registrar sin acción (POSSIBLE)" };
@@ -165,6 +165,8 @@ export default function Matching() {
                   <option value="REVIEW">Baja el par a revisión humana (dígitos transpuestos, homónimos)</option>
                   <option value="NO_MATCH">Son personas distintas (NO_MATCH vinculante)</option>
                 </select></label>
+              <label className="flex items-center gap-2 md:col-span-2"><input type="checkbox" checked={params.veto_typo ?? true} onChange={(e) => upd({ veto_typo: e.target.checked })} />
+                Vetar también el posible error de digitación (números del mismo tipo a un solo dígito transpuesto o sustituido: estado parcial, nunca fusiona solo)</label>
             </div>
           </Card>
 

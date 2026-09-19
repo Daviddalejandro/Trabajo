@@ -30,6 +30,7 @@ DEFAULT_POLICIES: dict[str, dict] = {
         "auto_requires_group": True,
         "veto_attributes": ["document"],
         "veto_mode": "REVIEW",
+        "veto_typo": True,
         "groups": [
             {"code": "G1", "name": "Identidad documental", "attributes": ["document", "first_surname"], "decision": "AUTO_MERGE", "active": True,
              "note": "Documento (tipo y número) y primer apellido coinciden"},
@@ -49,6 +50,7 @@ DEFAULT_POLICIES: dict[str, dict] = {
         "auto_requires_group": True,
         "veto_attributes": ["nit"],
         "veto_mode": "REVIEW",
+        "veto_typo": True,
         "groups": [
             {"code": "O1", "name": "NIT + nombre", "attributes": ["nit", "legal_name|trade_name"], "decision": "AUTO_MERGE", "active": True,
              "note": "NIT válido igual y razón social o nombre comercial coincidente"},
@@ -129,6 +131,7 @@ def validate_policy(params: dict, attributes: list[str]) -> dict:
     if mode not in ("REVIEW", "NO_MATCH"):
         raise ValueError("veto_mode debe ser REVIEW (nunca auto-merge, a revisión) o NO_MATCH (son personas distintas)")
     p["veto_mode"] = mode
+    p["veto_typo"] = bool(p.get("veto_typo", True))
     groups, codes = [], set()
     for g in p.get("groups") or []:
         code = str(g.get("code") or "").strip()
@@ -194,7 +197,11 @@ def decide_pair(rows: list[dict], policy: dict) -> tuple[str, dict]:
     evidence = round(100 * points / w_avail, 2) if w_avail else 0.0
     coverage = round(100 * w_avail / w_total, 2) if w_total else 0.0
     th = policy["thresholds"]
-    vetoed = [a for a in policy.get("veto_attributes", []) if states.get(a) == "DISAGREE"]
+    reasons = {r["attribute"]: r.get("reason") for r in rows}
+    # veto: identificador contradictorio; o a un solo error de digitación (PARTIAL/TYPO) si la política lo mantiene vetado
+    vetoed = [a for a in policy.get("veto_attributes", []) if states.get(a) == "DISAGREE"
+              or (states.get(a) == "PARTIAL" and reasons.get(a) == "TYPO" and policy.get("veto_typo", True))]
+    typo = [a for a, r in reasons.items() if r == "TYPO"]
     groups = []
     best_group, best_rank = None, -1
     satisfied_groups: list[str] = []
@@ -229,7 +236,7 @@ def decide_pair(rows: list[dict], policy: dict) -> tuple[str, dict]:
         decision, decided_by = "PROBABLE", f"{decided_by}+veto_review:{','.join(vetoed)}"
     basis = {"policy_version": policy.get("version"), "decision": decision, "decided_by": decided_by,
              "evidence": evidence, "coverage": coverage, "raw_points": round(points, 2), "weight_available": w_avail, "weight_total": w_total,
-             "threshold_score": th_score, "threshold_decision": th_decision, "vetoed_by": vetoed, "veto_mode": veto_mode,
+             "threshold_score": th_score, "threshold_decision": th_decision, "vetoed_by": vetoed, "veto_mode": veto_mode, "typo": typo,
              "satisfied_groups": satisfied_groups, "groups": groups, "states": states}
     return decision, basis
 

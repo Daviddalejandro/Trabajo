@@ -49,7 +49,7 @@ CALIFICACION (A–E → LOW/MEDIUM/HIGH), TIPO_TEL, ESTADO_TEL, FALLECIDO. Relac
 | V15 | ARCO CANCELLATION con obligación vigente | 3 consentimientos revocados; no es candidato a purga |
 | V16 | Audiencia COLLECTIONS / PHONE / CREDITO_SOCIAL ACTIVE | Incluye V1 y V16, excluye V6 y V8; auditada |
 | V17 | match-preview con los datos de V1 | AUTO_MERGE sugerido sin persistir |
-| V18 | Documento con dígito transpuesto | G4 satisfecho pero el veto del documento (modo REVIEW) lo baja a PROBABLE; NO_MATCH del steward es final |
+| V18 | Documento con dígito transpuesto | Documento `PARTIAL` "posible error de digitación" (+12); G4 satisfecho pero `veto_typo` lo baja a PROBABLE; NO_MATCH del steward es final |
 | V19 | Nombre en mayúsculas en crédito, correo nuevo | Nombre desde SAP_ECC_SD (prioridad); correo desde CREDITO_CORE (MOST_RECENT) |
 | V20 | Feed de cambios | Inserciones de obligaciones con fuente CREDITO_CORE |
 | V21 | Export a Drive | Hoja "Sistemas fuente" incluye CREDITO_CORE |

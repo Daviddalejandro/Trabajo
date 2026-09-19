@@ -5,13 +5,13 @@ from sqlalchemy.orm import Session
 
 RULES_V1 = {
     "PERSON": [
-        ("document", 30, "EXACT", {"partial_other_type": 15, "note": "número igual con tipo distinto: +15"}),
-        ("first_surname", 20, "JARO_WINKLER+SOUNDEX_ES", {"jw_min": 0.92}),
-        ("first_name", 15, "JARO_WINKLER", {"jw_min": 0.90}),
-        ("birth_date", 15, "EXACT_OR_1Y", {"partial_1y": 8}),
-        ("second_surname", 10, "JARO_WINKLER", {"jw_min": 0.92}),
-        ("email", 5, "EXACT", {}),
-        ("phone", 3, "EXACT", {"requires": "OWNER+CONFIRMED_BY_TITULAR en ambos"}),
+        ("document", 30, "EXACT", {"partial_other_type": 15, "partial_typo": 12, "note": "número igual con tipo distinto: +15; un dígito transpuesto o sustituido (Damerau-Levenshtein = 1): +12, marcado como posible error de digitación"}),
+        ("first_surname", 20, "JARO_WINKLER+SOUNDEX_ES", {"jw_min": 0.92, "near_min": 0.85, "partial_near": 10}),
+        ("first_name", 15, "JARO_WINKLER", {"jw_min": 0.90, "near_min": 0.85, "partial_near": 8}),
+        ("birth_date", 15, "EXACT_OR_1Y_OR_TYPO", {"partial_1y": 8, "partial_swap": 10, "partial_typo": 8}),
+        ("second_surname", 10, "JARO_WINKLER", {"jw_min": 0.92, "near_min": 0.85, "partial_near": 5}),
+        ("email", 5, "EXACT_OR_TYPO", {"partial_typo": 3}),
+        ("phone", 3, "EXACT_OR_TYPO", {"partial_typo": 2, "requires": "OWNER+CONFIRMED_BY_TITULAR en ambos"}),
         ("municipality", 2, "EXACT", {}),
     ],
     "ORGANIZATION": [

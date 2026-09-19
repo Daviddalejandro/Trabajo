@@ -688,7 +688,16 @@ el RDM §3.7) y `PARTY_MATCH.decision_basis` guarda con cuál se decidió cada p
 
 1. **Estado por atributo** en `score_detail`: `AGREE` / `PARTIAL` / `DISAGREE` / `MISSING`. El
    documento es `MISSING` cuando falta en uno de los dos o cuando los tipos no son comparables
-   (cédula vs. pasaporte); es `DISAGREE` solo con el mismo tipo y distinto número.
+   (cédula vs. pasaporte); es `PARTIAL` con el mismo número y distinto tipo (`OTHER_TYPE`, +15) o con
+   el mismo tipo y números a un solo dígito transpuesto o sustituido (Damerau-Levenshtein = 1,
+   `TYPO`, +12, "posible error de digitación"); es `DISAGREE` con el mismo tipo y distinto número.
+   La misma tolerancia aplica al resto de atributos, siempre como `PARTIAL` con su motivo en
+   `reason` y puntos parametrizados en `MATCH_RULE`: fecha con día y mes intercambiados
+   (`DM_SWAP`, +10), fecha o correo o celular a un solo carácter (`TYPO`: +8 / +3 / +2), nombre
+   o apellido con JW entre 0,85 y el mínimo o a un solo carácter (`NEAR`: +10 / +8 / +5). Los
+   grupos de suficiencia exigen `AGREE`, así que un error de digitación suma evidencia (vía de
+   umbrales, como máximo `PROBABLE` mientras `auto_requires_group` esté activo) pero nunca
+   fusiona solo por grupo.
 2. **Evidencia** = puntos / peso de los atributos comparables (0–100). **Cobertura** = peso
    comparable / peso total. `total_score` pasa a ser la evidencia; la consola muestra ambas.
 3. **Grupos de suficiencia**: conjuntos de atributos que, presentes en ambos registros y todos
@@ -702,8 +711,12 @@ el RDM §3.7) y `PARTY_MATCH.decision_basis` guarda con cuál se decidió cada p
    los puntos brutos si no; por debajo de 50 puntos brutos no hay candidato; sin un grupo
    satisfecho el umbral nunca fusiona solo (`auto_requires_group`), como máximo `PROBABLE`.
 5. **Vetos**: un identificador fuerte contradictorio (documento, NIT) nunca se fusiona solo.
-   Modo `REVIEW` (inicial): el par baja a revisión humana (dígitos transpuestos, homónimos).
-   Modo `NO_MATCH`: son personas distintas, decisión vinculante registrada.
+   Modo `REVIEW` (inicial): el par baja a revisión humana (homónimos, vecinos de cédula).
+   Modo `NO_MATCH`: son personas distintas, decisión vinculante registrada. El posible error de
+   digitación (`TYPO`) queda vetado por defecto (`veto_typo`): el steward ve "posible digitación"
+   en lugar de "contradice", pero decide él; la Jefatura puede levantar ese veto y entonces un
+   grupo `AUTO_MERGE` satisfecho fusiona solo (Ley 1581/2012 art. 4 lit. d: la exactitud del
+   identificador es responsabilidad del responsable del tratamiento, no del algoritmo).
 6. Decisión final = la más fuerte entre grupos satisfechos y vía de umbrales, acotada por el
    veto; la regla de unicidad §3.16 fuerza a revisión cualquier `AUTO_MERGE` cuyo documento ya
    sea golden en un tercero.

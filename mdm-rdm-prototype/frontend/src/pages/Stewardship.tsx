@@ -241,7 +241,7 @@ function DecisionBasis({ b }: { b: any }) {
     : by.startsWith("forced_review") ? "documento ya golden en otro party: revisión forzada (regla dura 3.16)"
     : by === "threshold:evidence" ? `umbrales sobre la evidencia normalizada (${Number(b.threshold_score).toFixed(1)})`
     : `umbrales sobre puntos brutos (${Number(b.threshold_score).toFixed(1)}; cobertura por debajo del mínimo)`;
-  const vetoNote = by.includes("+veto_review") ? " · un identificador contradice: nunca se fusiona solo, baja a revisión" : "";
+  const vetoNote = by.includes("+veto_review") ? (b.typo?.length ? " · el identificador tiene un posible error de digitación: nunca se fusiona solo, baja a revisión" : " · un identificador contradice: nunca se fusiona solo, baja a revisión") : "";
   return (
     <div className="mt-4" data-testid="decision-basis">
       <h4 className="mb-1 text-xs font-semibold uppercase text-slate-500">Base de la decisión · política v{b.policy_version}</h4>

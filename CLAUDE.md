@@ -63,7 +63,7 @@ tras cambiar la UI, `make ui-colab` y subir el cambio: el cuaderno clona la rama
 |---|---|
 | Escenario demo (21 casos A–U) en la consola | `make demo` |
 | Conjunto SAP ECC + crédito (V1–V28) en la consola | `make validation-load` |
-| Suite backend completa (129 pruebas, reconstruye la base) | `make test-backend` |
+| Suite backend completa (131 pruebas, reconstruye la base) | `make test-backend` |
 | Solo validación (37) | `make test-validation` |
 | UI compilada + e2e Playwright (7) | `make test-frontend` · `make test-e2e` |
 | Entregables para Drive | `make export-drive` |
@@ -86,7 +86,8 @@ Antes de subir cambios: `make test-backend` (o las suites afectadas) y `cd front
   sale de `default_business_unit` en `CAT_PARTY_ROLE`. Nunca fijar un rol en el código del adaptador.
 - Matching: pesos `MATCH_RULE` v1 en `backend/app/matching/rules.py`; la **decisión** la toma la política v2
   (`backend/app/matching/policy.py`, tabla `mdm.match_policy`, SPEC §8.4 bis): estados por atributo, evidencia sobre
-  lo comparable, grupos de suficiencia G1–G4/O1–O2, umbrales 85/70/50 sobre la evidencia, veto por documento. Se afina
+  lo comparable, grupos de suficiencia G1–G4/O1–O2, umbrales 85/70/50 sobre la evidencia, veto por documento (también
+  sobre el posible error de digitación a un dígito, `veto_typo`). Se afina
   desde `#/matching` publicando versiones (solo Jefatura); nunca cambiar la decisión en código si basta con la política.
   Survivorship: `SOURCE_PRIORITY` en `backend/app/survivorship/engine.py` (SF_EC, SAP_CRM, SAP_ECC_SD,
   SAP_ECC_MM, CREDITO_CORE, WEB_PORTAL) más MOST_RECENT / MOST_COMPLETE (SPEC §9).

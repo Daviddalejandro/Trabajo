@@ -8,6 +8,8 @@ from sqlalchemy import text
 
 from app.core.db import engine
 from app.matching.policy import DEFAULT_POLICIES, decide_pair, validate_policy
+from app.matching.rules import RULES_V1
+from app.matching.scoring import score_person
 
 MANIFEST = json.loads((Path(__file__).resolve().parents[1] / "data" / "synth" / "manifest.json").read_text(encoding="utf-8"))
 CASES = MANIFEST["cases"]
@@ -45,6 +47,60 @@ def _rows(**states):
 
 def _policy(**over):
     return validate_policy(DEFAULT_POLICIES["PERSON"] | over, ["document", "first_surname", "first_name", "birth_date", "second_surname", "email", "phone", "municipality"]) | {"version": 0}
+
+
+def _person(doc: str, contacts: bool = True) -> dict:
+    import datetime as dt
+    return {"party_type": "PERSON", "docs": {("CC", doc)}, "doc_numbers": {doc}, "first_surname": "Rangel", "sur1_k": "RANGEL", "sur1_soundex": "R524",
+            "first_name": "Ana", "first_name_k": "ANA", "birth_date": dt.date(1990, 5, 4), "second_surname": "Mora", "sur2_k": "MORA",
+            "emails": {"ana@x.test"} if contacts else set(), "phones": {"+573001234567"} if contacts else set(), "cities": {"11001"}}
+
+
+def test_document_typo_is_partial_and_vetoed_by_default():
+    """Un dígito transpuesto (1026256980 vs 1026259680) no es contradicción plena ni acierto: PARTIAL marcado TYPO (+12 de 30).
+    Por defecto sigue vetado (nunca fusiona solo); la política puede levantar ese veto o convertirlo en NO_MATCH."""
+    rules = {k: {"weight": w, "params": p} for k, w, _, p in RULES_V1["PERSON"]}
+    _, rows = score_person(_person("1026256980"), _person("1026259680"), rules)
+    doc = next(r for r in rows if r["attribute"] == "document")
+    assert doc["state"] == "PARTIAL" and doc["reason"] == "TYPO" and doc["points"] == 12 and "digitación" in doc["note"]
+    d, b = decide_pair(rows, _policy())
+    assert d == "PROBABLE" and b["decided_by"] == "group:G4+veto_review:document" and b["typo"] == ["document"] and b["evidence"] == 82
+    d, b = decide_pair(rows, _policy(veto_typo=False))
+    assert d == "AUTO_MERGE" and b["decided_by"] == "group:G4" and b["vetoed_by"] == []
+    d, b = decide_pair(rows, _policy(veto_mode="NO_MATCH"))
+    assert d == "NO_MATCH" and b["decided_by"] == "veto:document"
+    # dos dígitos distintos ya no es error de digitación: contradice
+    _, rows = score_person(_person("1026256980"), _person("1026259681"), rules)
+    assert next(r for r in rows if r["attribute"] == "document")["state"] == "DISAGREE"
+    _, rows = score_person(_person("1026256980"), _person("1026296580"), rules)
+    assert next(r for r in rows if r["attribute"] == "document")["state"] == "DISAGREE"
+
+
+def test_typos_in_date_email_phone_and_names_score_partial():
+    """La pregunta del autor: correo, celular, nombres y fecha no se califican solo exactos. Un solo carácter distinto
+    (Damerau-Levenshtein = 1), día y mes intercambiados o un nombre a JW ≥ 0.85 puntúan parcial con su motivo; los
+    grupos exigen coincidencia plena, así que un error de digitación nunca fusiona solo por grupo."""
+    import datetime as dt
+    rules = {k: {"weight": w, "params": p} for k, w, _, p in RULES_V1["PERSON"]}
+    a = _person("1026256980")
+    b = _person("1026256980") | {"birth_date": dt.date(1990, 4, 5), "emails": {"ana@x.tset"}, "phones": {"+573001234576"}, "first_name": "Ama", "first_name_k": "AMA"}
+    _, rows = score_person(a, b, rules)
+    got = {r["attribute"]: (r["state"], r["reason"], r["points"]) for r in rows}
+    assert got["birth_date"] == ("PARTIAL", "DM_SWAP", 10)
+    assert got["email"] == ("PARTIAL", "TYPO", 3) and got["phone"] == ("PARTIAL", "TYPO", 2)
+    assert got["first_name"] == ("PARTIAL", "NEAR", 8)
+    d, basis = decide_pair(rows, _policy())
+    assert d == "AUTO_MERGE" and basis["decided_by"] == "group:G1" and basis["evidence"] == 85   # el documento y el apellido plenos deciden
+    # sin documento comparable: los parciales suman evidencia pero no satisfacen G2/G3/G4 → vía de umbrales, nunca AUTO
+    a2, b2 = a | {"docs": set(), "doc_numbers": set()}, b | {"docs": set(), "doc_numbers": set()}
+    _, rows = score_person(a2, b2, rules)
+    d, basis = decide_pair(rows, _policy())
+    assert d == "PROBABLE" and basis["decided_by"] == "threshold:evidence" and basis["satisfied_groups"] == [] and 70 <= basis["evidence"] < 85
+    # fecha: un dígito distinto y ±1 año siguen siendo parciales con motivo distinto; dos dígitos lejanos contradicen
+    for bd, reason in ((dt.date(1990, 5, 14), "TYPO"), (dt.date(1991, 3, 4), "NEAR"), (dt.date(1975, 1, 1), None)):
+        _, rows = score_person(a, a | {"birth_date": bd}, rules)
+        r = next(x for x in rows if x["attribute"] == "birth_date")
+        assert (r["state"], r["reason"]) == (("PARTIAL", reason) if reason else ("DISAGREE", None)), bd
 
 
 def test_missing_attribute_is_neither_evidence_for_nor_against():

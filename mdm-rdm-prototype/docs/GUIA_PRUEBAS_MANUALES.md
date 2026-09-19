@@ -107,7 +107,9 @@ resta, y la **evidencia** se mide sobre lo comparable (la **cobertura** dice cu�
 | `AUTO_MERGE` | Mismo documento (tipo y número) y mismo primer apellido, aunque cambien correo o municipio | grupo G1 |
 | `AUTO_MERGE` sin documento | Sin documento en uno de los dos, con nombre, dos apellidos, fecha, correo **y** celular confirmado iguales | grupo G4 |
 | `PROBABLE` | Sin documento comparable (ausente o cédula vs. pasaporte) con nombre, apellidos y fecha iguales, y como mucho un contacto en común | grupos G2 / G3 |
-| `PROBABLE` con documento contradictorio | Mismo tipo con distinto número (dígito transpuesto) y todo lo demás igual: el veto impide fusionar solo | G4 + veto en modo `REVIEW` |
+| `PROBABLE` con posible error de digitación | Mismo tipo y números a un solo dígito transpuesto o sustituido (`1026256980` vs `1026259680`: parcial, +12) y todo lo demás igual: sigue vetado por defecto; desmarcar "Vetar también el posible error de digitación" lo convierte en `AUTO_MERGE` por G4 | G4 + `veto_typo` |
+| `PROBABLE` con documento contradictorio | Mismo tipo con distinto número (dos o más dígitos) y todo lo demás igual: el veto impide fusionar solo | G4 + veto en modo `REVIEW` |
+| `PROBABLE` por errores de digitación | Sin documento comparable; nombre, correo o celular a un carácter, fecha con día y mes intercambiados (`12/08` vs `08/12`): parciales que suman evidencia 70–84 sin satisfacer ningún grupo | vía de umbrales (nunca AUTO sin grupo) |
 | `POSSIBLE` | Homónimo con fecha a menos de un año (parcial) o segundo apellido distinto: ningún grupo, evidencia 50–69 | vía de umbrales |
 | `NO_MATCH` | Solo coincide el nombre o solo la fecha (menos de 50 puntos brutos); o documento contradictorio con el veto en modo `NO_MATCH` | piso de puntos / veto |
 
