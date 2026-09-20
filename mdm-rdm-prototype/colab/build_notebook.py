@@ -270,7 +270,7 @@ La demo de la celda 5 ya carga la vitrina al final (la cola arranca con B, K, U 
 ejecutar sola (idempotente: los registros ya cargados quedan como «sin cambio por hash») para reimprimir el `party_sk` y el `match_sk` de cada caso:
 S1–S3, S6, S8 (cobertura parcial) y S10 (organizaciones homónimas) se ven en la Consola de Stewardship; S4 (golden con CC + pasaporte + TI),
 S5 (organización) y S9 (fusión por G1 con nombre y fecha distintos) en la Vista 360; S7 (sin bucket común) en el explorador de buckets.
-Los lotes quedan en **Modelo y cargas → Cargas y buckets**, donde también está el simulador de carga transaccional.
+Los lotes quedan en **Modelo y cargas → Cargas y buckets**, donde también están la explicación visual de los buckets (archivador con cajones, cinco pasos) y el simulador de carga transaccional.
 """)
 code('''
 sh(sys.executable, "cli.py", "showcase")

@@ -143,6 +143,15 @@ test("Modelo y cargas · modelo relacional desde el catálogo, etapas del lote y
   await page.getByRole("tab", { name: "Cargas y buckets" }).click();
   await expect(page.getByTestId("pipeline-stages")).toBeVisible();
   await expect(page.getByText("Buckets más poblados")).toBeVisible();
+  // explicación visual de los buckets: cinco pasos y escenarios; S7 no se compara con nadie
+  const ex = page.getByTestId("buckets-explainer");
+  await expect(ex).toBeVisible();
+  expect(await ex.getByTestId("buckets-step").count()).toBe(5);
+  for (let i = 0; i < 4; i++) await ex.getByRole("button", { name: "Siguiente →" }).click();
+  await expect(ex.getByText("Paso 5 de 5")).toBeVisible();
+  await expect(ex.getByText("parties nunca se miran")).toBeVisible();
+  await ex.getByRole("button", { name: /apellido cambia de sonido \(S7\)/ }).click();
+  await expect(ex.getByText("el registro no se compara con nadie")).toBeVisible();
 });
 
 test("Vista 360 · las 8 capas en orden con fuente ganadora por campo", async ({ page }) => {

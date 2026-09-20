@@ -174,3 +174,9 @@ registro nativo por `POST /pipeline/{fuente}/record` y muestra al instante el pa
 buckets en los que cayó y la decisión; enviar el mismo ID externo con cambios = actualización por XREF, sin cambios =
 `unchanged_hash` (idempotencia). El explorador de buckets responde, para cualquier `party_sk`, con quién se compararía
 un registro igual (documento, correo, celular, Soundex del apellido, NIT, tokens de la razón social).
+
+Para explicar los buckets a una audiencia no técnica, la tarjeta arranca con **«¿Cómo funcionan los buckets? Piense en un
+archivador con cajones»**: cinco pasos (llega un registro → se calculan sus claves → cada clave abre un cajón → solo se compara
+con los vecinos → cada par se puntúa y la política decide) sobre cuatro escenarios (datos limpios, S1 cédula transpuesta, S6 todo
+mal digitado con el apellido que conserva el sonido, S7 el apellido cambia de sonido y el registro no se compara con nadie). Al
+explorar un `party_sk` aparece un quinto escenario con sus cajones reales y cuántos parties de la base nunca se miran.

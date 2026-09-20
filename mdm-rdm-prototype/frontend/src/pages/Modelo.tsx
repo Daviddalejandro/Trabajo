@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNo
 import { api, errorText } from "../api";
 import { Badge, Button, Card, KV, LAYERS, Notice, Spinner, Table, Tabs, fmtDate, layer, partyLink, statusTone, type LayerKey } from "../components/ui";
 import { Cd, Src } from "../labels";
+import { BucketsExplainer } from "../components/BucketsExplainer";
 
 // Modelo y cargas: (1) el modelo relacional del MDM leído del catálogo de PostgreSQL (tablas por capa,
 // columnas, PK/FK, filas) y (2) cómo entra la información —masiva FULL/DELTA o transaccional TX— por las
@@ -267,6 +268,7 @@ function Buckets({ batchId }: { batchId?: number }) {
         <button className={`rounded border px-2 py-0.5 ${scope === "batch" ? "bg-blue-700 text-white" : "bg-white"}`} onClick={() => setScope("batch")} disabled={!batchId}>lote #{batchId ?? "—"}</button>
       </div>}>
       <p className="text-sm text-slate-600">Un bucket es un bloque de parties que comparten una clave (documento, correo, celular confirmado, Soundex del primer apellido, NIT o tokens de la razón social). Solo se comparan pares dentro de un mismo bucket: así el costo no crece con el cuadrado de la base y un registro nuevo, masivo o transaccional, se compara solo con sus vecinos. Nunca se cruzan personas con organizaciones (regla dura 3.17).</p>
+      <div className="mt-3"><BucketsExplainer live={pb} /></div>
       {err && <div className="mt-2"><Notice kind="error">{err}</Notice></div>}
       {!d && <Spinner />}
       {d && (
@@ -278,7 +280,7 @@ function Buckets({ batchId }: { batchId?: number }) {
             <Table head={["Estrategia", "Clave", "Miembros", "Lote"]} rows={d.top.map((r: any) => [<Cd cat="CAT_BLOCKING_STRATEGY" v={r.strategy} />, <span className="font-mono text-xs">{r.blocking_key}</span>, r.members, `#${r.batch_id}`])} />
           </div>
           <div>
-            <h4 className="mb-1 text-xs font-semibold uppercase text-slate-500">Explorador: ¿en qué buckets cae un party y con quién se compararía?</h4>
+            <h4 className="mb-1 text-xs font-semibold uppercase text-slate-500">Explorador: ¿en qué buckets cae un party y con quién se compararía? (también alimenta la explicación visual de arriba)</h4>
             <div className="flex gap-2"><input aria-label="party_sk" value={sk} onChange={(e) => setSk(e.target.value.replace(/\D/g, ""))} placeholder="party_sk" className="w-28 rounded border px-2 py-1 font-mono text-sm" /><Button onClick={explore} disabled={!sk}>Explorar</Button></div>
             {pb && (
               <div className="mt-2 space-y-2 text-sm" data-testid="bucket-explorer">

@@ -75,8 +75,10 @@ Capturas de referencia: [`docs/evidence/validation/`](evidence/validation/README
 | S9 mismo documento y apellido, nombre y fecha distintos | `#/party/<sk>` capa 7 (merges) | Fusión AUTO con justificación `group:G1`; `first_name` contradice y `birth_date` contradice pero G1 (documento + primer apellido) basta. Para exigir la fecha, editar el grupo G1 en `#/matching` y simular |
 | S10 organizaciones homónimas, NIT distinto | `#/stewardship` → par PROBABLE de organización | `nit` «contradice» (veto), `legal_name` y `city` coinciden: base `group:O2` con `nit` en los vetos, por eso nunca pasa de PROBABLE; se decide con justificación como cualquier par |
 
-Y en `#/modelo` → **Cargas y buckets**: los lotes DELTA de la vitrina con sus etapas, el simulador de carga transaccional
-y el explorador de buckets (pruebe con el `party_sk` de S4).
+Y en `#/modelo` → **Cargas y buckets**: los lotes DELTA de la vitrina con sus etapas, el simulador de carga transaccional,
+la explicación visual «archivador con cajones» (recorra los cinco pasos con «Siguiente» y cambie de escenario: en S7 ningún
+cajón coincide y el registro no se compara con nadie) y el explorador de buckets (pruebe con el `party_sk` de S4 o de S7: el
+explorador añade el escenario «Party real» a la explicación).
 
 ## 3 bis. Caso U · vitrina 360: una persona con todas las capas pobladas
 
