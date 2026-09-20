@@ -921,6 +921,16 @@ unmerge restaura desde `pre_merge_snapshot` y re-ejecuta survivorship en ambos.
    códigos publicados), gestión de homologaciones por sistema fuente, **probador de
    homologación** (inputs sistema/campo/valor → canónico) y botón **Rehomologar**
    que muestra cuántos registros `UNKNOWN` se corregirán.
+   **2 bis. Consola RDM** (ampliación 2026-09-20): el ciclo completo del dato de referencia desde la
+   interfaz, en el orden en que se construye el RDM (§3.1): dominios → catálogos (fuente oficial,
+   jerarquía) → **campos personalizados** (diccionario del EAV en `RDM.CATALOG_ATTRIBUTE`: código, nombre,
+   tipo de dato TEXT/NUMBER/BOOLEAN/DATE/REGEX/CODE, obligatorio; valida los atributos al publicar o corregir
+   un valor) → listas de referencia (alta con padre y atributos, deprecación, corrección de atributos sin
+   tocar código ni nombre) → sistemas fuente (owner y steward, §3.4) → integraciones y homologación
+   (campo fuente → catálogo; valor fuente → canónico versionado: la nueva cierra la anterior, cierre explícito,
+   prueba canónica) → ciclo de vida y auditoría (historial de versiones, rehomologar §7.2, `RDM_AUDIT_LOG`
+   con antes y después de las cinco capas). Incluye un **recorrido guiado** idempotente que crea un catálogo
+   sintético completo contra la API. El Admin RDM clásico se conserva.
 3. **Vista 360 del golden record**: cabecera con resumen ejecutivo (elegibilidad por finalidad
    con su razón, servicios activos por UES, hallazgos DQ abiertos, pares de matching pendientes,
    fuentes, merges y autorizaciones; marcas de menor de edad y fallecido) y perfil recorriendo las 8 capas en

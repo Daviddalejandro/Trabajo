@@ -83,7 +83,34 @@ def seed_rdm(session: Session, actor: str = "rdm-seed") -> SeedReport:
         i_ok, m_ok = add_mapping(session, system, field, catalog, source_value, canonical)
         rep.integrations += i_ok
         rep.mappings += m_ok
+
+    sync_attribute_dictionary(session)
     return rep
+
+
+def sync_attribute_dictionary(session: Session) -> int:
+    """Diccionario de campos personalizados (CATALOG_ATTRIBUTE) a partir del EAV sembrado: un campo por
+    (catálogo, field_code) con el tipo inferido de sus valores y el nombre de negocio de ATTRIBUTE_NAMES.
+    Idempotente: lo definido desde la consola no se toca."""
+    rows = session.execute(text("""
+        SELECT c.catalog_sk, f.field_code,
+               CASE WHEN bool_and(f.field_value IN ('true', 'false')) THEN 'BOOLEAN'
+                    WHEN bool_and(f.field_value ~ '^-?[0-9]+(\\.[0-9]+)?$') THEN 'NUMBER'
+                    WHEN f.field_code ILIKE '%regex%' THEN 'REGEX'
+                    WHEN bool_and(f.field_value ~ '^[A-Z][A-Z0-9_]*$') THEN 'CODE'
+                    ELSE 'TEXT' END AS data_type
+        FROM rdm.reference_field_value f
+        JOIN rdm.reference_value v ON v.value_sk = f.value_sk
+        JOIN rdm.catalog c ON c.catalog_sk = v.catalog_sk
+        GROUP BY c.catalog_sk, f.field_code""")).all()
+    n = 0
+    for cat_sk, field_code, data_type in rows:
+        r = session.execute(text(
+            "INSERT INTO rdm.catalog_attribute(catalog_sk, field_code, field_name, data_type) VALUES (:c, :f, :n, :t) "
+            "ON CONFLICT (catalog_sk, field_code) DO NOTHING"),
+            {"c": cat_sk, "f": field_code, "n": sd.ATTRIBUTE_NAMES.get(field_code, field_code), "t": data_type})
+        n += r.rowcount
+    return n
 
 
 def add_mapping(session: Session, system: str, field: str, catalog: str,

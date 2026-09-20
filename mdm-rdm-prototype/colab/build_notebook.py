@@ -154,6 +154,7 @@ from google.colab import output
 URL = output.eval_js("google.colab.kernel.proxyPort(8000)")
 print("Consola de Stewardship:", URL + "#/stewardship")
 print("Tablero:", URL + "#/")
+print("Consola RDM (dominios, catálogos, campos personalizados, listas, sistemas fuente, homologación, ciclo de vida; recorrido guiado):", URL + "#/rdm-consola")
 print("Política de matching (grupos, umbrales, vetos; simular y publicar como JEFATURA):", URL + "#/matching")
 print("Modelo relacional, cargas masivas/transaccionales y buckets:", URL + "#/modelo")
 print("Swagger de la API:", URL + "docs")

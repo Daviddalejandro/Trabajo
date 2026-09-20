@@ -31,6 +31,27 @@ El guion final recorre los 21 casos plantados de la especificación (§13, A–U
    → el probador devuelve VENDOR; `POST /rdm/rehomologate` reprocesa los UNKNOWN (ver Fase 2).
 8. **Regla del sistema exacto:** el mismo POST con `system: SAP_ECC` → 404.
 
+### Consola RDM (`#/rdm-consola`): las cinco capas desde la interfaz
+
+Para mostrar cómo un usuario de Gobierno de Datos construye el RDM sin tocar la base: siete estaciones en el orden
+del ciclo (dominios → catálogos → campos personalizados → listas de referencia → sistemas fuente → integraciones y
+homologación → ciclo de vida y auditoría), cada una con su explicación, lo que existe y el formulario de alta.
+
+1. **Recorrido guiado** (tarjeta «mostrar» → «Ejecutar el recorrido»): ocho pasos contra la API con datos sintéticos.
+   Crea el dominio `EXPERIENCIA`, el catálogo `CAT_CANAL_PREFERIDO` (fuente oficial «Política de servicio al afiliado»),
+   tres campos personalizados (`horario` texto, `costo_contacto` número, `requiere_consentimiento` sí/no obligatorio),
+   cuatro valores con atributos (y muestra cómo el diccionario **rechaza** un quinto con `costo_contacto = gratis` y sin
+   el obligatorio), registra el sistema fuente `APP_MOVIL` (owner y steward), declara la integración
+   `APP_MOVIL.canal_pref → CAT_CANAL_PREFERIDO`, homologa `wa/mail/sms/call`, prueba `wa → WHATSAPP`, **depreca `SMS`**,
+   publica `SMS_RCS` y re-apunta `sms → SMS_RCS` (la homologación anterior queda cerrada en el histórico) y termina en la
+   auditoría. Repetirlo no duplica nada: lo que ya existe se reporta como «ya existía».
+2. Estación **4 · Listas de referencia** con `CAT_CANAL_PREFERIDO` e «incluir deprecados»: los campos personalizados
+   aparecen como columnas, `SMS` deprecado y `SMS_RCS` activo; «atributos» corrige un atributo sin tocar código ni nombre.
+3. Estación **7 · Ciclo de vida**: historial de `APP_MOVIL / canal_pref / CAT_CANAL_PREFERIDO / sms` → dos versiones
+   (`SMS_RCS` vigente, `SMS` cerrada); auditoría filtrable por capa con el antes y el después de cada cambio.
+4. Los contadores de las estaciones (dominios, catálogos, campos, valores activos +deprecados, sistemas,
+   integraciones · homologaciones, entradas de auditoría) se actualizan con cada alta.
+
 ## Fase 2 · Staging, MDM y pipeline
 
 1. `python backend/cli.py synth-generate` → 1.580 registros en 5 fuentes, `manifest.json` con los casos.

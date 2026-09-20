@@ -27,7 +27,7 @@ mdm-rdm-prototype/
   DEMO.md                         guion de demostración por fase (casos A–U)
   Makefile                        todos los comandos operativos (make help no existe: leer el Makefile)
   backend/  (FastAPI + SQLAlchemy 2 + Alembic + typer)   app/, alembic/versions/, cli.py, tests/, data/synth, data/validation
-  frontend/ (React 18 + Vite + Tailwind v4 + Playwright)  src/pages/{Dashboard,Stewardship,AdminRdm,Vista360,Compliance}.tsx
+  frontend/ (React 18 + Vite + Tailwind v4 + Playwright)  src/pages/{Dashboard,Stewardship,RdmConsole,AdminRdm,Vista360,Compliance,Matching,Modelo}.tsx
   docs/GUIA_PRUEBAS_MANUALES.md   cómo probar desde la interfaz y trabajar la zona gris de matching
   docs/ESTADO_Y_CONTINUIDAD.md    estado actual, decisiones tomadas, pendientes, prompt de arranque
   docs/validation/README.md       conjunto de validación SAP ECC + sistema de crédito (casos V1–V28)
@@ -64,9 +64,9 @@ tras cambiar la UI, `make ui-colab` y subir el cambio: el cuaderno clona la rama
 | Escenario demo (21 casos A–U) + vitrina S1–S10 en la consola | `make demo` |
 | Conjunto SAP ECC + crédito (V1–V28) en la consola | `make validation-load` |
 | Solo la vitrina S1–S10 (digitación, homónimo, tres documentos, NIT, todo mal digitado, cobertura parcial, G1 manda, organizaciones homónimas) en modo DELTA sobre la base actual, idempotente | `make showcase` |
-| Suite backend completa (136 pruebas, reconstruye la base) | `make test-backend` |
+| Suite backend completa (140 pruebas, reconstruye la base) | `make test-backend` |
 | Solo validación (37) | `make test-validation` |
-| UI compilada + e2e Playwright (8) | `make test-frontend` · `make test-e2e` |
+| UI compilada + e2e Playwright (9) | `make test-frontend` · `make test-e2e` |
 | Entregables para Drive | `make export-drive` |
 | API / UI locales | `make api` · `cd frontend && npm run dev` |
 

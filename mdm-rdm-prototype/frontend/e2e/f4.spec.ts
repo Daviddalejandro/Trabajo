@@ -134,6 +134,41 @@ test("Admin RDM · alta y deprecación de valor sin tocar SKs, homologación y r
   await expect(page.getByTestId("tester-result")).toContainText("CAT_GENDER.M");
 });
 
+test("Consola RDM · recorrido guiado de las cinco capas (dominio → catálogo → campos → valores → sistema → homologación → ciclo de vida → auditoría)", async ({ page, request }) => {
+  await page.goto("/#/rdm-consola");
+  await actAs(page, "steward.mdm");
+  await expect(page.getByTestId("rdm-console")).toBeVisible();
+  expect(await page.getByTestId("rdm-station").count()).toBe(7);
+  await page.getByRole("button", { name: "mostrar" }).click();
+  await page.getByRole("button", { name: "Ejecutar el recorrido" }).click();
+  await expect(page.getByTestId("rdm-tour-step")).toHaveCount(8, { timeout: 30000 });
+  await expect(page.getByTestId("rdm-tour-step").last()).toContainText("RDM_AUDIT_LOG", { timeout: 30000 });
+  expect(await page.getByTestId("rdm-tour-step").filter({ hasText: "error" }).count()).toBe(0);
+  // lo creado existe de verdad en la API: catálogo con campos, valores validados y homologación vigente
+  const detail = await request.get(`${API}/rdm/catalogs/CAT_CANAL_PREFERIDO/detail`).then((r) => r.json());
+  expect(detail.domain_code).toBe("EXPERIENCIA");
+  expect(detail.attributes.map((a: any) => a.field_code).sort()).toEqual(["costo_contacto", "horario", "requiere_consentimiento"]);
+  expect(detail.integrations[0].source_system_cd).toBe("APP_MOVIL");
+  const h = await request.get(`${API}/rdm/homologate?system=APP_MOVIL&field=canal_pref&value=sms`).then((r) => r.json());
+  expect(h.value_code).toBe("SMS_RCS");
+  // estación 4: la lista muestra los campos personalizados como columnas y SMS deprecado
+  await page.getByRole("button", { name: /4 · Listas de referencia/ }).click();
+  await page.getByLabel("Catálogo", { exact: true }).selectOption("CAT_CANAL_PREFERIDO");
+  await page.getByLabel("incluir deprecados").check();
+  await expect(page.locator("tr").filter({ has: page.locator("td", { hasText: /^SMS_RCS$/ }) })).toContainText("activo");
+  await expect(page.locator("tr").filter({ has: page.locator("td", { hasText: /^SMS$/ }) })).toContainText("deprecado");
+  await expect(page.locator("th").filter({ hasText: "requiere_consentimiento" })).toBeVisible();
+  // estación 7: el historial de la homologación muestra la versión vigente y la cerrada
+  await page.getByRole("button", { name: /7 · Ciclo de vida/ }).click();
+  await page.getByLabel("Sistema del historial").fill("APP_MOVIL");
+  await page.getByLabel("Campo del historial").fill("canal_pref");
+  await page.getByLabel("Catálogo del historial").fill("CAT_CANAL_PREFERIDO");
+  await page.getByLabel("Valor fuente del historial").fill("sms");
+  await page.getByRole("button", { name: "Ver versiones" }).click();
+  await expect(page.getByTestId("mapping-history")).toContainText("vigente");
+  await expect(page.getByTestId("mapping-history").locator("tr")).toHaveCount(3);   // cabecera + 2 versiones
+});
+
 test("Modelo y cargas · modelo relacional desde el catálogo, etapas del lote y explorador de buckets", async ({ page }) => {
   await page.goto("/#/modelo");
   await page.waitForSelector("[data-testid='erd']");

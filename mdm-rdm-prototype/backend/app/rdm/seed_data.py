@@ -436,3 +436,27 @@ MAPPINGS = [
     ("WEB_PORTAL", "segmento_comercial", "CAT_SEGMENT_TYPE", "basico", "BASIC"),
     ("WEB_PORTAL", "segmento_comercial", "CAT_SEGMENT_TYPE", "premium", "PREMIUM"),
 ]
+
+
+# Diccionario de campos personalizados (CATALOG_ATTRIBUTE, consola RDM): nombre de negocio de cada field_code del EAV.
+# El tipo de dato se infiere de los valores sembrados; lo que no esté aquí toma el field_code como nombre.
+ATTRIBUTE_NAMES = {
+    "validation_regex": "Expresión regular de validación",
+    "applies_to": "Tipo de party al que aplica",
+    "has_check_digit": "Tiene dígito de verificación",
+    "required_consent_type": "Tipo de consentimiento que exige",
+    "rne_applies": "Aplica el Registro Nacional de Excluidos (RNE)",
+    "locality_type": "Tipo de localidad",
+    "default_business_unit": "UES por defecto del rol",
+    "parent_role": "Rol padre",
+    "from_party_type": "Tipo de party origen",
+    "to_party_type": "Tipo de party destino",
+    "inverse_code": "Código de la relación inversa",
+    "trigger": "Disparador de la retención",
+    "years": "Años de retención",
+    "authoritative_source": "Fuente autoritativa del segmento",
+    "collections_applies": "Aplica gestión de cobranza",
+    "service_kind": "Clase de servicio",
+    "sla_business_days": "SLA en días hábiles",
+}
+

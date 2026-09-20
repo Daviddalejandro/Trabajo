@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.db import get_session
-from app.rdm import service
+from app.rdm import console, service
 from app.rdm.seed import add_mapping
 
 router = APIRouter(prefix="/rdm", tags=["rdm"])
@@ -29,6 +29,64 @@ class MappingIn(BaseModel):
     catalog: str
     source_value: str
     value_code: str
+
+
+class MappingRef(BaseModel):
+    system: str
+    field: str
+    catalog: str
+    source_value: str
+
+
+class DomainIn(BaseModel):
+    domain_code: str = Field(min_length=2, max_length=40)
+    domain_name: str = Field(min_length=1, max_length=120)
+
+
+class CatalogIn(BaseModel):
+    catalog_code: str = Field(min_length=4, max_length=60)
+    catalog_name: str = Field(min_length=1, max_length=160)
+    domain_code: str
+    official_source: str | None = None
+    is_hierarchical: bool = False
+
+
+class AttributeIn(BaseModel):
+    field_code: str = Field(min_length=2, max_length=60)
+    field_name: str = Field(min_length=1, max_length=160)
+    data_type: str = "TEXT"
+    is_required: bool = False
+    description: str | None = None
+
+
+class AttributesIn(BaseModel):
+    attributes: dict[str, str]
+
+
+class SourceSystemIn(BaseModel):
+    source_system_cd: str = Field(min_length=2, max_length=40)
+    name: str = Field(min_length=1, max_length=160)
+    data_owner: str | None = None
+    data_steward: str | None = None
+    is_prototype_active: bool = True
+
+
+class IntegrationIn(BaseModel):
+    catalog: str
+    system: str
+    source_field: str = Field(min_length=1, max_length=60)
+
+
+def _handle(fn):
+    """Traduce las excepciones de dominio a HTTP: no existe → 404, ya existe → 409, inválido → 422."""
+    try:
+        return fn()
+    except LookupError as e:
+        raise HTTPException(404, str(e))
+    except FileExistsError as e:
+        raise HTTPException(409, str(e))
+    except ValueError as e:
+        raise HTTPException(422, str(e))
 
 
 @router.get("/labels", summary="Nombres en español de todos los códigos canónicos (consola): {catálogo: {código: nombre}}")
@@ -59,8 +117,9 @@ def values(code: str, include_inactive: bool = False, limit: int = Query(200, ge
 def create_value(code: str, body: ValueIn, actor: str = Depends(actor_header),
                  session: Session = Depends(get_session)):
     try:
+        attributes = console.validate_attributes(session, code, body.attributes, for_new_value=True) if service.get_catalog(session, code) else body.attributes
         out = service.create_value(session, code, body.value_code, body.value_name,
-                                   body.parent_value_code, body.attributes, actor)
+                                   body.parent_value_code, attributes, actor)
         session.commit()
         return out
     except LookupError as e:
@@ -121,3 +180,123 @@ def source_systems(session: Session = Depends(get_session)):
 @router.get("/audit", summary="Últimos cambios de referencia (RDM_AUDIT_LOG)")
 def audit(entity: str | None = None, limit: int = Query(50, ge=1, le=500), session: Session = Depends(get_session)):
     return service.audit_tail(session, entity, limit)
+
+
+# ------------------------------------------------------------------ Consola RDM: las cinco capas desde la interfaz
+@router.get("/overview", summary="Consola RDM · conteos por capa (dominios, catálogos, valores, campos, sistemas, integraciones, mapeos, auditoría)")
+def overview(session: Session = Depends(get_session)):
+    return console.overview(session)
+
+
+@router.post("/domains", status_code=201, summary="Consola RDM · alta de dominio")
+def create_domain(body: DomainIn, actor: str = Depends(actor_header), session: Session = Depends(get_session)):
+    def go():
+        out = console.create_domain(session, body.domain_code, body.domain_name, actor); session.commit(); return out
+    try:
+        return _handle(go)
+    except HTTPException:
+        session.rollback(); raise
+
+
+@router.post("/catalogs", status_code=201, summary="Consola RDM · alta de catálogo en un dominio")
+def create_catalog(body: CatalogIn, actor: str = Depends(actor_header), session: Session = Depends(get_session)):
+    def go():
+        out = console.create_catalog(session, body.catalog_code, body.catalog_name, body.domain_code, body.official_source, body.is_hierarchical, actor)
+        session.commit(); return out
+    try:
+        return _handle(go)
+    except HTTPException:
+        session.rollback(); raise
+
+
+@router.get("/catalogs/{code}/detail", summary="Consola RDM · ficha del catálogo: conteos, campos personalizados e integraciones")
+def catalog_detail(code: str, session: Session = Depends(get_session)):
+    out = console.catalog_detail(session, code)
+    if out is None:
+        raise HTTPException(404, f"Catálogo {code} no existe")
+    return out
+
+
+@router.get("/catalogs/{code}/attributes", summary="Consola RDM · campos personalizados (diccionario del EAV) de un catálogo")
+def attributes(code: str, include_inactive: bool = False, session: Session = Depends(get_session)):
+    if service.get_catalog(session, code) is None:
+        raise HTTPException(404, f"Catálogo {code} no existe")
+    return console.list_attributes(session, code, include_inactive)
+
+
+@router.post("/catalogs/{code}/attributes", status_code=201, summary="Consola RDM · definir un campo personalizado")
+def create_attribute(code: str, body: AttributeIn, actor: str = Depends(actor_header), session: Session = Depends(get_session)):
+    def go():
+        out = console.create_attribute(session, code, body.field_code, body.field_name, body.data_type, body.is_required, body.description, actor)
+        session.commit(); return out
+    try:
+        return _handle(go)
+    except HTTPException:
+        session.rollback(); raise
+
+
+@router.post("/catalogs/{code}/attributes/{field_code}/retire", summary="Consola RDM · retirar un campo personalizado (los datos EAV se conservan)")
+def retire_attribute(code: str, field_code: str, actor: str = Depends(actor_header), session: Session = Depends(get_session)):
+    def go():
+        out = console.retire_attribute(session, code, field_code, actor); session.commit(); return out
+    try:
+        return _handle(go)
+    except HTTPException:
+        session.rollback(); raise
+
+
+@router.put("/catalogs/{code}/values/{value_code}/attributes", summary="Consola RDM · completar o corregir los atributos de un valor (código y nombre siguen inmutables)")
+def set_value_attributes(code: str, value_code: str, body: AttributesIn, actor: str = Depends(actor_header), session: Session = Depends(get_session)):
+    def go():
+        out = console.set_value_attributes(session, code, value_code, body.attributes, actor); session.commit(); return out
+    try:
+        return _handle(go)
+    except HTTPException:
+        session.rollback(); raise
+
+
+@router.post("/source-systems", status_code=201, summary="Consola RDM · registrar un sistema fuente (owner y steward)")
+def create_source_system(body: SourceSystemIn, actor: str = Depends(actor_header), session: Session = Depends(get_session)):
+    def go():
+        out = console.create_source_system(session, body.source_system_cd, body.name, body.data_owner, body.data_steward, body.is_prototype_active, actor)
+        session.commit(); return out
+    try:
+        return _handle(go)
+    except HTTPException:
+        session.rollback(); raise
+
+
+@router.get("/integrations", summary="Consola RDM · qué campo de qué sistema alimenta cada catálogo")
+def integrations(catalog: str | None = None, system: str | None = None, session: Session = Depends(get_session)):
+    return console.list_integrations(session, catalog, system)
+
+
+@router.post("/integrations", status_code=201, summary="Consola RDM · declarar una integración campo fuente → catálogo")
+def create_integration(body: IntegrationIn, actor: str = Depends(actor_header), session: Session = Depends(get_session)):
+    def go():
+        out = console.create_integration(session, body.catalog, body.system, body.source_field, actor); session.commit(); return out
+    try:
+        return _handle(go)
+    except HTTPException:
+        session.rollback(); raise
+
+
+@router.post("/mappings/retire", summary="Consola RDM · cerrar la homologación vigente (queda en el histórico)")
+def retire_mapping(body: MappingRef, actor: str = Depends(actor_header), session: Session = Depends(get_session)):
+    def go():
+        out = console.retire_mapping(session, body.system, body.field, body.catalog, body.source_value, actor); session.commit(); return out
+    try:
+        return _handle(go)
+    except HTTPException:
+        session.rollback(); raise
+
+
+@router.get("/mappings/history", summary="Consola RDM · versiones de una homologación (vigente y cerradas)")
+def mapping_history(system: str, field: str, catalog: str, source_value: str | None = None, session: Session = Depends(get_session)):
+    return console.mapping_history(session, system, field, catalog, source_value)
+
+
+@router.get("/audit/detail", summary="Consola RDM · auditoría con el antes y el después de cada cambio")
+def audit_detail(entity: str | None = None, limit: int = Query(30, ge=1, le=200), session: Session = Depends(get_session)):
+    return console.audit_detail(session, entity, limit)
+

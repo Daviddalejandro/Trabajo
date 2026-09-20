@@ -4,6 +4,7 @@ import { LAYERS, useHash } from "./components/ui";
 import Dashboard from "./pages/Dashboard";
 import Stewardship from "./pages/Stewardship";
 import AdminRdm from "./pages/AdminRdm";
+import RdmConsole from "./pages/RdmConsole";
 import Vista360 from "./pages/Vista360";
 import Compliance from "./pages/Compliance";
 import Matching from "./pages/Matching";
@@ -12,6 +13,7 @@ import Modelo from "./pages/Modelo";
 const NAV = [
   ["#/", "Tablero"],
   ["#/stewardship", "Consola de Stewardship"],
+  ["#/rdm-consola", "Consola RDM"],
   ["#/rdm", "Admin RDM"],
   ["#/party", "Vista 360"],
   ["#/compliance", "Cumplimiento"],
@@ -39,6 +41,7 @@ export default function App() {
   const active = (href: string) => (href === "#/" ? hash === "#/" || hash === "" : hash.startsWith(href));
   let page = <Dashboard />;
   if (hash.startsWith("#/stewardship")) page = <Stewardship key={session.actor} />;
+  else if (hash.startsWith("#/rdm-consola")) page = <RdmConsole />;
   else if (hash.startsWith("#/rdm")) page = <AdminRdm />;
   else if (hash.startsWith("#/party")) page = <Vista360 hash={hash} />;
   else if (hash.startsWith("#/compliance")) page = <Compliance />;

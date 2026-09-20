@@ -117,6 +117,22 @@ Capturas: [`09_stewardship_vitrina_evidencia.png`](evidence/f4/README.md),
 [`10_vista360_vitrina_capa4.png`](evidence/f4/README.md) y
 [`11_vista360_vitrina_resumen.png`](evidence/f4/README.md).
 
+## 3 quater. Consola RDM: construir un catálogo de principio a fin
+
+`#/rdm-consola` recorre las cinco capas del RDM en el orden en que se construyen (regla dura §3.1). Para una demostración
+de diez minutos:
+
+| Paso | Dónde | Qué mirar |
+|---|---|---|
+| Recorrido guiado → «Ejecutar el recorrido» | tarjeta bajo las estaciones | Ocho pasos «hecho» (o «ya existía» si se repite): dominio `EXPERIENCIA`, catálogo `CAT_CANAL_PREFERIDO`, tres campos personalizados, cuatro valores más uno rechazado por el diccionario, sistema `APP_MOVIL`, integración y homologaciones, deprecación de `SMS` con versionado de `sms → SMS_RCS`, auditoría |
+| 1 · Dominios | «Nuevo dominio» | Código en MAYÚSCULAS; queda auditado con el actor de «Actúa como» |
+| 2 · Catálogos | «Nuevo catálogo» | El dominio debe existir antes; el código empieza por `CAT_`; fuente oficial y jerarquía |
+| 3 · Campos personalizados | seleccionar `CAT_ID_TYPE` | El diccionario inferido de la semilla: `validation_regex` (expresión regular), `has_check_digit` (sí/no), `applies_to` (código). Declarar un campo obligatorio sobre valores que no lo tienen se rechaza |
+| 4 · Listas de referencia | `CAT_CANAL_PREFERIDO`, «incluir deprecados» | Campos como columnas, `SMS` deprecado, «atributos» corrige un atributo (el código y el nombre siguen inmutables: la base rechaza el cambio) |
+| 5 · Sistemas fuente | «Registrar sistema fuente» | Sin sistema registrado no se puede declarar integración ni homologar (regla dura §3.4) |
+| 6 · Integraciones y homologación | «Nueva homologación» sobre un valor fuente ya homologado | La anterior se cierra y la nueva queda vigente; «cerrar» deja el valor fuente en UNKNOWN; la prueba canónica lo confirma |
+| 7 · Ciclo de vida | «Ver versiones» con `APP_MOVIL / canal_pref / CAT_CANAL_PREFERIDO / sms` | Dos versiones con vigencia; auditoría por capa con antes y después; rehomologar con conteo previo |
+
 ## 4. Probar sus propios casos de zona gris
 
 | Vía | Cómo | Cuándo usarla |
