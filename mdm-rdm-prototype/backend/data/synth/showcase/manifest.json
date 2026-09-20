@@ -1,0 +1,117 @@
+{
+  "seed": 20260920,
+  "cases": {
+    "S1": {
+      "doc": "956555954",
+      "doc_typo": "956559554",
+      "email": "margarita.peña9000@ejemplo.test",
+      "phone": "3026975930",
+      "name": "Margarita Hernández Galeano",
+      "sf_ec": "00090001",
+      "crm": "0009000001"
+    },
+    "S2": {
+      "doc": "943714576",
+      "email": "diana.acosta9001@ejemplo.test",
+      "phone": "3334834001",
+      "name": "Diana Díaz Rincón",
+      "ecc_sd": "0000900001",
+      "name_typo": "Diano Díaz Rincón",
+      "email_typo": "diana.acosta9001s@ejemplo.test",
+      "birth": "1948-03-12",
+      "birth_typo": "1948-12-03",
+      "portal": "u900001"
+    },
+    "S3": {
+      "doc_a": "997755277",
+      "name": "Esperanza Gómez Mosquera",
+      "birth_a": "1946-12-21",
+      "sf_ec": "00090002",
+      "doc_b": "916251075",
+      "birth_b": "1947-12-21",
+      "crm": "0009000002"
+    },
+    "S4": {
+      "cc": "957911735",
+      "passport": "AB987282",
+      "ti": "946940674",
+      "email": "paola.gómez9003@ejemplo.test",
+      "phone": "3385686996",
+      "name": "Paola Navarro Guzmán",
+      "sf_ec": "00090003",
+      "crm": "0009000003",
+      "portal": "u900002"
+    },
+    "S5": {
+      "nit": "851483266-1",
+      "legal": "Fundación Torres-Quintero",
+      "legal_typo": "Fundeción Torres-Quintero",
+      "ecc_sd": "0000900002",
+      "ecc_mm": "0000900001"
+    },
+    "S6": {
+      "a": {
+        "doc": "935403402",
+        "name": "Eduardo Parada Jaramillo",
+        "birth": "1974-06-12",
+        "email": "eduardo.ortega9004@ejemplo.test",
+        "phone": "3121423465"
+      },
+      "b": {
+        "doc": "935404302",
+        "name": "Edaardo Perada Jeramillo",
+        "birth": "1974-12-06",
+        "email": "eduardo.ortega9004s@ejemplo.test",
+        "phone": "3121424365"
+      },
+      "sf_ec": "00090004",
+      "crm": "0009000004"
+    },
+    "S7": {
+      "a": {
+        "doc": "977048677",
+        "name": "Jesús García Suárez",
+        "birth": "1942-05-12",
+        "email": "jesús.gómez9005@ejemplo.test",
+        "phone": "3074647682"
+      },
+      "b": {
+        "doc": "977046877",
+        "name": "Jasús Varcía Saárez",
+        "birth": "1942-12-05",
+        "email": "jesús.gómez9005s@ejemplo.test",
+        "phone": "3074646782"
+      },
+      "sf_ec": "00090005",
+      "crm": "0009000005"
+    },
+    "S8": {
+      "doc": "961546352",
+      "name": "Laura Estrada Prada",
+      "email": "laura.domínguez9006@ejemplo.test",
+      "sf_ec": "00090006",
+      "portal": "u900003"
+    },
+    "S9": {
+      "doc": "932699013",
+      "a": "Víctor Rodríguez Aguirre · 2000-04-17",
+      "b": "Carlos Rodríguez Aguirre · 1995-04-17",
+      "sf_ec": "00090007",
+      "crm": "0009000006"
+    },
+    "S10": {
+      "legal": "Fundación Lozano Martínez and Silva",
+      "nit_a": "821222126-0",
+      "nit_b": "838671506-3",
+      "ecc_sd": "0000900003",
+      "ecc_mm": "0000900002"
+    }
+  },
+  "counts": {
+    "sf_ec": 7,
+    "ecc_sd": 3,
+    "ecc_mm": 2,
+    "crm_bp": 6,
+    "web_portal": 3
+  }
+}

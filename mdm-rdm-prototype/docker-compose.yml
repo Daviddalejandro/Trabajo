@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mdm
+      POSTGRES_PASSWORD: mdm
+      POSTGRES_DB: mdm_prototype
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mdm -d mdm_prototype"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://mdm:mdm@db:5432/mdm_prototype
+      APP_ENV: prototype
+      SYNTH_SEED: "20260913"
+    ports: ["8000:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  ui:
+    build: ./frontend
+    environment:
+      VITE_API_BASE: http://localhost:8000/api/v1
+    ports: ["5173:5173"]
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:

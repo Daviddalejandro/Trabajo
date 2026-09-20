@@ -1,0 +1,4 @@
+user_id,tipo_doc,num_doc,nombres,apellidos,fecha_nacimiento,genero,email,celular,categoria,segmento_comercial,acepta_datos,acepta_comercial,ciudad,updated_at
+u900001,,,Diano,Díaz Rincón,1948-12-03,F,diana.acosta9001s@ejemplo.test,+57 333 483 4001,,,true,false,05001,2026-09-05T10:00:00
+u900002,tarjeta_identidad,946940674,Paola Xiomara,Navarro Guzmán,1954-11-18,F,paola.gómez9003@ejemplo.test,+57 338 568 6996,A,,true,true,05001,2026-09-05T10:00:00
+u900003,,,Laura María,Estrada Prada,,,laura.domínguez9006@ejemplo.test,,,,true,true,76001,2026-09-05T10:00:00
