@@ -51,6 +51,16 @@ homologación → ciclo de vida y auditoría), cada una con su explicación, lo 
    (`SMS_RCS` vigente, `SMS` cerrada); auditoría filtrable por capa con el antes y el después de cada cambio.
 4. Los contadores de las estaciones (dominios, catálogos, campos, valores activos +deprecados, sistemas,
    integraciones · homologaciones, entradas de auditoría) se actualizan con cada alta.
+5. **Navegación con contexto** (para mostrar el flujo de un usuario real): en **2 · Catálogos** cada fila ofrece
+   «campos · valores · homologar →»; lo que se elige queda en la barra **«Trabajando sobre: Dominio › Catálogo ›
+   Sistema fuente»** y en la URL (`#/rdm-consola/valores?catalogo=CAT_CANAL_PREFERIDO`), así que «atrás» y los enlaces
+   compartidos vuelven al mismo punto. Cada estación termina con el **siguiente paso** ya contextualizado
+   («Siguiente: Homologar CAT_CANAL_PREFERIDO con una fuente →»). En **4 · Listas de referencia**, «homologar este
+   catálogo →» abre **6 · Homologación** filtrada por el catálogo (solo sus integraciones y mapeos, formularios
+   prefijados). Si la fuente no existe, el selector de sistema ofrece **«＋ registrar una fuente nueva…»**: lleva a
+   **5 · Sistemas fuente** con el aviso de desvío («está registrando la fuente para homologar CAT_…»), y al registrarla
+   vuelve solo a Homologación con la fuente ya seleccionada y el catálogo intacto. Desde un mapeo, «historial» abre
+   **7 · Ciclo de vida** con las versiones ya cargadas.
 
 ## Fase 2 · Staging, MDM y pipeline
 

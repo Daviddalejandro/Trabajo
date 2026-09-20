@@ -132,6 +132,8 @@ de diez minutos:
 | 5 · Sistemas fuente | «Registrar sistema fuente» | Sin sistema registrado no se puede declarar integración ni homologar (regla dura §3.4) |
 | 6 · Integraciones y homologación | «Nueva homologación» sobre un valor fuente ya homologado | La anterior se cierra y la nueva queda vigente; «cerrar» deja el valor fuente en UNKNOWN; la prueba canónica lo confirma |
 | 7 · Ciclo de vida | «Ver versiones» con `APP_MOVIL / canal_pref / CAT_CANAL_PREFERIDO / sms` | Dos versiones con vigencia; auditoría por capa con antes y después; rehomologar con conteo previo |
+| Flujo con contexto | 2 · Catálogos → «valores» en `CAT_CANAL_PREFERIDO` → «homologar este catálogo →» | La barra «Trabajando sobre» y la URL (`?catalogo=…`) conservan el catálogo; Homologación llega filtrada (solo `APP_MOVIL`) y con los formularios prefijados; el pie «Siguiente: …» está contextualizado en cada estación |
+| Desvío con retorno | en 6 · Homologación, selector de sistema → «＋ registrar una fuente nueva…» | Va a 5 · Sistemas fuente con el aviso ámbar de desvío; «Registrar y volver a homologar» regresa a Homologación con la fuente seleccionada (`?catalogo=…&sistema=…`) y un aviso verde; «atrás» del navegador respeta el recorrido |
 
 ## 4. Probar sus propios casos de zona gris
 

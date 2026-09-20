@@ -929,7 +929,11 @@ unmerge restaura desde `pre_merge_snapshot` y re-ejecuta survivorship en ambos.
    tocar código ni nombre) → sistemas fuente (owner y steward, §3.4) → integraciones y homologación
    (campo fuente → catálogo; valor fuente → canónico versionado: la nueva cierra la anterior, cierre explícito,
    prueba canónica) → ciclo de vida y auditoría (historial de versiones, rehomologar §7.2, `RDM_AUDIT_LOG`
-   con antes y después de las cinco capas). Incluye un **recorrido guiado** idempotente que crea un catálogo
+   con antes y después de las cinco capas). La consola navega **con contexto**: el dominio, el catálogo y el
+   sistema fuente elegidos acompañan al usuario de estación en estación (barra «Trabajando sobre», URL
+   `#/rdm-consola/<estación>?catalogo=…&sistema=…`, «siguiente paso» contextual); desde las listas de referencia
+   se pasa a la homologación del mismo catálogo y, si la fuente no existe, «registrar una fuente nueva» desvía a
+   sistemas fuente y vuelve con la fuente seleccionada. Incluye un **recorrido guiado** idempotente que crea un catálogo
    sintético completo contra la API. El Admin RDM clásico se conserva.
 3. **Vista 360 del golden record**: cabecera con resumen ejecutivo (elegibilidad por finalidad
    con su razón, servicios activos por UES, hallazgos DQ abiertos, pares de matching pendientes,

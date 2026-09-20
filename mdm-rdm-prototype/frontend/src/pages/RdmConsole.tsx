@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, errorText } from "../api";
 import { Badge, Button, Card, Notice, Spinner, Table, fmtDate } from "../components/ui";
 
@@ -8,6 +8,13 @@ import { Badge, Button, Card, Notice, Spinner, Table, fmtDate } from "../compone
  * antes que el MDM): 1 dominios → 2 catálogos → 3 campos personalizados → 4 listas de referencia (valores) →
  * 5 sistemas fuente → 6 integraciones y homologación → 7 ciclo de vida y auditoría. Cada estación explica qué es,
  * muestra lo que hay y permite crearlo; el «recorrido guiado» ejecuta un ejemplo completo contra la API real.
+ *
+ * Navegación con contexto (ISO 9241-110:2020 cl. 4.4 conformidad con las expectativas y 4.5 control por el usuario):
+ * el objeto sobre el que se trabaja (dominio › catálogo › sistema fuente) acompaña al usuario de estación en estación,
+ * se ve en la barra «Trabajando sobre», viaja en la URL (#/rdm-consola/<estación>?catalogo=…&sistema=…) para que
+ * «atrás» y los enlaces compartidos lo conserven, y cada estación termina con el «siguiente paso» ya contextualizado.
+ * El desvío «necesito una fuente nueva» (Homologación → Sistemas fuente → de vuelta a Homologación con la fuente
+ * seleccionada) se marca con ?volver=mapeo para que el usuario nunca pierda el catálogo que estaba homologando.
  */
 
 type Msg = { kind: "ok" | "error" | "warn"; text: string } | null;
@@ -34,14 +41,46 @@ function Why({ s }: { s: Station }) {
   return <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-sm text-slate-700"><b className="text-blue-900">{s.n} · {s.title}.</b> {s.why}</div>;
 }
 
+// ------------------------------------------------------------------ contexto de trabajo (dominio › catálogo › sistema) en la URL
+type Ctx = { domain: string; catalog: string; system: string; volver: string };
+const EMPTY_CTX: Ctx = { domain: "", catalog: "", system: "", volver: "" };
+const STATION_KEYS = STATIONS.map((x) => x.key);
+function parseHash(): { station: string; ctx: Ctx } {
+  const h = decodeURIComponent(window.location.hash).replace(/^#\/rdm-consola\/?/, "");
+  const [path, q = ""] = h.split("?");
+  const p = new URLSearchParams(q);
+  return { station: STATION_KEYS.includes(path) ? path : "dominios", ctx: { domain: p.get("dominio") ?? "", catalog: p.get("catalogo") ?? "", system: p.get("sistema") ?? "", volver: p.get("volver") ?? "" } };
+}
+function buildHash(station: string, ctx: Ctx): string {
+  const p = new URLSearchParams();
+  if (ctx.domain) p.set("dominio", ctx.domain);
+  if (ctx.catalog) p.set("catalogo", ctx.catalog);
+  if (ctx.system) p.set("sistema", ctx.system);
+  if (ctx.volver) p.set("volver", ctx.volver);
+  const q = p.toString();
+  return `#/rdm-consola/${station}${q ? `?${q}` : ""}`;
+}
+type Go = (station: string, patch?: Partial<Ctx>, flash?: Msg) => void;
+export type HistoryPreset = { system: string; field: string; catalog: string; source_value: string };
+
 export default function RdmConsole() {
-  const [station, setStation] = useState("dominios");
+  const [init] = useState(parseHash);
+  const [station, setStation] = useState(init.station);
+  const [ctx, setCtxState] = useState<Ctx>(init.ctx);
+  const [flash, setFlash] = useState<Msg>(null);
+  const [preset, setPreset] = useState<HistoryPreset | null>(null);
   const [ov, setOv] = useState<any | null>(null);
-  const [domain, setDomain] = useState("");
-  const [catalog, setCatalog] = useState("");
   const [tick, setTick] = useState(0);
   const refresh = useCallback(() => { setTick((t) => t + 1); api("/rdm/overview").then(setOv).catch(() => undefined); }, []);
   useEffect(refresh, [refresh]);
+  const cur = useRef({ station: init.station, ctx: init.ctx }); cur.current = { station, ctx };
+  // el contexto cambia sin crear entrada en el historial (selector); cambiar de estación sí la crea («atrás» vuelve a la anterior)
+  const setCtx = useCallback((patch: Partial<Ctx>) => { const n = { ...cur.current.ctx, ...patch }; setCtxState(n); window.history.replaceState(null, "", buildHash(cur.current.station, n)); }, []);
+  const go: Go = useCallback((st, patch, fl) => { const n = { ...cur.current.ctx, ...(patch ?? {}) }; setCtxState(n); setStation(st); setFlash(fl ?? null); window.location.hash = buildHash(st, n); window.scrollTo({ top: 0, behavior: "smooth" }); }, []);
+  useEffect(() => {
+    const on = () => { if (!window.location.hash.startsWith("#/rdm-consola")) return; const h = parseHash(); setStation(h.station); setCtxState(h.ctx); };
+    window.addEventListener("hashchange", on); return () => window.removeEventListener("hashchange", on);
+  }, []);
   const s = STATIONS.find((x) => x.key === station)!;
   const counts: Record<string, ReactNode> = ov ? {
     dominios: ov.domains, catalogos: ov.catalogs, campos: ov.attributes, valores: `${ov.values_active}${ov.values_deprecated ? ` +${ov.values_deprecated}` : ""}`,
@@ -51,11 +90,11 @@ export default function RdmConsole() {
   return (
     <div className="space-y-4" data-testid="rdm-console">
       <Card title="Consola RDM · el dato de referencia de arriba hacia abajo" actions={<a className="text-xs text-blue-700 underline" href="#/rdm">ir al Admin RDM clásico</a>}>
-        <p className="text-sm text-slate-600">El RDM se construye en este orden y el MDM lo consume después (regla dura §3.1). Recorra las estaciones o ejecute el <b>recorrido guiado</b>, que crea un ejemplo completo con datos sintéticos contra la API real.</p>
+        <p className="text-sm text-slate-600">El RDM se construye en este orden y el MDM lo consume después (regla dura §3.1). Recorra las estaciones o ejecute el <b>recorrido guiado</b>, que crea un ejemplo completo con datos sintéticos contra la API real. Lo que elija en una estación (dominio, catálogo, sistema fuente) lo acompaña a la siguiente.</p>
         <ol className="mt-3 grid gap-1 sm:grid-cols-4 lg:grid-cols-7" aria-label="Estaciones">
           {STATIONS.map((x) => (
             <li key={x.key}>
-              <button onClick={() => setStation(x.key)} data-testid="rdm-station" aria-current={x.key === station ? "step" : undefined}
+              <button onClick={() => go(x.key)} data-testid="rdm-station" aria-current={x.key === station ? "step" : undefined}
                 className={`h-full w-full rounded-lg border p-2 text-left ${x.key === station ? "border-blue-700 bg-blue-700 text-white" : "border-slate-200 bg-white hover:bg-slate-50"}`}>
                 <div className="flex items-center justify-between text-xs"><span className="font-semibold">{x.n} · {x.title}</span><span className={`rounded px-1 ${x.key === station ? "bg-white/20" : "bg-slate-100 text-slate-600"}`}>{counts[x.key] ?? "…"}</span></div>
                 <div className={`mt-0.5 text-[11px] ${x.key === station ? "text-blue-100" : "text-slate-500"}`}>{x.short}</div>
@@ -63,17 +102,83 @@ export default function RdmConsole() {
             </li>
           ))}
         </ol>
+        <ContextBar ctx={ctx} station={station} go={go} setCtx={setCtx} />
       </Card>
       <Why s={s} />
-      <GuidedTour onDone={() => { refresh(); }} />
-      {station === "dominios" && <Domains onChange={refresh} onPick={(d) => { setDomain(d); setStation("catalogos"); }} tick={tick} />}
-      {station === "catalogos" && <Catalogs domain={domain} setDomain={setDomain} onChange={refresh} onPick={(c) => { setCatalog(c); setStation("campos"); }} tick={tick} />}
-      {station === "campos" && <Attributes catalog={catalog} setCatalog={setCatalog} onChange={refresh} tick={tick} />}
-      {station === "valores" && <Values catalog={catalog} setCatalog={setCatalog} onChange={refresh} tick={tick} />}
-      {station === "sistemas" && <Systems onChange={refresh} tick={tick} />}
-      {station === "mapeo" && <Mappings catalog={catalog} onChange={refresh} tick={tick} />}
-      {station === "ciclo" && <Lifecycle tick={tick} />}
+      {station === "dominios" && <GuidedTour onDone={() => { refresh(); }} />}
+      {flash && <Notice kind={flash.kind}>{flash.text}</Notice>}
+      {station === "dominios" && <Domains onChange={refresh} onPick={(d) => go("catalogos", { domain: d })} tick={tick} />}
+      {station === "catalogos" && <Catalogs domain={ctx.domain} setDomain={(d) => setCtx({ domain: d })} onChange={refresh} onPick={(c, st) => go(st, { catalog: c })} tick={tick} />}
+      {station === "campos" && <Attributes catalog={ctx.catalog} setCatalog={(c) => setCtx({ catalog: c })} onChange={refresh} tick={tick} />}
+      {station === "valores" && <Values catalog={ctx.catalog} setCatalog={(c) => setCtx({ catalog: c })} onChange={refresh} tick={tick} go={go} />}
+      {station === "sistemas" && <Systems ctx={ctx} go={go} onChange={refresh} tick={tick} />}
+      {station === "mapeo" && <Mappings ctx={ctx} setCtx={setCtx} go={go} onChange={refresh} tick={tick} onHistory={(h) => { setPreset(h); go("ciclo", { system: h.system, catalog: h.catalog }); }} />}
+      {station === "ciclo" && <Lifecycle ctx={ctx} preset={preset} tick={tick} />}
+      <StepNav station={station} ctx={ctx} go={go} />
     </div>
+  );
+}
+
+// ------------------------------------------------------------------ barra «Trabajando sobre» y desvío con retorno
+function ContextBar({ ctx, station, go, setCtx }: { ctx: Ctx; station: string; go: Go; setCtx: (p: Partial<Ctx>) => void }) {
+  const chip = (label: string, value: string, target: string, clear: Partial<Ctx>) => (
+    <span className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-2 py-0.5 text-xs" data-testid="rdm-ctx-chip">
+      <span className="text-slate-500">{label}</span>
+      <button className="font-mono font-semibold text-blue-800 hover:underline" title={`ir a ${STATIONS.find((x) => x.key === target)!.title}`} onClick={() => go(target)}>{value}</button>
+      <button className="text-slate-400 hover:text-red-700" aria-label={`quitar ${label.toLowerCase()} del contexto`} title="quitar del contexto" onClick={() => setCtx(clear)}>×</button>
+    </span>
+  );
+  const any = ctx.domain || ctx.catalog || ctx.system;
+  return (
+    <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2" data-testid="rdm-ctx">
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span className="font-semibold text-slate-600">Trabajando sobre:</span>
+        {!any && <span className="text-slate-500">nada todavía. Elija un dominio, un catálogo o un sistema fuente y la consola lo llevará de estación en estación sin perderlo.</span>}
+        {ctx.domain && chip("Dominio", ctx.domain, "catalogos", { domain: "" })}
+        {ctx.domain && ctx.catalog && <span className="text-slate-400">›</span>}
+        {ctx.catalog && chip("Catálogo", ctx.catalog, "valores", { catalog: "" })}
+        {ctx.catalog && ctx.system && <span className="text-slate-400">›</span>}
+        {ctx.system && chip("Sistema fuente", ctx.system, "mapeo", { system: "" })}
+        {any && <span className="ml-auto text-slate-400">la URL conserva este contexto: «atrás» y los enlaces compartidos vuelven aquí</span>}
+      </div>
+      {ctx.volver === "mapeo" && station === "sistemas" && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-900" data-testid="rdm-detour">
+          <b>Desvío:</b> está registrando la fuente que necesita para homologar <span className="font-mono">{ctx.catalog || "el catálogo"}</span>. Al registrarla volverá automáticamente a Homologación con la fuente ya seleccionada.
+          <button className="ml-auto underline" onClick={() => go("mapeo", { volver: "" })}>cancelar y volver sin registrar</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------ siguiente paso contextual al pie de cada estación
+function StepNav({ station, ctx, go }: { station: string; ctx: Ctx; go: Go }) {
+  const i = STATION_KEYS.indexOf(station);
+  const prev = i > 0 ? STATIONS[i - 1] : null;
+  const next = i < STATIONS.length - 1 ? STATIONS[i + 1] : null;
+  const m = (v: string) => <span className="font-mono">{v}</span>;
+  let nextLabel: ReactNode = next ? next.title : null, hint: ReactNode = null, patch: Partial<Ctx> = {}, target = next?.key ?? "";
+  switch (station) {
+    case "dominios": nextLabel = ctx.domain ? <>Catálogos de {m(ctx.domain)}</> : "Catálogos"; hint = ctx.domain ? null : "Con «ver catálogos →» en un dominio, la siguiente estación llega ya filtrada."; break;
+    case "catalogos": nextLabel = ctx.catalog ? <>Campos personalizados de {m(ctx.catalog)}</> : "Campos personalizados"; hint = ctx.catalog ? "Si el catálogo no necesita campos propios, salte a las listas de referencia desde la tabla («valores»)." : "Elija un catálogo en la tabla (campos · valores · homologar) para llevarlo consigo."; break;
+    case "campos": nextLabel = ctx.catalog ? <>Listas de referencia de {m(ctx.catalog)}</> : "Listas de referencia"; hint = "Los campos definidos aquí aparecen como columnas y se validan al publicar cada valor."; break;
+    case "valores": nextLabel = ctx.catalog ? <>Homologar {m(ctx.catalog)} con una fuente</> : "Integraciones y homologación"; target = "mapeo"; hint = "El catálogo sigue seleccionado: Homologación mostrará solo sus integraciones y mapeos. Si la fuente aún no existe, allí mismo podrá registrarla."; break;
+    case "sistemas":
+      if (ctx.volver === "mapeo") { nextLabel = <>Volver a la homologación de {m(ctx.catalog || "…")}</>; target = "mapeo"; patch = { volver: "" }; hint = "Registre la fuente y volverá solo; este botón vuelve sin registrar."; }
+      else if (ctx.system) { nextLabel = <>Homologar con {m(ctx.system)}{ctx.catalog ? <> → {m(ctx.catalog)}</> : null}</>; target = "mapeo"; }
+      else { hint = "«homologar →» en un sistema lo lleva a Homologación con ese sistema seleccionado."; }
+      break;
+    case "mapeo": nextLabel = "Ciclo de vida y auditoría"; hint = ctx.system || ctx.catalog ? <>El historial de versiones llegará prefijado con {m([ctx.system, ctx.catalog].filter(Boolean).join(" / "))}.</> : "Historial de versiones, rehomologación y auditoría con el antes y el después."; break;
+    case "ciclo": nextLabel = null; hint = "Fin del ciclo. Para otro catálogo, vuelva a Dominios o Catálogos: el contexto se conserva hasta que lo quite."; break;
+  }
+  return (
+    <nav aria-label="Siguiente paso" className="flex flex-wrap items-center gap-3 rounded-lg border bg-white px-4 py-3" data-testid="rdm-stepnav">
+      {prev ? <button className="text-sm text-blue-700 hover:underline" onClick={() => go(prev.key)}>← {prev.n} · {prev.title}</button> : <span className="text-sm text-slate-400">Inicio del ciclo</span>}
+      {hint && <span className="text-xs text-slate-500">{hint}</span>}
+      <span className="ml-auto">
+        {nextLabel ? <Button onClick={() => go(target, patch)}><span data-testid="rdm-next">Siguiente: {nextLabel} →</span></Button> : <button className="text-sm text-blue-700 hover:underline" onClick={() => go("dominios")}>↺ Volver a Dominios</button>}
+      </span>
+    </nav>
   );
 }
 
@@ -194,10 +299,11 @@ function Domains({ onChange, onPick, tick }: { onChange: () => void; onPick: (d:
 }
 
 // ------------------------------------------------------------------ 2 · catálogos
-function Catalogs({ domain, setDomain, onChange, onPick, tick }: { domain: string; setDomain: (d: string) => void; onChange: () => void; onPick: (c: string) => void; tick: number }) {
+function Catalogs({ domain, setDomain, onChange, onPick, tick }: { domain: string; setDomain: (d: string) => void; onChange: () => void; onPick: (c: string, station: string) => void; tick: number }) {
   const [domains, setDomains] = useState<any[]>([]);
   const [items, setItems] = useState<any[] | null>(null);
   const [form, setForm] = useState({ catalog_code: "CAT_", catalog_name: "", domain_code: "", official_source: "", is_hierarchical: false });
+  const [created, setCreated] = useState("");
   const [msg, setMsg] = useMsg();
   useEffect(() => { api("/rdm/domains").then(setDomains); }, [tick]);
   useEffect(() => { setItems(null); api("/rdm/catalogs", { params: { domain: domain || null } }).then(setItems); }, [domain, tick]);
@@ -205,7 +311,7 @@ function Catalogs({ domain, setDomain, onChange, onPick, tick }: { domain: strin
     setMsg(null);
     try {
       const r = await api("/rdm/catalogs", { method: "POST", body: { ...form, catalog_code: form.catalog_code.trim().toUpperCase(), catalog_name: form.catalog_name.trim(), domain_code: form.domain_code || domain, official_source: form.official_source || null } });
-      setMsg({ kind: "ok", text: `Catálogo ${r.catalog_code} creado en ${r.domain_code}. Siguiente paso: definir sus campos y publicar valores.` }); setForm({ catalog_code: "CAT_", catalog_name: "", domain_code: "", official_source: "", is_hierarchical: false }); onChange();
+      setMsg({ kind: "ok", text: `Catálogo ${r.catalog_code} creado en ${r.domain_code}. Siguiente paso: definir sus campos y publicar valores.` }); setForm({ catalog_code: "CAT_", catalog_name: "", domain_code: "", official_source: "", is_hierarchical: false }); setCreated(r.catalog_code); onChange();
     } catch (e) { setMsg({ kind: "error", text: errorText(e) }); }
   };
   return (
@@ -215,7 +321,7 @@ function Catalogs({ domain, setDomain, onChange, onPick, tick }: { domain: strin
         {items && <div className="max-h-[28rem] overflow-auto"><Table head={["Código", "Nombre", "Dominio", "Fuente oficial", "Valores", ""]} rows={items.map((c) => [
           <span className="font-mono text-xs">{c.catalog_code}</span>, c.catalog_name, <span className="text-xs">{c.domain_code}</span>, <span className="text-xs text-slate-600">{c.official_source ?? "—"}</span>,
           <span className="text-xs">{c.active_values} activos{c.deprecated_values ? ` · ${c.deprecated_values} depr.` : ""}{c.is_hierarchical ? " · jerárquico" : ""}</span>,
-          <button className="text-xs text-blue-700 underline" onClick={() => onPick(c.catalog_code)}>abrir →</button>])} /></div>}
+          <span className="flex gap-2 whitespace-nowrap text-xs"><button className="text-blue-700 underline" title="definir los campos personalizados" onClick={() => onPick(c.catalog_code, "campos")}>campos</button><button className="text-blue-700 underline" title="ver y publicar los valores" onClick={() => onPick(c.catalog_code, "valores")}>valores</button><button className="text-blue-700 underline" title="integraciones y homologaciones de este catálogo" onClick={() => onPick(c.catalog_code, "mapeo")}>homologar →</button></span>])} /></div>}
       </Card>
       <Card title="Nuevo catálogo">
         <Show msg={msg} />
@@ -225,7 +331,7 @@ function Catalogs({ domain, setDomain, onChange, onPick, tick }: { domain: strin
           <input aria-label="Nombre del catálogo" placeholder="Nombre de negocio" value={form.catalog_name} onChange={(e) => setForm({ ...form, catalog_name: e.target.value })} className={input} />
           <input aria-label="Fuente oficial" placeholder="Fuente oficial (DANE, DIAN, política interna…)" value={form.official_source} onChange={(e) => setForm({ ...form, official_source: e.target.value })} className={input} />
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_hierarchical} onChange={(e) => setForm({ ...form, is_hierarchical: e.target.checked })} /> jerárquico (los valores pueden tener padre)</label>
-          <div><Button disabled={!(form.domain_code || domain) || form.catalog_code.length < 5 || !form.catalog_name} onClick={create}>Crear catálogo</Button></div>
+          <div className="flex flex-wrap items-center gap-2"><Button disabled={!(form.domain_code || domain) || form.catalog_code.length < 5 || !form.catalog_name} onClick={create}>Crear catálogo</Button>{created && <Button tone="neutral" onClick={() => onPick(created, "campos")}>Continuar con {created} →</Button>}</div>
         </div>
       </Card>
     </div>
@@ -282,7 +388,7 @@ function Attributes({ catalog, setCatalog, onChange, tick }: { catalog: string; 
 }
 
 // ------------------------------------------------------------------ 4 · valores
-function Values({ catalog, setCatalog, onChange, tick }: { catalog: string; setCatalog: (c: string) => void; onChange: () => void; tick: number }) {
+function Values({ catalog, setCatalog, onChange, tick, go }: { catalog: string; setCatalog: (c: string) => void; onChange: () => void; tick: number; go: Go }) {
   const [items, setItems] = useState<any[] | null>(null);
   const [defs, setDefs] = useState<any[]>([]);
   const [inactive, setInactive] = useState(false);
@@ -325,7 +431,7 @@ function Values({ catalog, setCatalog, onChange, tick }: { catalog: string; setC
   };
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
-      <Card title={<span>Lista de referencia <span className="font-mono">{catalog || "…"}</span></span>} actions={<div className="flex items-center gap-2"><CatalogPicker catalog={catalog} setCatalog={setCatalog} /><label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={inactive} onChange={(e) => setInactive(e.target.checked)} /> incluir deprecados</label></div>}>
+      <Card title={<span>Lista de referencia <span className="font-mono">{catalog || "…"}</span></span>} actions={<div className="flex items-center gap-2"><CatalogPicker catalog={catalog} setCatalog={setCatalog} /><label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={inactive} onChange={(e) => setInactive(e.target.checked)} /> incluir deprecados</label><button className="whitespace-nowrap rounded border border-blue-700 px-2 py-0.5 text-xs font-medium text-blue-800 hover:bg-blue-50" data-testid="rdm-go-mapeo" title="ir a Integraciones y homologación con este catálogo seleccionado" onClick={() => go("mapeo", { catalog })}>homologar este catálogo →</button></div>}>
         <Show msg={msg} />
         {!items && <Spinner />}
         <div className="max-h-[30rem] overflow-auto">
@@ -366,31 +472,39 @@ function Values({ catalog, setCatalog, onChange, tick }: { catalog: string; setC
 }
 
 // ------------------------------------------------------------------ 5 · sistemas fuente
-function Systems({ onChange, tick }: { onChange: () => void; tick: number }) {
+function Systems({ ctx, go, onChange, tick }: { ctx: Ctx; go: Go; onChange: () => void; tick: number }) {
   const [items, setItems] = useState<any[] | null>(null);
   const [form, setForm] = useState({ source_system_cd: "", name: "", data_owner: "", data_steward: "", is_prototype_active: true });
   const [msg, setMsg] = useMsg();
+  const [created, setCreated] = useState("");
+  const detour = ctx.volver === "mapeo";
   useEffect(() => { api("/rdm/source-systems").then(setItems); }, [tick]);
   const create = async () => {
     setMsg(null);
-    try { const r = await api("/rdm/source-systems", { method: "POST", body: { ...form, source_system_cd: form.source_system_cd.trim().toUpperCase() } }); setMsg({ kind: "ok", text: `Sistema ${r.source_system_cd} registrado. Ya puede declarar integraciones y homologaciones para él.` }); setForm({ source_system_cd: "", name: "", data_owner: "", data_steward: "", is_prototype_active: true }); onChange(); }
-    catch (e) { setMsg({ kind: "error", text: errorText(e) }); }
+    try {
+      const r = await api("/rdm/source-systems", { method: "POST", body: { ...form, source_system_cd: form.source_system_cd.trim().toUpperCase() } });
+      setForm({ source_system_cd: "", name: "", data_owner: "", data_steward: "", is_prototype_active: true }); onChange();
+      if (detour) { go("mapeo", { system: r.source_system_cd, volver: "" }, { kind: "ok", text: `Fuente ${r.source_system_cd} registrada (owner ${r.data_owner ?? "—"}, steward ${r.data_steward ?? "—"}). Ya está seleccionada: declare la integración con ${ctx.catalog || "el catálogo"} y homologue sus valores.` }); return; }
+      setCreated(r.source_system_cd); setMsg({ kind: "ok", text: `Sistema ${r.source_system_cd} registrado. Ya puede declarar integraciones y homologaciones para él.` });
+    } catch (e) { setMsg({ kind: "error", text: errorText(e) }); }
   };
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
       <Card title="Sistemas fuente registrados">
         {!items && <Spinner />}
-        {items && <Table head={["Código", "Nombre", "Owner (negocio)", "Steward", "Estado"]} rows={items.map((s) => [<span className="font-mono text-xs">{s.source_system_cd}</span>, s.name, s.data_owner ?? "—", <span className="font-mono text-xs">{s.data_steward ?? "—"}</span>, s.is_prototype_active ? <Badge tone="green">activo</Badge> : <Badge tone="gray">inactivo</Badge>])} />}
+        {items && <Table head={["Código", "Nombre", "Owner (negocio)", "Steward", "Estado", ""]} rows={items.map((x) => [<span className="font-mono text-xs">{x.source_system_cd}</span>, x.name, x.data_owner ?? "—", <span className="font-mono text-xs">{x.data_steward ?? "—"}</span>, x.is_prototype_active ? <Badge tone="green">activo</Badge> : <Badge tone="gray">inactivo</Badge>,
+          <button className="whitespace-nowrap text-xs text-blue-700 underline" title={ctx.catalog ? `homologar ${ctx.catalog} con ${x.source_system_cd}` : `integraciones y homologaciones de ${x.source_system_cd}`} onClick={() => go("mapeo", { system: x.source_system_cd, volver: "" })}>{detour ? "usar esta →" : "homologar →"}</button>])} />}
       </Card>
-      <Card title="Registrar sistema fuente">
+      <Card title={detour ? <span>Registrar la fuente para <span className="font-mono">{ctx.catalog || "…"}</span></span> : "Registrar sistema fuente"}>
         <Show msg={msg} />
         <div className="grid gap-2">
-          <input aria-label="Código del sistema" placeholder="CÓDIGO (p. ej. APP_MOVIL)" value={form.source_system_cd} onChange={(e) => setForm({ ...form, source_system_cd: e.target.value })} className={mono} />
+          <input aria-label="Código del sistema" placeholder="CÓDIGO (p. ej. APP_MOVIL)" value={form.source_system_cd} onChange={(e) => setForm({ ...form, source_system_cd: e.target.value })} className={mono} autoFocus={detour} />
           <input aria-label="Nombre del sistema" placeholder="Nombre" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={input} />
           <input aria-label="Owner del sistema" placeholder="Owner de negocio (gerencia / UES)" value={form.data_owner} onChange={(e) => setForm({ ...form, data_owner: e.target.value })} className={input} />
           <input aria-label="Steward del sistema" placeholder="Steward (usuario)" value={form.data_steward} onChange={(e) => setForm({ ...form, data_steward: e.target.value })} className={mono} />
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_prototype_active} onChange={(e) => setForm({ ...form, is_prototype_active: e.target.checked })} /> activo en el prototipo</label>
-          <div><Button disabled={!form.source_system_cd || !form.name} onClick={create}>Registrar</Button></div>
+          <div className="flex flex-wrap items-center gap-2"><Button disabled={!form.source_system_cd || !form.name} onClick={create}>{detour ? "Registrar y volver a homologar" : "Registrar"}</Button>{created && !detour && <Button tone="neutral" onClick={() => go("mapeo", { system: created })}>Homologar con {created} →</Button>}</div>
+          <p className="text-xs text-slate-500">Sin owner y steward no hay a quién preguntar por un código desconocido (regla dura §3.4). El registro queda auditado.</p>
         </div>
       </Card>
     </div>
@@ -398,31 +512,38 @@ function Systems({ onChange, tick }: { onChange: () => void; tick: number }) {
 }
 
 // ------------------------------------------------------------------ 6 · integraciones y homologación
-function Mappings({ catalog, onChange, tick }: { catalog: string; onChange: () => void; tick: number }) {
+const NEW_SYSTEM = "__nueva_fuente__";
+function Mappings({ ctx, setCtx, go, onChange, tick, onHistory }: { ctx: Ctx; setCtx: (p: Partial<Ctx>) => void; go: Go; onChange: () => void; tick: number; onHistory: (h: HistoryPreset) => void }) {
   const [systems, setSystems] = useState<any[]>([]);
   const [catalogs, setCatalogs] = useState<any[]>([]);
-  const [system, setSystem] = useState("");
   const [ints, setInts] = useState<any[] | null>(null);
   const [maps, setMaps] = useState<any[] | null>(null);
   const [filter, setFilter] = useState("");
+  const [scopeAll, setScopeAll] = useState(false);
   const [msg, setMsg] = useMsg();
-  const [fi, setFi] = useState({ catalog: catalog || "", system: "", source_field: "" });
-  const [fm, setFm] = useState({ system: "", field: "", catalog: catalog || "", source_value: "", value_code: "" });
-  const [test, setTest] = useState({ system: "SAP_CRM", field: "GESCHL", value: "1" });
+  const [fi, setFi] = useState({ catalog: ctx.catalog, system: ctx.system, source_field: "" });
+  const [fm, setFm] = useState({ system: ctx.system, field: "", catalog: ctx.catalog, source_value: "", value_code: "" });
+  const [test, setTest] = useState({ system: ctx.system || "SAP_CRM", field: ctx.system ? "" : "GESCHL", value: ctx.system ? "" : "1" });
   const [testOut, setTestOut] = useState<{ ok: boolean; text: string } | null>(null);
   const [values, setValues] = useState<any[]>([]);
+  const catalog = scopeAll ? "" : ctx.catalog, system = ctx.system;
   useEffect(() => { api("/rdm/source-systems").then(setSystems); api("/rdm/catalogs").then(setCatalogs); }, [tick]);
-  const load = useCallback(() => { api("/rdm/integrations", { params: { system: system || null } }).then(setInts); api("/rdm/mappings", { params: { system: system || null } }).then(setMaps); }, [system]);
+  // el contexto manda sobre los formularios: al volver del desvío con la fuente nueva, ya viene seleccionada
+  useEffect(() => { setFi((f) => ({ ...f, catalog: ctx.catalog || f.catalog, system: ctx.system || f.system })); setFm((f) => ({ ...f, catalog: ctx.catalog || f.catalog, system: ctx.system || f.system, value_code: ctx.catalog && ctx.catalog !== f.catalog ? "" : f.value_code })); if (ctx.system) setTest((t) => ({ ...t, system: ctx.system })); }, [ctx.catalog, ctx.system]);
+  const load = useCallback(() => { setInts(null); setMaps(null); api("/rdm/integrations", { params: { system: system || null, catalog: catalog || null } }).then(setInts); api("/rdm/mappings", { params: { system: system || null, catalog: catalog || null } }).then(setMaps); }, [system, catalog]);
   useEffect(load, [load, tick]);
   useEffect(() => { if (fm.catalog) api(`/rdm/catalogs/${fm.catalog}/values`, { params: { limit: 1000 } }).then((r) => setValues(r.items.filter((v: any) => !v.technical && v.is_active))).catch(() => setValues([])); }, [fm.catalog]);
+  // la integración declarada sugiere el campo de la homologación y de la prueba (menos digitación, menos error)
+  useEffect(() => { if (!ints?.length) return; const i = ints.find((x) => x.source_system_cd === (fm.system || system)) ?? ints[0]; if (!fm.field) setFm((f) => ({ ...f, field: i.source_field, system: f.system || i.source_system_cd, catalog: f.catalog || i.catalog_code })); if (!test.field) setTest((t) => ({ ...t, field: i.source_field, system: t.system || i.source_system_cd })); }, [ints]); // eslint-disable-line
+  const pickSystem = (x: string, on: (v: string) => void) => { if (x === NEW_SYSTEM) { go("sistemas", { volver: "mapeo" }); return; } on(x); };
   const createInt = async () => {
     setMsg(null);
-    try { const r = await api("/rdm/integrations", { method: "POST", body: fi }); setMsg({ kind: r.created ? "ok" : "warn", text: r.created ? `Integración ${r.source_system_cd}.${r.source_field} → ${r.catalog_code} declarada` : "Esa integración ya existía" }); setFm({ ...fm, system: fi.system, field: fi.source_field, catalog: fi.catalog }); load(); onChange(); }
+    try { const r = await api("/rdm/integrations", { method: "POST", body: fi }); setMsg({ kind: r.created ? "ok" : "warn", text: r.created ? `Integración ${r.source_system_cd}.${r.source_field} → ${r.catalog_code} declarada. Ahora homologue cada valor fuente a su canónico.` : "Esa integración ya existía" }); setFm({ ...fm, system: fi.system, field: fi.source_field, catalog: fi.catalog }); setTest({ system: fi.system, field: fi.source_field, value: "" }); setCtx({ system: fi.system, catalog: fi.catalog }); load(); onChange(); }
     catch (e) { setMsg({ kind: "error", text: errorText(e) }); }
   };
   const createMap = async () => {
     setMsg(null);
-    try { const r = await api("/rdm/mappings", { method: "POST", body: { ...fm, value_code: fm.value_code.toUpperCase() } }); setMsg({ kind: "ok", text: r.created ? `Homologación ${fm.system}/${fm.field}/${fm.source_value} → ${fm.catalog}.${r.value_code} vigente (si había otra, quedó cerrada en el histórico)` : "Ya existía con ese canónico" }); setFm({ ...fm, source_value: "", value_code: "" }); load(); onChange(); }
+    try { const r = await api("/rdm/mappings", { method: "POST", body: { ...fm, value_code: fm.value_code.toUpperCase() } }); setMsg({ kind: "ok", text: r.created ? `Homologación ${fm.system}/${fm.field}/${fm.source_value} → ${fm.catalog}.${r.value_code} vigente (si había otra, quedó cerrada en el histórico)` : "Ya existía con ese canónico" }); setTest({ system: fm.system, field: fm.field, value: fm.source_value }); setFm({ ...fm, source_value: "", value_code: "" }); load(); onChange(); }
     catch (e) { setMsg({ kind: "error", text: errorText(e) }); }
   };
   const retire = async (m: any) => {
@@ -431,17 +552,38 @@ function Mappings({ catalog, onChange, tick }: { catalog: string; onChange: () =
   };
   const runTest = async () => { setTestOut(null); try { const o = await api("/rdm/homologate", { params: test }); setTestOut({ ok: true, text: `${o.source_system_cd}/${o.source_field}/${o.source_value} → ${o.catalog_code}.${o.value_code} (${o.value_name})` }); } catch (e) { setTestOut({ ok: false, text: errorText(e) }); } };
   const shown = (maps ?? []).filter((m) => !filter || `${m.source_field} ${m.source_value} ${m.catalog_code} ${m.value_code}`.toLowerCase().includes(filter.toLowerCase()));
-  const sysSel = (v: string, on: (x: string) => void, label: string) => <select aria-label={label} value={v} onChange={(e) => on(e.target.value)} className={input}><option value="">Sistema fuente…</option>{systems.map((s) => <option key={s.source_system_cd} value={s.source_system_cd}>{s.source_system_cd}</option>)}</select>;
-  const catSel = (v: string, on: (x: string) => void, label: string) => <select aria-label={label} value={v} onChange={(e) => on(e.target.value)} className={input}><option value="">Catálogo…</option>{catalogs.map((c) => <option key={c.catalog_code} value={c.catalog_code}>{c.catalog_code}</option>)}</select>;
+  const sysSel = (v: string, on: (x: string) => void, label: string) => (
+    <select aria-label={label} value={v} onChange={(e) => pickSystem(e.target.value, on)} className={`${input} w-full min-w-0`}>
+      <option value="">Sistema fuente…</option>
+      {systems.map((x) => <option key={x.source_system_cd} value={x.source_system_cd}>{x.source_system_cd} · {x.name}</option>)}
+      <option value={NEW_SYSTEM}>＋ registrar una fuente nueva…</option>
+    </select>
+  );
+  const catSel = (v: string, on: (x: string) => void, label: string) => <select aria-label={label} value={v} onChange={(e) => on(e.target.value)} className={`${input} w-full min-w-0`}><option value="">Catálogo…</option>{catalogs.map((c) => <option key={c.catalog_code} value={c.catalog_code}>{c.catalog_code}</option>)}</select>;
+  const scope = ctx.catalog ? (
+    <span className="flex flex-wrap items-center gap-2 text-xs" data-testid="rdm-mapeo-scope">
+      {scopeAll ? <span>todos los catálogos</span> : <span>solo <span className="font-mono font-semibold">{ctx.catalog}</span></span>}
+      <button className="text-blue-700 underline" onClick={() => setScopeAll((a) => !a)}>{scopeAll ? `volver a ${ctx.catalog}` : "ver todos los catálogos"}</button>
+      <button className="text-blue-700 underline" title="ver los valores canónicos de este catálogo" onClick={() => go("valores")}>valores de {ctx.catalog}</button>
+    </span>
+  ) : null;
   return (
     <div className="space-y-4">
       <Show msg={msg} />
+      {ctx.catalog && !scopeAll && (
+        <div className="rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm" data-testid="rdm-mapeo-head">
+          <b>Homologación de <span className="font-mono">{ctx.catalog}</span></b>{ctx.system && <> con <span className="font-mono">{ctx.system}</span></>}: {ints ? <>{ints.length} {ints.length === 1 ? "integración" : "integraciones"} y {maps?.length ?? "…"} {maps?.length === 1 ? "homologación vigente" : "homologaciones vigentes"}.</> : "cargando…"}{" "}
+          <span className="text-slate-600">¿La fuente que necesita no está registrada? Elija «＋ registrar una fuente nueva…» en el selector de sistema: irá a Sistemas fuente y volverá aquí con ella seleccionada.</span>
+        </div>
+      )}
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
-        <Card title="Integraciones: qué campo de qué sistema alimenta cada catálogo" actions={<select aria-label="Filtrar por sistema" value={system} onChange={(e) => setSystem(e.target.value)} className="rounded border px-1 py-0.5 text-xs"><option value="">todos los sistemas</option>{systems.map((s) => <option key={s.source_system_cd} value={s.source_system_cd}>{s.source_system_cd}</option>)}</select>}>
+        <Card title="Integraciones: qué campo de qué sistema alimenta cada catálogo" actions={<div className="flex flex-wrap items-center gap-2">{scope}<select aria-label="Filtrar por sistema" value={system} onChange={(e) => pickSystem(e.target.value, (x) => setCtx({ system: x }))} className="rounded border px-1 py-0.5 text-xs"><option value="">todos los sistemas</option>{systems.map((x) => <option key={x.source_system_cd} value={x.source_system_cd}>{x.source_system_cd}</option>)}<option value={NEW_SYSTEM}>＋ registrar una fuente nueva…</option></select></div>}>
           {!ints && <Spinner />}
-          {ints && <div className="max-h-64 overflow-auto"><Table head={["Sistema", "Campo fuente", "→ Catálogo", "Vigentes", "Cerradas"]} rows={ints.map((i) => [<span className="font-mono text-xs">{i.source_system_cd}</span>, <span className="font-mono text-xs">{i.source_field}</span>, <span className="font-mono text-xs">{i.catalog_code}</span>, i.mappings_current, <span className="text-slate-500">{i.mappings_closed}</span>])} /></div>}
+          {ints && <div className="max-h-64 overflow-auto"><Table head={["Sistema", "Campo fuente", "→ Catálogo", "Vigentes", "Cerradas", ""]} rows={ints.map((i) => [<span className="font-mono text-xs">{i.source_system_cd}</span>, <span className="font-mono text-xs">{i.source_field}</span>, <span className="font-mono text-xs">{i.catalog_code}</span>, i.mappings_current, <span className="text-slate-500">{i.mappings_closed}</span>,
+            <button className="whitespace-nowrap text-xs text-blue-700 underline" title="prefijar la nueva homologación con esta integración" onClick={() => { setFm({ ...fm, system: i.source_system_cd, field: i.source_field, catalog: i.catalog_code, value_code: "" }); setTest({ system: i.source_system_cd, field: i.source_field, value: "" }); setCtx({ system: i.source_system_cd, catalog: i.catalog_code }); }}>homologar valores</button>])}
+            empty={ctx.catalog && !scopeAll ? `Ningún sistema alimenta ${ctx.catalog} todavía: declare la primera integración a la derecha.` : "Sin integraciones"} /></div>}
         </Card>
-        <Card title="Declarar integración">
+        <Card title={<span>Declarar integración{fi.catalog && <> → <span className="font-mono">{fi.catalog}</span></>}</span>}>
           <div className="grid gap-2">
             {sysSel(fi.system, (x) => setFi({ ...fi, system: x }), "Sistema de la integración")}
             <input aria-label="Campo fuente de la integración" placeholder="Campo fuente (p. ej. canal_pref, RLTYP)" value={fi.source_field} onChange={(e) => setFi({ ...fi, source_field: e.target.value })} className={mono} />
@@ -453,15 +595,18 @@ function Mappings({ catalog, onChange, tick }: { catalog: string; onChange: () =
       <div className="grid gap-4 lg:grid-cols-[1fr_360px]">
         <Card title="Homologaciones vigentes: valor fuente → canónico" actions={<input aria-label="Filtro de homologaciones" value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="filtrar…" className="rounded border px-2 py-0.5 text-xs" />}>
           {!maps && <Spinner />}
-          {maps && <div className="max-h-72 overflow-auto"><Table head={["Sistema", "Campo", "Valor fuente", "Catálogo", "Canónico", "Desde", ""]} rows={shown.map((m) => [<span className="font-mono text-xs">{m.source_system_cd}</span>, <span className="font-mono text-xs">{m.source_field}</span>, <span className="font-mono text-xs">{m.source_value}</span>, <span className="font-mono text-xs">{m.catalog_code}</span>, <span>{m.value_code} <span className="text-xs text-slate-500">{m.value_name}</span></span>, <span className="text-xs text-slate-500">{fmtDate(m.valid_from)}</span>, <button className="text-xs text-red-700 underline" onClick={() => retire(m)}>cerrar</button>])} /></div>}
+          {maps && <div className="max-h-72 overflow-auto"><Table head={["Sistema", "Campo", "Valor fuente", "Catálogo", "Canónico", "Desde", ""]} rows={shown.map((m) => [<span className="font-mono text-xs">{m.source_system_cd}</span>, <span className="font-mono text-xs">{m.source_field}</span>, <span className="font-mono text-xs">{m.source_value}</span>, <span className="font-mono text-xs">{m.catalog_code}</span>, <span>{m.value_code} <span className="text-xs text-slate-500">{m.value_name}</span></span>, <span className="text-xs text-slate-500">{fmtDate(m.valid_from)}</span>,
+            <span className="flex gap-2 whitespace-nowrap text-xs"><button className="text-blue-700 underline" title="versiones de esta homologación en 7 · Ciclo de vida" onClick={() => onHistory({ system: m.source_system_cd, field: m.source_field, catalog: m.catalog_code, source_value: m.source_value })}>historial</button><button className="text-red-700 underline" onClick={() => retire(m)}>cerrar</button></span>])}
+            empty={ctx.catalog && !scopeAll ? `Sin homologaciones vigentes para ${ctx.catalog}${system ? ` desde ${system}` : ""}.` : "Sin homologaciones"} /></div>}
         </Card>
-        <Card title="Nueva homologación">
+        <Card title={<span>Nueva homologación{fm.catalog && <> → <span className="font-mono">{fm.catalog}</span></>}</span>}>
           <div className="grid gap-2">
             {sysSel(fm.system, (x) => setFm({ ...fm, system: x }), "Sistema de la homologación")}
             <input aria-label="Campo fuente de la homologación" placeholder="Campo fuente" value={fm.field} onChange={(e) => setFm({ ...fm, field: e.target.value })} className={mono} />
             {catSel(fm.catalog, (x) => setFm({ ...fm, catalog: x, value_code: "" }), "Catálogo de la homologación")}
             <input aria-label="Valor fuente" placeholder="Valor fuente (p. ej. wa, ZPRV, 1)" value={fm.source_value} onChange={(e) => setFm({ ...fm, source_value: e.target.value })} className={mono} />
-            <select aria-label="Código canónico" value={fm.value_code} onChange={(e) => setFm({ ...fm, value_code: e.target.value })} className={input}><option value="">Canónico…</option>{values.map((v) => <option key={v.value_code} value={v.value_code}>{v.value_code} · {v.value_name}</option>)}</select>
+            <select aria-label="Código canónico" value={fm.value_code} onChange={(e) => setFm({ ...fm, value_code: e.target.value })} className={`${input} w-full min-w-0`}><option value="">Canónico…</option>{values.map((v) => <option key={v.value_code} value={v.value_code}>{v.value_code} · {v.value_name}</option>)}</select>
+            {fm.catalog && values.length === 0 && <p className="text-xs text-amber-800">{fm.catalog} no tiene valores publicados: <button className="underline" onClick={() => go("valores", { catalog: fm.catalog })}>publíquelos en 4 · Listas de referencia</button> y vuelva.</p>}
             <div><Button disabled={!fm.system || !fm.field || !fm.catalog || !fm.source_value || !fm.value_code} onClick={createMap}>Publicar homologación</Button></div>
             <p className="text-xs text-slate-500">Si el valor fuente ya tenía canónico, la homologación anterior se cierra y la nueva queda vigente: se versiona, nunca se edita.</p>
           </div>
@@ -481,12 +626,13 @@ function Mappings({ catalog, onChange, tick }: { catalog: string; onChange: () =
 }
 
 // ------------------------------------------------------------------ 7 · ciclo de vida y auditoría
-function Lifecycle({ tick }: { tick: number }) {
+function Lifecycle({ ctx, preset, tick }: { ctx: Ctx; preset: HistoryPreset | null; tick: number }) {
   const [audit, setAudit] = useState<any[] | null>(null);
   const [entity, setEntity] = useState("");
   const [openRow, setOpenRow] = useState<number | null>(null);
-  const [h, setH] = useState({ system: "SAP_CRM", field: "RLTYP", catalog: "CAT_PARTY_ROLE", source_value: "" });
+  const [h, setH] = useState(preset ?? (ctx.system || ctx.catalog ? { system: ctx.system, field: "", catalog: ctx.catalog, source_value: "" } : { system: "SAP_CRM", field: "RLTYP", catalog: "CAT_PARTY_ROLE", source_value: "" }));
   const [hist, setHist] = useState<any[] | null>(null);
+  useEffect(() => { if (preset) { setH(preset); api("/rdm/mappings/history", { params: preset }).then(setHist).catch(() => undefined); } }, [preset]);
   const [prev, setPrev] = useState<any | null>(null);
   const [result, setResult] = useState<any | null>(null);
   const [msg, setMsg] = useMsg();
@@ -515,7 +661,7 @@ function Lifecycle({ tick }: { tick: number }) {
             <li><Badge tone="purple">auditar</Badge> cada cambio de las cinco capas guarda actor, antes y después (Ley 1581/2012 art. 17).</li>
           </ul>
         </Card>
-        <Card title="Historial de una homologación (versiones)">
+        <Card title={<span>Historial de una homologación (versiones){preset && <> · <span className="font-mono text-xs">{preset.source_value}</span></>}</span>}>
           <div className="grid gap-1">
             <input aria-label="Sistema del historial" value={h.system} onChange={(e) => setH({ ...h, system: e.target.value })} className={mono} placeholder="Sistema" />
             <input aria-label="Campo del historial" value={h.field} onChange={(e) => setH({ ...h, field: e.target.value })} className={mono} placeholder="Campo" />

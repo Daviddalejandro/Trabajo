@@ -134,7 +134,7 @@ test("Admin RDM · alta y deprecación de valor sin tocar SKs, homologación y r
   await expect(page.getByTestId("tester-result")).toContainText("CAT_GENDER.M");
 });
 
-test("Consola RDM · recorrido guiado de las cinco capas (dominio → catálogo → campos → valores → sistema → homologación → ciclo de vida → auditoría)", async ({ page, request }) => {
+test("Consola RDM · recorrido guiado de las cinco capas y navegación con contexto (catálogo → homologación → fuente nueva → de vuelta)", async ({ page, request }) => {
   await page.goto("/#/rdm-consola");
   await actAs(page, "steward.mdm");
   await expect(page.getByTestId("rdm-console")).toBeVisible();
@@ -158,6 +158,31 @@ test("Consola RDM · recorrido guiado de las cinco capas (dominio → catálogo 
   await expect(page.locator("tr").filter({ has: page.locator("td", { hasText: /^SMS_RCS$/ }) })).toContainText("activo");
   await expect(page.locator("tr").filter({ has: page.locator("td", { hasText: /^SMS$/ }) })).toContainText("deprecado");
   await expect(page.locator("th").filter({ hasText: "requiere_consentimiento" })).toBeVisible();
+  // navegación con contexto: de las listas de referencia a Homologación sin perder el catálogo (la URL lo conserva)
+  await page.getByTestId("rdm-go-mapeo").click();
+  await expect(page).toHaveURL(/#\/rdm-consola\/mapeo\?catalogo=CAT_CANAL_PREFERIDO$/);
+  await expect(page.getByTestId("rdm-mapeo-head")).toContainText("Homologación de CAT_CANAL_PREFERIDO");
+  await expect(page.getByTestId("rdm-ctx-chip")).toHaveCount(1);
+  await expect(page.locator("td", { hasText: /^APP_MOVIL$/ }).first()).toBeVisible();     // integraciones y mapeos filtrados por el catálogo
+  await expect(page.locator("td", { hasText: /^SAP_CRM$/ })).toHaveCount(0);
+  await expect(page.getByLabel("Catálogo de la integración")).toHaveValue("CAT_CANAL_PREFERIDO");
+  // desvío con retorno: «registrar una fuente nueva» lleva a Sistemas fuente y, al registrarla, vuelve con ella seleccionada
+  await page.getByLabel("Sistema de la integración").selectOption("__nueva_fuente__");
+  await expect(page).toHaveURL(/#\/rdm-consola\/sistemas\?catalogo=CAT_CANAL_PREFERIDO&volver=mapeo$/);
+  await expect(page.getByTestId("rdm-detour")).toContainText("CAT_CANAL_PREFERIDO");
+  await page.getByLabel("Código del sistema").fill("PORTAL_PYT");
+  await page.getByLabel("Nombre del sistema").fill("Portal de pruebas (sintético)");
+  await page.getByLabel("Owner del sistema").fill("Gerencia de Canales");
+  await page.getByRole("button", { name: "Registrar y volver a homologar" }).click();
+  await expect(page).toHaveURL(/#\/rdm-consola\/mapeo\?catalogo=CAT_CANAL_PREFERIDO&sistema=PORTAL_PYT$/);
+  await expect(page.getByRole("status").filter({ hasText: "Fuente PORTAL_PYT registrada" })).toBeVisible();
+  await expect(page.getByLabel("Sistema de la integración")).toHaveValue("PORTAL_PYT");
+  await expect(page.getByTestId("rdm-ctx-chip")).toHaveCount(2);
+  // «atrás» del navegador respeta el recorrido y el contexto
+  await page.goBack();
+  await expect(page).toHaveURL(/#\/rdm-consola\/sistemas\?catalogo=CAT_CANAL_PREFERIDO/);
+  await page.goForward();
+  await expect(page.getByTestId("rdm-mapeo-head")).toContainText("con PORTAL_PYT");
   // estación 7: el historial de la homologación muestra la versión vigente y la cerrada
   await page.getByRole("button", { name: /7 · Ciclo de vida/ }).click();
   await page.getByLabel("Sistema del historial").fill("APP_MOVIL");
