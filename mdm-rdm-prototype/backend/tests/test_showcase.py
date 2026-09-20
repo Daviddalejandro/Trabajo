@@ -10,7 +10,7 @@ def q(sql, **p):
         return conn.execute(text(sql), p)
 
 
-def test_showcase_cases_s1_to_s7():
+def test_showcase_cases_s1_to_s10():
     from app.synth.showcase import CASES, load, report
 
     with SessionLocal() as session:
@@ -27,6 +27,8 @@ def test_showcase_cases_s1_to_s7():
     # S6: todos los campos con un error de digitación → comparado y en zona gris con parciales; S7: sin bucket común → sin par
     assert "document=PARTIAL/TYPO" in by["S6"]["evidence"] and "birth_date=PARTIAL/DM_SWAP" in by["S6"]["evidence"] and "POSSIBLE" in by["S6"]["evidence"]
     assert "sin par" in by["S7"]["evidence"] and by["S7"]["party"]
+    # S8 cobertura parcial → puntos brutos; S9 fusión por G1; S10 organizaciones homónimas con veto del NIT
+    assert "threshold:raw_points" in by["S8"]["evidence"] and "group:G1" in by["S9"]["evidence"] and "O2" in by["S10"]["evidence"]
 
 
 def test_transactional_record_goes_through_the_seven_stages(client):
@@ -46,6 +48,16 @@ def test_transactional_record_goes_through_the_seven_stages(client):
     assert r3["unchanged_hash"] == 1 and r3["loaded"] == 0
     assert client.get("/api/v1/pipeline/batches", params={"limit": 3}).json()[0]["mode"] == "TX"
     assert client.post("/api/v1/pipeline/nope/record", json={"external_id": "x", "payload": {}}).status_code == 404
+
+
+def test_queue_filter_all_returns_probable_and_possible(client):
+    # la consola arranca con B, K, U y la vitrina: «Todas» debe listar PROBABLE y POSSIBLE (antes el parámetro omitido caía en PROBABLE)
+    items = client.get("/api/v1/matches", params={"decision": "ALL", "status": "PENDING", "limit": 200}).json()["items"]
+    decisions = {i["decision"] for i in items}
+    assert {"PROBABLE", "POSSIBLE"} <= decisions
+    assert all(i["match_status"] == "PENDING" for i in items)
+    default = client.get("/api/v1/matches").json()["items"]
+    assert default and all(i["decision"] == "PROBABLE" for i in default)
 
 
 def test_erd_and_buckets_endpoints(client):

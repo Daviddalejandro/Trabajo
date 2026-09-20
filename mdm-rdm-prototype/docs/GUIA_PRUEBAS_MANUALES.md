@@ -58,9 +58,9 @@ imprimen el resumen de pares por decisión. Se pueden alternar tantas veces como
 Capturas de referencia: [`docs/evidence/validation/`](evidence/validation/README.md) y
 [`docs/evidence/f4/`](evidence/f4/README.md).
 
-## 3 ter. Vitrina S1–S7: digitación muy parecida, homónimo, tres documentos, NIT, todo mal digitado
+## 3 ter. Vitrina S1–S10: digitación muy parecida, homónimo, tres documentos, NIT, todo mal digitado, cobertura parcial, G1, homónimas
 
-`make showcase` sobre la base actual (demo o validación) carga siete casos en modo DELTA e imprime `party_sk` y `match_sk`:
+`make demo` deja cargada la vitrina (diez casos en modo DELTA) e imprime `party_sk` y `match_sk`; `make showcase` la carga sola sobre la base actual (demo o validación) y es idempotente. La cola de `#/stewardship` arranca así con B, K, U, S1, S2, S3, S6, S8 y S10:
 
 | Caso | Ir a | Qué mirar |
 |---|---|---|
@@ -71,6 +71,9 @@ Capturas de referencia: [`docs/evidence/validation/`](evidence/validation/README
 | S5 NIT con razón social mal digitada | `#/party/<sk>` | Organización con dos fuentes (SD y MM) y survivorship de la razón social |
 | S6 todos los campos con un error de digitación | `#/stewardship` → filtro **Posible** (evidencia 59) | Todas las filas en amarillo salvo el nombre (Jaro-Winkler lo absorbe): documento, fecha, correo y celular «digitación», apellidos «parecido»; base de la decisión: umbral de evidencia, ningún grupo. Para que un caso así suba a PROBABLE hay que subir los puntos parciales en `MATCH_RULE` (`partial_typo`, `partial_near`) o bajar el umbral en `#/matching`; para que fusione solo haría falta apagar `auto_requires_group`, lo que no se recomienda |
 | S7 igual que S6 pero el apellido cambia de Soundex | `#/modelo` → Cargas y buckets → explorador con el `party_sk` | 0 vecinos en todas las claves: el registro nunca se comparó. Límite del bloqueo exacto |
+| S8 cobertura parcial: solo nombres, apellidos y correo | `#/stewardship` → filtro **Posible** (evidencia 100 sobre cobertura 52) | `document`, `birth_date` y `phone` «sin dato»; base de la decisión «umbral sobre puntos brutos» (52) porque la cobertura no llega al mínimo (60). Subir `min_raw_points` por encima de 52 en `#/matching` lo vuelve NO_MATCH; bajar el umbral «probable» por debajo de 52 lo sube a PROBABLE (simular antes de publicar) |
+| S9 mismo documento y apellido, nombre y fecha distintos | `#/party/<sk>` capa 7 (merges) | Fusión AUTO con justificación `group:G1`; `first_name` contradice y `birth_date` contradice pero G1 (documento + primer apellido) basta. Para exigir la fecha, editar el grupo G1 en `#/matching` y simular |
+| S10 organizaciones homónimas, NIT distinto | `#/stewardship` → par PROBABLE de organización | `nit` «contradice» (veto), `legal_name` y `city` coinciden: base `group:O2` con `nit` en los vetos, por eso nunca pasa de PROBABLE; se decide con justificación como cualquier par |
 
 Y en `#/modelo` → **Cargas y buckets**: los lotes DELTA de la vitrina con sus etapas, el simulador de carga transaccional
 y el explorador de buckets (pruebe con el `party_sk` de S4).

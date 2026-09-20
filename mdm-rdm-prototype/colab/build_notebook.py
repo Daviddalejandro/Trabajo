@@ -107,7 +107,7 @@ r = subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-r", "require
 print("Dependencias Python instaladas." if r.returncode == 0 else r.stderr[-2000:])
 ''')
 
-md("## 4 · Base de datos, catálogos RDM y datos sintéticos")
+md("## 4 · Base de datos, catálogos RDM y datos sintéticos\n\nCon `CONJUNTO = \"demo\"` corre `cli.py demo`: reconstruye la base, verifica los 21 casos A–U y carga la vitrina S1–S10; la Consola de Stewardship arranca con B, K, U, S1, S2, S3, S6, S8 y S10.")
 code('''
 import os, subprocess, sys
 ENV = dict(os.environ, PGBIN=PGBIN, PGDATA_LOCAL="/content/pgdata",
@@ -264,11 +264,12 @@ cola()
 ''')
 
 md("""
-## 6 bis · Vitrina S1–S7 (opcional): digitación muy parecida, homónimo, tres documentos, NIT, todo mal digitado
+## 6 bis · Vitrina S1–S10 (opcional): digitación, homónimo, tres documentos, NIT, todo mal digitado, cobertura parcial, G1, homónimas
 
-Carga en modo DELTA siete casos sintéticos sobre la base actual y verifica cada uno. Imprime el `party_sk` y el `match_sk`:
-S1–S3 y S6 (todos los campos con un error de digitación) se ven en la Consola de Stewardship; S4 (golden con CC + pasaporte + TI) y S5
-(organización) en la Vista 360; S7 (sin bucket común) en el explorador de buckets.
+La demo de la celda 5 ya carga la vitrina al final (la cola arranca con B, K, U y S1, S2, S3, S6, S8, S10). Esta celda la vuelve a
+ejecutar sola (idempotente: los registros ya cargados quedan como «sin cambio por hash») para reimprimir el `party_sk` y el `match_sk` de cada caso:
+S1–S3, S6, S8 (cobertura parcial) y S10 (organizaciones homónimas) se ven en la Consola de Stewardship; S4 (golden con CC + pasaporte + TI),
+S5 (organización) y S9 (fusión por G1 con nombre y fecha distintos) en la Vista 360; S7 (sin bucket común) en el explorador de buckets.
 Los lotes quedan en **Modelo y cargas → Cargas y buckets**, donde también está el simulador de carga transaccional.
 """)
 code('''

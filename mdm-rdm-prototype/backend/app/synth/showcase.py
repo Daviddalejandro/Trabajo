@@ -23,6 +23,9 @@ CASES = {
     "S5": "Organización: mismo NIT, razón social con error de digitación en MM → fusiona sola por O1 (NIT + razón social)",
     "S6": "Todos los campos con un solo error de digitación (cédula, nombre, apellidos, fecha, correo, celular) que aún cae en un bucket → se compara y queda en la zona gris; los nombres los absorbe Jaro-Winkler, el resto queda parcial",
     "S7": "Todos los campos con un error de digitación y además el primer apellido cambia de Soundex (B/V) → no comparte ningún bucket: nunca se compara (límite del bloqueo exacto, visible en el explorador de buckets)",
+    "S8": "Cobertura parcial: el portal solo trae nombres, apellidos y correo (sin documento, fecha ni celular) → cobertura 52 %, por debajo del mínimo: decide sobre puntos brutos → POSSIBLE",
+    "S9": "El grupo G1 manda: mismo documento y primer apellido, pero nombre distinto y fecha cinco años aparte → fusiona sola (G1 documental); queda en el historial de merges para discutir si G1 debe exigir más",
+    "S10": "Organizaciones homónimas: misma razón social y ciudad con NIT distinto → PROBABLE por O2 (razón social + municipio) con veto del NIT: cola de organizaciones",
 }
 
 
@@ -60,7 +63,7 @@ def _swap(doc: str, i: int = 5) -> str:
 def build(seed: int = SEED) -> tuple[Universe, dict]:
     u = Universe(seed, n_persons=0, n_orgs=0)
     u._next = {"pernr": 90000, "kunnr": 900000, "lifnr": 900000, "partner": 9000000, "user": 900000}   # no colisionar con el demo (XREF)
-    P = [u._person(9000 + i) for i in range(6)]
+    P = [u._person(9000 + i) for i in range(8)]
     O = [u._org(900)]
     m: dict = {"seed": seed, "cases": {}}
     # S1 · cédula con dígito transpuesto, todo lo demás igual
@@ -110,6 +113,21 @@ def build(seed: int = SEED) -> tuple[Universe, dict]:
         m["cases"][code] = {"a": {"doc": p.doc, "name": f"{p.first} {p.sur1} {p.sur2}", "birth": b.isoformat(), "email": p.email, "phone": p.phone},
                             "b": {"doc": q.doc, "name": f"{q.first} {q.sur1} {q.sur2}", "birth": q.birth.isoformat(), "email": q.email, "phone": q.phone},
                             "sf_ec": u.emit_sf_ec(p), "crm": u.emit_crm_person(q, categoria="A", telefonos=[f"{q.phone}:TIT:OWN:TIT"])}
+    # S8 · cobertura parcial: el portal solo trae nombres, apellidos y correo
+    p = P[6]; p.doc_type = "CC"
+    m["cases"]["S8"] = {"doc": p.doc, "name": f"{p.first} {p.sur1} {p.sur2}", "email": p.email, "sf_ec": u.emit_sf_ec(p), "portal": u.emit_portal(p, doc=None)}
+    u.rows["web_portal"][-1].update({"fecha_nacimiento": "", "celular": "", "genero": ""})
+    # S9 · G1 manda: documento y primer apellido iguales, nombre y fecha distintos, contactos distintos
+    p = P[7]; p.doc_type = "CC"
+    q = type(p)(**{**p.__dict__, "first": "Carlos" if p.first != "Carlos" else "Andrés", "middle": "", "birth": p.birth.replace(year=p.birth.year - 5),
+                   "email": f"otro.{p.email}", "phone": f"31{p.phone[2:]}"}); q.sources = {}
+    m["cases"]["S9"] = {"doc": p.doc, "a": f"{p.first} {p.sur1} {p.sur2} · {p.birth.isoformat()}", "b": f"{q.first} {q.sur1} {q.sur2} · {q.birth.isoformat()}",
+                        "sf_ec": u.emit_sf_ec(p), "crm": u.emit_crm_person(q, categoria="B")}
+    # S10 · organizaciones homónimas con NIT distinto
+    from app.pipeline.common import nit_check_digit
+    o = u._org(901); o2 = type(o)(**o.__dict__); o2.sources = {}
+    o2.nit = f"8{u.rng.randint(10_000_000, 99_999_999)}"; o2.dv = nit_check_digit(o2.nit)
+    m["cases"]["S10"] = {"legal": o.legal, "nit_a": f"{o.nit}-{o.dv}", "nit_b": f"{o2.nit}-{o2.dv}", "ecc_sd": u.emit_sd_org(o), "ecc_mm": u.emit_mm_org(o2)}
     m["counts"] = {k: len(v) for k, v in u.rows.items()}
     return u, m
 
@@ -195,4 +213,19 @@ def report(session, m: dict) -> list[dict]:
     pr = pair(a, b) if a and b else None
     ok = bool(a and b) and a != b and pr is None
     out.append({"case": "S7", "ok": ok, "evidence": f"parties {a} y {b} sin par: A «{c['S7']['a']['name']}» / B «{c['S7']['b']['name']}» no comparten documento, correo, celular ni Soundex del apellido → nunca se compararon" if ok else f"inesperado: par {pr['match_sk'] if pr else None}", "party": a, "match": None})
+    # S8: cobertura por debajo del mínimo → vía de puntos brutos
+    a, b = party_of("SF_EC", c["S8"]["sf_ec"]), party_of("WEB_PORTAL", c["S8"]["portal"])
+    pr = pair(a, b) if a and b else None
+    ok = bool(pr) and pr["decision"] == "POSSIBLE" and pr["decision_basis"]["decided_by"] == "threshold:raw_points" and pr["decision_basis"]["coverage"] < 60
+    out.append({"case": "S8", "ok": ok, "evidence": f"par #{pr['match_sk']} · {pr['decision']} · evidencia {pr['total_score']} sobre cobertura {pr['decision_basis']['coverage']} · {pr['decision_basis']['decided_by']} · sin dato: {[r['attribute'] for r in pr['score_detail'] if r['state'] == 'MISSING']}" if pr else "sin par", "party": a, "match": pr["match_sk"] if pr else None})
+    # S9: fusión automática por G1 pese a nombre y fecha distintos
+    sks = {party_of("SF_EC", c["S9"]["sf_ec"]), party_of("SAP_CRM", c["S9"]["crm"])}
+    just = session.execute(text("SELECT justification FROM mdm.party_merge_history WHERE surviving_party_sk=:p AND unmerged_at IS NULL ORDER BY merge_sk DESC LIMIT 1"), {"p": next(iter(sks))}).scalar() if len(sks) == 1 else None
+    ok = len(sks) == 1 and bool(just) and "group:G1" in just
+    out.append({"case": "S9", "ok": ok, "evidence": f"party {next(iter(sks))} · A «{c['S9']['a']}» + B «{c['S9']['b']}» fusionados: {just}" if ok else f"sin fusionar por G1: {sks} · {just}", "party": next(iter(sks)) if len(sks) == 1 else None, "match": None})
+    # S10: organizaciones homónimas → PROBABLE por O2 con veto del NIT
+    a, b = party_of("SAP_ECC_SD", c["S10"]["ecc_sd"]), party_of("SAP_ECC_MM", c["S10"]["ecc_mm"])
+    pr = pair(a, b) if a and b else None
+    ok = bool(pr) and pr["decision"] == "PROBABLE" and "O2" in pr["decision_basis"]["decided_by"] and "nit" in (pr["decision_basis"].get("vetoed_by") or [])
+    out.append({"case": "S10", "ok": ok, "evidence": f"par #{pr['match_sk']} · {pr['decision']} · evidencia {pr['total_score']} · {pr['decision_basis']['decided_by']} · «{c['S10']['legal']}» NIT {c['S10']['nit_a']} vs {c['S10']['nit_b']}" if pr else f"sin par ({a}, {b})", "party": a, "match": pr["match_sk"] if pr else None})
     return out

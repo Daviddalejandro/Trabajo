@@ -20,7 +20,7 @@ export default function Stewardship() {
   const refreshCounts = useCallback(() => {
     const me = getSession().actor;
     Promise.all([
-      api("/matches", { params: { decision: null, status: "PENDING", limit: 500 } }),
+      api("/matches", { params: { decision: "ALL", status: "PENDING", limit: 500 } }),   // toda la zona gris: probables y posibles
       api("/review-tasks", { params: { status: "RECEIVED", assignee: me } }),
       api("/merges", { params: { unmerged: false, limit: 1 } }),
     ]).then(([q, t]) => setCounts({ queue: q.items.length, tasks: t.length, merges: 0 })).catch(() => undefined);
@@ -51,7 +51,7 @@ function Queue({ initialMatch, onChanged }: { initialMatch?: number; onChanged: 
 
   const load = useCallback(() => {
     setErr(null);
-    api("/matches", { params: { decision: decision || null, status: status || null, limit: 200 } })
+    api("/matches", { params: { decision, status, limit: 200 } })
       .then((r) => setItems(r.items)).catch((e) => setErr(errorText(e)));
   }, [decision, status]);
   useEffect(load, [load]);
@@ -61,10 +61,10 @@ function Queue({ initialMatch, onChanged }: { initialMatch?: number; onChanged: 
       <Card title="Cola" actions={
         <div className="flex gap-1 text-xs">
           <select aria-label="Decisión" value={decision} onChange={(e) => setDecision(e.target.value)} className="rounded border px-1 py-0.5">
-            <option value="PROBABLE">Probable</option><option value="POSSIBLE">Posible</option><option value="">Todas</option>
+            <option value="PROBABLE">Probable</option><option value="POSSIBLE">Posible</option><option value="ALL">Todas</option>
           </select>
           <select aria-label="Estado" value={status} onChange={(e) => setStatus(e.target.value)} className="rounded border px-1 py-0.5">
-            <option value="PENDING">Pendientes</option><option value="IN_REVIEW">En revisión</option><option value="RESOLVED">Resueltos</option><option value="">Todos</option>
+            <option value="PENDING">Pendientes</option><option value="IN_REVIEW">En revisión</option><option value="RESOLVED">Resueltos</option><option value="ALL">Todos</option>
           </select>
         </div>}>
         {err && <Notice kind="error">{err}</Notice>}

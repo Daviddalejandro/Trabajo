@@ -61,10 +61,10 @@ tras cambiar la UI, `make ui-colab` y subir el cambio: el cuaderno clona la rama
 
 | Objetivo | Comando |
 |---|---|
-| Escenario demo (21 casos A–U) en la consola | `make demo` |
+| Escenario demo (21 casos A–U) + vitrina S1–S10 en la consola | `make demo` |
 | Conjunto SAP ECC + crédito (V1–V28) en la consola | `make validation-load` |
-| Vitrina S1–S7 (digitación, homónimo, tres documentos, NIT, todos los campos mal digitados) en modo DELTA sobre la base actual | `make showcase` |
-| Suite backend completa (135 pruebas, reconstruye la base) | `make test-backend` |
+| Solo la vitrina S1–S10 (digitación, homónimo, tres documentos, NIT, todo mal digitado, cobertura parcial, G1 manda, organizaciones homónimas) en modo DELTA sobre la base actual, idempotente | `make showcase` |
+| Suite backend completa (136 pruebas, reconstruye la base) | `make test-backend` |
 | Solo validación (37) | `make test-validation` |
 | UI compilada + e2e Playwright (8) | `make test-frontend` · `make test-e2e` |
 | Entregables para Drive | `make export-drive` |

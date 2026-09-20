@@ -27,10 +27,10 @@ rne-sync:      ## F5: sincroniza el RNE simulado (solo finalidad COMMERCIAL)
 	cd backend && python cli.py rne-sync
 purge:         ## F5: purga simulada (nunca borra)
 	cd backend && python cli.py purge --dry-run
-demo:          ## F5: rebuild → rne-sync → caso Q → verificación de los 20 casos; deja B y K en la consola
+demo:          ## F5: rebuild → rne-sync → caso Q → verificación de los 21 casos → vitrina S1–S10; deja B, K, U y la vitrina en la consola
 	cd backend && python cli.py demo
 
-showcase:      ## Vitrina: casos S1–S7 (digitación, homónimo, tres documentos, NIT, todo mal digitado) en modo DELTA sobre la base actual
+showcase:      ## Vitrina: casos S1–S10 (digitación, homónimo, tres documentos, NIT, todo mal digitado, cobertura parcial, G1, organizaciones homónimas) en modo DELTA; make demo ya la incluye
 	cd backend && python cli.py showcase
 
 rebuild:       ## Reconstruye rdm + mdm + staging desde cero con sintéticos (deja B y K en la consola)

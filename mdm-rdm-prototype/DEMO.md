@@ -147,11 +147,13 @@ los 21 casos (todos OK). Luego, con `make api` y la UI:
 10. `make export-drive` genera `docs/drive/` (diccionario, catálogos, matching, cumplimiento, evidencia,
     demo y resumen ejecutivo) para subir a la carpeta `MDM_RDM_Prototipo` de Google Drive.
 
-## Vitrina · casos S1–S7 y cargas masivas/transaccionales
+## Vitrina · casos S1–S10 y cargas masivas/transaccionales
 
-`make showcase` (después de `make demo` o `make validation-load`) ingiere en modo **DELTA** cinco casos sintéticos
-que el escenario A–U no cubre y verifica cada uno; imprime el `party_sk` y el `match_sk` para ir directo. Cinco casos originales
-más dos (S6, S7) para responder «¿qué pasa si *todos* los campos traen un error de digitación?».
+`make demo` termina cargando la vitrina en modo **DELTA** (también `make showcase` sola, sobre la base actual, idempotente): diez
+casos sintéticos que el escenario A–U no cubre, verificados uno a uno; imprime el `party_sk` y el `match_sk` para ir directo. Con ello
+la Consola de Stewardship arranca con una **variedad de zona gris**: B, K y U del escenario más S1, S2, S3, S6, S8 y S10. Los casos
+responden a preguntas concretas: «¿qué pasa si *todos* los campos traen un error de digitación?» (S6, S7), «¿y si solo llegan
+algunos campos?» (S8), «¿fusiona con el mismo documento aunque nombre y fecha no cuadren?» (S9), «¿y dos empresas homónimas?» (S10).
 
 | Caso | Dónde verlo | Qué muestra |
 |---|---|---|
@@ -162,8 +164,11 @@ más dos (S6, S7) para responder «¿qué pasa si *todos* los campos traen un er
 | **S5** organización con el mismo NIT y razón social mal digitada en MM | Vista 360 del `party_sk` impreso | Fusión automática por O1 (NIT + razón social por tokens) |
 | **S6** todos los campos con un solo error de digitación: cédula (dígito transpuesto), nombre y apellidos (una vocal), fecha (día y mes intercambiados), correo (un carácter), celular (dígito transpuesto) | Consola de Stewardship, filtro **Posible** | Se compara porque el apellido conserva el Soundex; evidencia **59**: documento, fecha, correo y celular «parcial · digitación», apellidos «parcial · parecido», el nombre lo absorbe Jaro-Winkler (coincide). Ningún grupo se satisface → POSSIBLE por umbral: con todo ligeramente mal, el motor no se atreve a «probable» y menos a fusionar; lo decide el steward |
 | **S7** lo mismo que S6 pero la letra cambiada del primer apellido altera el Soundex (García → Varcía) | Modelo y cargas → explorador de buckets con el `party_sk` impreso | No comparte documento, correo, celular ni Soundex: **no cae en ningún bucket común y nunca se compara**. Es el límite del bloqueo exacto; el explorador lo muestra (0 vecinos en cada clave) |
+| **S8** cobertura parcial: el portal solo trae nombres, apellidos y correo (sin documento, fecha ni celular) | Consola de Stewardship, filtro **Posible** | Evidencia 100 sobre **cobertura 52**: todo lo comparable coincide, pero falta más de la mitad del peso. Por debajo de la cobertura mínima (60) la política decide sobre **puntos brutos** (52 de 100, `threshold:raw_points`) → POSSIBLE; la base de la decisión lo dice y las filas `document`, `birth_date` y `phone` aparecen «sin dato» |
+| **S9** el grupo G1 manda: mismo documento y primer apellido, nombre de pila distinto (Carlos / Andrés) y fecha cinco años aparte | Vista 360 del `party_sk` impreso, capa 7 (merges) | Fusionó sola por **G1** (documento + primer apellido) con evidencia 64: el documento verificado pesa más que el nombre y la fecha. Caso para discutir con las UES si G1 debe exigir además la fecha (se cambia en `#/matching` sin tocar código) |
+| **S10** organizaciones homónimas: misma razón social y municipio, NIT distinto (SD vs MM) | Consola de Stewardship, par PROBABLE (organización) | Evidencia 45 por **O2** (razón social + municipio), con el NIT en la lista de vetos de la base de la decisión (`group:O2`, vetado por `nit`): nunca fusiona sola; el steward confirma si es la misma empresa (NIT mal cargado) o dos distintas |
 
-En **Modelo y cargas → Cargas y buckets** se ven esos cinco lotes DELTA con sus etapas (extraídos, sin cambio por hash,
+En **Modelo y cargas → Cargas y buckets** se ven los cinco lotes DELTA de la vitrina con sus etapas (extraídos, sin cambio por hash,
 cuarentena, XREF, cargados, buckets, comparados, auto, a revisión). El simulador de **carga transaccional** envía un
 registro nativo por `POST /pipeline/{fuente}/record` y muestra al instante el party creado o actualizado por XREF, los
 buckets en los que cayó y la decisión; enviar el mismo ID externo con cambios = actualización por XREF, sin cambios =

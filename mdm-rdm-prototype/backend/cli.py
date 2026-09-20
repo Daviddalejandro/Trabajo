@@ -224,7 +224,7 @@ def eligibility_recompute(party: int = typer.Option(None, help="party_sk; vacío
 @cli.command("demo")
 def demo(actor: str = typer.Option("demo")) -> None:
     """F5 · make demo end-to-end: rebuild (migrar → sembrar → sintéticos → ingerir con matching) → rne-sync → caso Q (ARCO vencida)
-    → deja la consola con B y K pendientes e imprime el estado de los 21 casos."""
+    → vitrina S1–S10 en modo DELTA → deja la consola con B, K, U y la vitrina pendientes e imprime el estado de los casos."""
     from app.demo import plant_and_report
 
     rc = subprocess.call([sys.executable, "cli.py", "rebuild", "--yes", "--actor", actor])
@@ -244,13 +244,26 @@ def demo(actor: str = typer.Option("demo")) -> None:
         typer.echo(f"{row['case']:6s}{('OK' if row['ok'] else 'REVISAR'):10s}{row['evidence']}")
     if not all(r["ok"] for r in report):
         raise typer.Exit(code=1)
-    typer.echo("\nDemo lista: consola con los casos B y K pendientes en http://localhost:5173/#/stewardship")
+    from app.synth.showcase import CASES, load as showcase_load, report as showcase_report
+
+    with SessionLocal() as session:
+        m, _ = showcase_load(session, actor)
+        rows = showcase_report(session, m)
+        session.commit()
+    typer.echo("")
+    for r in rows:
+        typer.echo(f"{r['case']:6s}{('OK' if r['ok'] else 'REVISAR'):10s}{CASES[r['case']]}")
+        typer.echo(f"{'':16s}{r['evidence']}")
+    if not all(r["ok"] for r in rows):
+        raise typer.Exit(code=1)
+    typer.echo("\nDemo lista: consola con B, K, U y la vitrina S1–S10 (zona gris: probables y posibles) en http://localhost:5173/#/stewardship")
 
 
 @cli.command("showcase")
 def showcase(actor: str = typer.Option("showcase")) -> None:
-    """Vitrina · Carga en modo DELTA los casos S1–S7 (digitación muy parecida, homónimo, golden con tres tipos de documento,
-    organización con NIT igual, todos los campos mal digitados) sobre la base actual y verifica cada uno. Se ejecuta después de `demo` o `validation-load`."""
+    """Vitrina · Carga en modo DELTA los casos S1–S10 (digitación muy parecida, homónimo, golden con tres tipos de documento,
+    organización con NIT igual, todos los campos mal digitados, cobertura parcial, G1, organizaciones homónimas) sobre la base
+    actual y verifica cada uno. `demo` ya la incluye; sirve también después de `validation-load`."""
     from app.core.db import SessionLocal
     from app.synth.showcase import CASES, load, report
 
@@ -267,7 +280,7 @@ def showcase(actor: str = typer.Option("showcase")) -> None:
         typer.echo(f"{'':16s}{r['evidence']}")
     if not all(r["ok"] for r in rows):
         raise typer.Exit(code=1)
-    typer.echo("\nVitrina lista: S1–S3 y S6 en la Consola de Stewardship (S3 y S6 con el filtro Posible), S4 y S5 en la Vista 360, S7 en Modelo y cargas → explorador de buckets (party_sk arriba).")
+    typer.echo("\nVitrina lista: S1–S3, S6, S8 y S10 en la Consola de Stewardship (S3, S6 y S8 con el filtro Posible), S4, S5 y S9 en la Vista 360 / historial de merges, S7 en Modelo y cargas → explorador de buckets (party_sk arriba).")
 
 
 @cli.command("export-drive")

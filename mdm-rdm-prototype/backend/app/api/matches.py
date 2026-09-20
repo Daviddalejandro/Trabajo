@@ -83,6 +83,9 @@ def party_summary(session: Session, party_sk: int) -> dict:
 @router.get("/matches", summary="Cola de stewardship")
 def list_matches(decision: str | None = "PROBABLE", status: str | None = "PENDING", limit: int = Query(50, ge=1, le=500),
                  cursor: int = Query(0, ge=0), session: Session = Depends(get_session)):
+    # `ALL` (o vacío) quita el filtro: la consola lo usa para «Todas» las decisiones / «Todos» los estados
+    decision = None if (decision or "ALL").upper() == "ALL" else decision
+    status = None if (status or "ALL").upper() == "ALL" else status
     rows = session.execute(text("""
         SELECT m.match_sk, m.party_a_sk, m.party_b_sk, m.total_score, d.value_code AS decision, m.match_status, m.rule_version, m.matched_at,
                (SELECT count(*) FROM mdm.match_review_task t WHERE t.match_sk=m.match_sk AND t.decided_at IS NULL) AS open_tasks

@@ -27,14 +27,14 @@
       "name": "Esperanza Gómez Mosquera",
       "birth_a": "1946-12-21",
       "sf_ec": "00090002",
-      "doc_b": "949291738",
+      "doc_b": "916251075",
       "birth_b": "1947-12-21",
       "crm": "0009000002"
     },
     "S4": {
       "cc": "957911735",
-      "passport": "AB769799",
-      "ti": "986461182",
+      "passport": "AB987282",
+      "ti": "946940674",
       "email": "paola.gómez9003@ejemplo.test",
       "phone": "3385686996",
       "name": "Paola Navarro Guzmán",
@@ -43,9 +43,9 @@
       "portal": "u900002"
     },
     "S5": {
-      "nit": "868411051-9",
-      "legal": "Barbosa-Guzmán S.A.",
-      "legal_typo": "Berbosa-Guzmán S.A.",
+      "nit": "851483266-1",
+      "legal": "Fundación Torres-Quintero",
+      "legal_typo": "Fundeción Torres-Quintero",
       "ecc_sd": "0000900002",
       "ecc_mm": "0000900001"
     },
@@ -84,13 +84,34 @@
       },
       "sf_ec": "00090005",
       "crm": "0009000005"
+    },
+    "S8": {
+      "doc": "961546352",
+      "name": "Laura Estrada Prada",
+      "email": "laura.domínguez9006@ejemplo.test",
+      "sf_ec": "00090006",
+      "portal": "u900003"
+    },
+    "S9": {
+      "doc": "932699013",
+      "a": "Víctor Rodríguez Aguirre · 2000-04-17",
+      "b": "Carlos Rodríguez Aguirre · 1995-04-17",
+      "sf_ec": "00090007",
+      "crm": "0009000006"
+    },
+    "S10": {
+      "legal": "Fundación Lozano Martínez and Silva",
+      "nit_a": "821222126-0",
+      "nit_b": "838671506-3",
+      "ecc_sd": "0000900003",
+      "ecc_mm": "0000900002"
     }
   },
   "counts": {
-    "sf_ec": 5,
-    "ecc_sd": 2,
-    "ecc_mm": 1,
-    "crm_bp": 5,
-    "web_portal": 2
+    "sf_ec": 7,
+    "ecc_sd": 3,
+    "ecc_mm": 2,
+    "crm_bp": 6,
+    "web_portal": 3
   }
 }

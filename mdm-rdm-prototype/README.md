@@ -253,7 +253,7 @@ Decisiones de implementación de la Fase 5:
 - **`INVALID_CONTACT`** se añadió a `CAT_ELIGIBILITY_REASON` para los vínculos `WRONG_PERSON` / `INVALID`, que nunca son elegibles (precedencia 7).
 - **Frecuencia** (precedencia 11): sin historial de envíos en el prototipo, solo `NEVER` se considera excedida.
 - **Caso H** trae ahora un crédito activo en SD para que la cobranza sea legítima (precedencia 8) mientras el RNE bloquea solo lo comercial; **caso S** recibe su crédito en `data/synth/ecc_sd_delta.csv` (corrida delta) y pasa de `NO_ACTIVE_SERVICE` a `ELIGIBLE` sin tocar BENEFITS.
-- **`make demo`** verifica los 21 casos sobre la base reconstruida y falla si alguno no cumple; F, L, M y N se ejecutan desde la API o la consola según el guion.
+- **`make demo`** verifica los 21 casos sobre la base reconstruida, carga después la vitrina S1–S10 en modo DELTA y falla si alguno no cumple; F, L, M y N se ejecutan desde la API o la consola según el guion. La cola de la consola queda con B, K, U y la zona gris de la vitrina (S1, S2, S3, S6, S8, S10).
 - **Caso U · vitrina 360**: una persona sintética con las ocho capas pobladas (cinco fuentes, cuatro roles, los tres tipos de segmento, servicios en tres UES y relaciones persona↔organización y persona↔persona). Se busca en la Vista 360 como `Mariana Lucía Restrepo Vanegas` y deja un par `PROBABLE` en la Consola de Stewardship (registro del portal sin documento y con correo nuevo: grupo G3); detalle en `docs/GUIA_PRUEBAS_MANUALES.md` §3 bis.
 
 ## Conjunto de validación (SAP ECC + sistema de crédito)
@@ -261,9 +261,11 @@ Decisiones de implementación de la Fase 5:
 ```bash
 make test-validation                          # 37 pruebas: genera, ingiere y verifica los casos V1–V28
 python backend/cli.py validation-generate     # backend/data/validation/*.csv + manifest_validacion.json
-make showcase                                 # vitrina S1–S7 en modo DELTA sobre la base actual: cédula con dígito transpuesto (S1), portal sin documento con
-                                              # nombre, fecha (día/mes) y correo mal digitados (S2), homónimo (S3), golden con CC + pasaporte + TI (S4), NIT con razón
-                                              # social mal digitada (S5), todos los campos con un error de digitación (S6) y el mismo caso sin bucket común (S7)
+make showcase                                 # vitrina S1–S10 en modo DELTA sobre la base actual (make demo ya la incluye; repetirla es idempotente por XREF/hash):
+                                              # cédula con dígito transpuesto (S1), portal sin documento con nombre, fecha (día/mes) y correo mal digitados (S2),
+                                              # homónimo (S3), golden con CC + pasaporte + TI (S4), NIT con razón social mal digitada (S5), todos los campos con un
+                                              # error de digitación (S6) y el mismo caso sin bucket común (S7), cobertura parcial: solo nombres y correo (S8),
+                                              # mismo documento con nombre y fecha distintos → G1 fusiona (S9), organizaciones homónimas con NIT distinto (S10)
 make validation-load                          # deja ECC + crédito en la consola (zona gris: V2 por G3, V18 por veto del documento, V3 por G2)
 ```
 
